@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{47F1BBA3-EB60-425B-B9E1-4ACB86EC51BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bokra.IntegrationTests", "tests\Bokra.IntegrationTests\Bokra.IntegrationTests.csproj", "{5370F677-1BC2-4A76-9E98-BA13704F1D35}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bokra.UnitTests", "tests\Bokra.UnitTests\Bokra.UnitTests.csproj", "{8DE7082A-50D5-4914-B194-415448AEE939}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F8C46FB0-5B87-4172-AC27-882372617974}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bokra.API", "src\Bokra.API\Bokra.API.csproj", "{F10A0258-C6F6-44E5-A2E7-6B3A7069CC83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bokra.Core", "src\Bokra.Core\Bokra.Core.csproj", "{100B0CFE-C5D0-4EC5-AE45-CF14CA768D6E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bokra.Infrastructure", "src\Bokra.Infrastructure\Bokra.Infrastructure.csproj", "{1AF0CE1E-BE15-4A60-AB96-609D153800ED}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5370F677-1BC2-4A76-9E98-BA13704F1D35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5370F677-1BC2-4A76-9E98-BA13704F1D35}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5370F677-1BC2-4A76-9E98-BA13704F1D35}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5370F677-1BC2-4A76-9E98-BA13704F1D35}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DE7082A-50D5-4914-B194-415448AEE939}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DE7082A-50D5-4914-B194-415448AEE939}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DE7082A-50D5-4914-B194-415448AEE939}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DE7082A-50D5-4914-B194-415448AEE939}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F10A0258-C6F6-44E5-A2E7-6B3A7069CC83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F10A0258-C6F6-44E5-A2E7-6B3A7069CC83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F10A0258-C6F6-44E5-A2E7-6B3A7069CC83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F10A0258-C6F6-44E5-A2E7-6B3A7069CC83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{100B0CFE-C5D0-4EC5-AE45-CF14CA768D6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{100B0CFE-C5D0-4EC5-AE45-CF14CA768D6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{100B0CFE-C5D0-4EC5-AE45-CF14CA768D6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{100B0CFE-C5D0-4EC5-AE45-CF14CA768D6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1AF0CE1E-BE15-4A60-AB96-609D153800ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1AF0CE1E-BE15-4A60-AB96-609D153800ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1AF0CE1E-BE15-4A60-AB96-609D153800ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1AF0CE1E-BE15-4A60-AB96-609D153800ED}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5370F677-1BC2-4A76-9E98-BA13704F1D35} = {47F1BBA3-EB60-425B-B9E1-4ACB86EC51BE}
+		{8DE7082A-50D5-4914-B194-415448AEE939} = {47F1BBA3-EB60-425B-B9E1-4ACB86EC51BE}
+		{F10A0258-C6F6-44E5-A2E7-6B3A7069CC83} = {F8C46FB0-5B87-4172-AC27-882372617974}
+		{100B0CFE-C5D0-4EC5-AE45-CF14CA768D6E} = {F8C46FB0-5B87-4172-AC27-882372617974}
+		{1AF0CE1E-BE15-4A60-AB96-609D153800ED} = {F8C46FB0-5B87-4172-AC27-882372617974}
+	EndGlobalSection
+EndGlobal

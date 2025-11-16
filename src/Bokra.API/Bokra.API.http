@@ -1,0 +1,6 @@
+@Bokra.API_HostAddress = http://localhost:5256
+
+GET {{Bokra.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
