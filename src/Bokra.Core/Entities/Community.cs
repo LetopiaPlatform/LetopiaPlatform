@@ -56,7 +56,7 @@ namespace Bokra.Core.Entities
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         //add some exter columns
-        [MaxLength(500)]
+
         [MaxLength(500)]
         [Column("cover_image_url")]
         public string? CoverImageUrl { get; set; }
