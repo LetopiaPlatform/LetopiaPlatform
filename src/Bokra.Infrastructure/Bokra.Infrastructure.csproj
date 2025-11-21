@@ -5,8 +5,27 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-    <PackageReference Include="StackExchange.Redis" Version="2.9.32" />
+
+	  <!-- EF Core Design -->
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.22">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
+
+	  <!-- EF Core Tools (يجب أن تكون نفس نسخة EF Core = الإصدار 8) -->
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.22">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
+
+	  <!-- PostgreSQL Provider -->
+	  <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+
+	  <!-- Identity -->
+	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.22" />
+
+	  <!-- Redis -->
+	  <PackageReference Include="StackExchange.Redis" Version="2.9.32" />
   </ItemGroup>
 
   <PropertyGroup>
