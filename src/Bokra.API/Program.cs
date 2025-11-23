@@ -21,7 +21,7 @@ public class Program
                      .AddDefaultTokenProviders();
         #endregion
 
-
+        builder.Services.AddDebendancy();
 
         var app = builder.Build();
 
@@ -36,7 +36,7 @@ public class Program
             await UserSeeder.SeedAsync(userManager);
         }
         #endregion
-
+        
         app.UseHttpsRedirection();
         app.UseStaticFiles();
         app.UseAuthentication();
