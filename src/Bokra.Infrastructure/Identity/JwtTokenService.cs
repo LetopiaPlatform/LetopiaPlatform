@@ -1,8 +1,11 @@
 using Bokra.Core.AppSettings;
+using Bokra.Core.DTOs.Auth.Response;
+using Bokra.Core.Entities.Identity;
 using Bokra.Core.Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 
 namespace Bokra.Infrastructure.Identity;
@@ -16,38 +19,30 @@ public class JwtTokenService : IJwtTokenService
         _jwtSettings = jwtSettings.Value ?? throw new ArgumentNullException(nameof(jwtSettings));
     }
 
-    // TODO: Implement generate token method after user management is set up
-    public bool ValidateToken(string token)
+    public Task<TokenResult> GenerateTokenAsync(User user)
     {
-        if (!string.IsNullOrEmpty(token))
-            return false;
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+        var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryInMinutes);
 
-        try
+        var claims = new List<Claim>
         {
-            tokenHandler.ValidateToken(token, new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = true,
-                ValidIssuer = _jwtSettings.Issuer,
-                ValidateAudience = true,
-                ValidAudience = _jwtSettings.Audience,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero // No clock skew for simplicity
-            }, out SecurityToken validatedToken);
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+            new Claim(ClaimTypes.Role, user.Role ?? "Learner"),
+        };
 
-            var jwtToken = (JwtSecurityToken)validatedToken;
-            var userIdClaim = jwtToken.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
+        var token = new JwtSecurityToken(
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
+            claims: claims,
+            expires: expiresAt,
+            signingCredentials: creds
+        );
 
-            return userIdClaim != null;
-        }
-        catch (Exception)
-        {
-            // Log the exception if needed
-            return false;
-        }
+        string jwtString = new JwtSecurityTokenHandler().WriteToken(token);
+
+        return Task.FromResult(new TokenResult(jwtString, expiresAt));
     }
 }

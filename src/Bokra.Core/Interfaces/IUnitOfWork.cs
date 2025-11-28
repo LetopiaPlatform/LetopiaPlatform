@@ -8,13 +8,8 @@ namespace Bokra.Core.Interfaces
     {
 
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
-
- 
         Task BeginTransactionAsync();
-
         Task CommitAsync();
-
-
         Task RollbackAsync();
     }
 }

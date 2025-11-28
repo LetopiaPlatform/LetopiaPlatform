@@ -3,18 +3,18 @@
     public static class Router
     {
 
-        public const string SignleRoute = "/{id}";
+        public const string SingleRoute = "/{id}";
 
-        public const string root = "Api";
-        public const string version = "V1";
-        public const string Rule = root + "/" + version + "/";
+        public const string Root = "/api";
+        public const string Version = "v1";
+        public const string Rule = $"{Root}/{Version}";
 
         public static class Authentication
         {
 
-            public const string Prefix = Rule + "Auth";
-            public const string SignUp = Prefix + "/SignUp";
-            public const string Login = Prefix + "/Login";
+            public const string Prefix = $"{Rule}/auth";
+            public const string SignUp = $"{Prefix}/signup";
+            public const string Login =  $"{Prefix}/login";
         }
     }
 }

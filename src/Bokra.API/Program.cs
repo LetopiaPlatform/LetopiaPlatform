@@ -1,5 +1,7 @@
+using Bokra.API.Middleware;
 using Bokra.Core.Entities.Identity;
-using Bokra.Infrastructure.Data.Configuration;
+using Bokra.Infrastructure;
+using Bokra.Infrastructure.Data;
 using Bokra.Infrastructure.Seeder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,19 +11,8 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
-        #region AddContext
-        builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-        #endregion
-
-        #region AddIdentity
-        builder.Services.AddIdentity<User, Role>()
-                     .AddEntityFrameworkStores<ApplicationDbContext>()
-                     .AddDefaultTokenProviders();
-        #endregion
-
-        builder.Services.AddDebendancy();
+        builder.Services.AddControllers();
+        builder.Services.AddInfrastructure(builder.Configuration);
 
         var app = builder.Build();
 
@@ -36,7 +27,8 @@ public class Program
             await UserSeeder.SeedAsync(userManager);
         }
         #endregion
-
+        app.UseMiddleware<ExceptionMiddleware>();
+        app.UseRouting();
         app.UseHttpsRedirection();
         app.UseStaticFiles();
         app.UseAuthentication();

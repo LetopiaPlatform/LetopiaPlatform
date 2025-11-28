@@ -1,9 +1,9 @@
-﻿using Bokra.API.DTOs.Auth.Response;
+﻿using Bokra.API.DTOs.Auth.Request;
 using FluentValidation;
 
 namespace Bokra.API.Validators
 {
-    public class LoginDtoValidator : AbstractValidator<LoginDtos>
+    public class LoginDtoValidator : AbstractValidator<LoginDto>
     {
         public LoginDtoValidator()
         {
