@@ -17,6 +17,7 @@ namespace Bokra.Infrastructure.Seeder
                     Email = "admin@project.com",
                     PhoneNumber = "123456",
                     EmailConfirmed = true,
+                    Role = "Admin",
                     PhoneNumberConfirmed = true,
                 };
                 await _usermanager.CreateAsync(defaultuser, "Admin@123");
