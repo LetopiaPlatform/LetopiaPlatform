@@ -1,9 +1,8 @@
 ﻿using Bokra.API.Common;
+using Bokra.API.Middleware;
 using Bokra.Core.Common;
 using Bokra.Core.Exceptions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Bokra.API.Controllers;
 
@@ -12,40 +11,14 @@ namespace Bokra.API.Controllers;
 public abstract class BaseController : ControllerBase
 {
     /// <summary>
-    /// Returns 200 OK with data
-    /// </summary>
-    protected IActionResult SuccessResponse<T>(T data, string message = "Success")
-    {
-        return Ok(ApiResponse<T>.SuccessResponse(data, message));
-    }
-
-    /// <summary>
-    /// Returns 400 Bad Request with error
-    /// </summary>
-    protected IActionResult BadRequestResponse(string error)
-    {
-        return BadRequest(ApiResponse<object>.FailureResponse(error));
-    }
-
-    /// <summary>
-    /// Returns 400 Bad Request with multiple errors
-    /// </summary>
-    protected IActionResult BadRequestResponse(List<string> errors)
-    {
-        return BadRequest(ApiResponse<object>.FailureResponse(errors));
-    }
-
-    /// <summary>
-    /// Handles Result pattern - return appropriate response
+    /// Handles Result pattern for generic responses
     /// </summary>
     protected IActionResult HandleResult<T>(Result<T> result)
     {
         if (result.IsSuccess)
-        {
-            return SuccessResponse(result.Value);
-        }
+            return SuccessResponse(result.Value!, "Success", result.StatusCode);
 
-        return BadRequestResponse(result.Errors);
+        return FailureResponse(result);
     }
 
     /// <summary>
@@ -54,11 +27,14 @@ public abstract class BaseController : ControllerBase
     protected IActionResult HandleResult(Result result)
     {
         if (result.IsSuccess)
-        {
-            return Ok(ApiResponse<object>.SuccessResponse(null, "Operation completed successfully"));
-        }
+            return SuccessResponse<object>(null, "Success", result.StatusCode);
 
-        return BadRequestResponse(result.Errors);
+        return StatusCode(result.StatusCode, new ErrorResponse
+        {
+            Status = result.StatusCode,
+            Message = result.Error,
+            Errors = result.Errors
+        });
     }
 
     /// <summary>
@@ -69,11 +45,33 @@ public abstract class BaseController : ControllerBase
         var userIdClaims = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
         if (string.IsNullOrEmpty(userIdClaims) || !Guid.TryParse(userIdClaims, out var userId))
-        {
             throw new UnauthorizedException("User ID not found in token");
-        }
 
         return userId;
+    }
+
+    /// <summary>
+    /// Returns a success response with customizable status code
+    /// </summary>
+    private IActionResult SuccessResponse<T>(T data, string message = "Success", int statusCode = 200)
+    {
+        var response = ApiResponse<T>.SuccessResponse(data, message, statusCode);
+        return StatusCode(statusCode, response);
+    }
+
+    /// <summary>
+    /// Returns a failure response with multiple errors
+    /// </summary>
+    private IActionResult FailureResponse<T>(Result<T> result)
+    {
+        var response = new ErrorResponse
+        {
+            Status = result.StatusCode,
+            Message = result.Error,
+            Errors = result.Errors
+        };
+
+        return StatusCode(result.StatusCode, response);
     }
 
 }

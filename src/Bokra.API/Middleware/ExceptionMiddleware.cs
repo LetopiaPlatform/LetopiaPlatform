@@ -1,132 +1,107 @@
 ﻿using Bokra.Core.Exceptions;
+using System.Diagnostics;
 using System.Text.Json;
 
-namespace Bokra.API.Middleware;
-
-public class ExceptionMiddleware
+namespace Bokra.API.Middleware
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionMiddleware> _logger;
-    private readonly IWebHostEnvironment _environment;
-
-    public ExceptionMiddleware(
-        RequestDelegate next,
-        ILogger<ExceptionMiddleware> logger,
-        IWebHostEnvironment environment)
+    public class ExceptionMiddleware
     {
-        _next = next;
-        _logger = logger;
-        _environment = environment;
-    }
+        private readonly RequestDelegate _next;
+        private readonly ILogger<ExceptionMiddleware> _logger;
+        private readonly IWebHostEnvironment _environment;
 
-    public async Task InvokeAsync(HttpContext context)
-    {
-        try
+        public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger, IWebHostEnvironment environment)
         {
-            await _next(context);
+            _next = next;
+            _logger = logger;
+            _environment = environment;
         }
-        catch (Exception ex)
+
+        public async Task InvokeAsync(HttpContext context)
         {
-            await HandleExceptionAsync(context, ex);
+            try
+            {
+                await _next(context);
+            }
+            catch (Exception ex)
+            {
+                await HandleExceptionAsync(context, ex);
+            }
+        }
+
+        private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+        {
+            // Log exception
+            _logger.LogError(exception, "Unhandled exception occurred");
+
+            context.Response.ContentType = "application/json";
+
+            int statusCode;
+            List<string> errors = new();
+            string message;
+
+            switch (exception)
+            {
+                case ValidationException ve:
+                    statusCode = StatusCodes.Status400BadRequest;
+                    errors.AddRange(ve.ValidationErrors);
+                    message = ve.Message;
+                    break;
+
+                case UnauthorizedException ue:
+                    statusCode = StatusCodes.Status401Unauthorized;
+                    message = ue.Message;
+                    break;
+
+                case ForbiddenException fe:
+                    statusCode = StatusCodes.Status403Forbidden;
+                    message = fe.Message;
+                    break;
+
+                case NotFoundException ne:
+                    statusCode = StatusCodes.Status404NotFound;
+                    message = ne.Message;
+                    break;
+
+                case ConflictException ce:
+                    statusCode = StatusCodes.Status409Conflict;
+                    message = ce.Message;
+                    break;
+
+                case AppException ae:
+                    statusCode = ae.StatusCode;
+                    message = ae.Message;
+                    break;
+
+                default:
+                    statusCode = StatusCodes.Status500InternalServerError;
+                    message = _environment.IsDevelopment() ? exception.Message : "An internal server error occurred";
+                    errors.Add(_environment.IsDevelopment() ? exception.StackTrace ?? string.Empty : string.Empty);
+                    break;
+            }
+
+            var response = new ErrorResponse
+            {
+                Status = statusCode,
+                Message = message,
+                Errors = errors
+            };
+
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            context.Response.StatusCode = statusCode;
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
         }
     }
 
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    /// <summary>
+    /// Standard error response format
+    /// </summary>
+    public class ErrorResponse
     {
-        // Log the exception
-        _logger.LogError(exception, $"An error occurred: {exception.Message}");
-
-        // Set response content type
-        context.Response.ContentType = "application/json";
-
-        // Determine status code and error response
-        var (statusCode, errorResponse) = exception switch
-        {
-            ValidationException validationEx => (
-                StatusCodes.Status400BadRequest,
-                new ErrorResponse
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Message = validationEx.Message,
-                    Errors = validationEx.ValidationErrors
-                }
-            ),
-            UnauthorizedException unauthorizedEx => (
-                StatusCodes.Status401Unauthorized,
-                new ErrorResponse
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    Message = unauthorizedEx.Message
-                }
-            ),
-            ForbiddenException forbiddenEx => (
-                StatusCodes.Status403Forbidden,
-                new ErrorResponse
-                {
-                    Status = StatusCodes.Status403Forbidden,
-                    Message = forbiddenEx.Message
-                }
-            ),
-            NotFoundException notFoundEx => (
-                StatusCodes.Status404NotFound,
-                new ErrorResponse
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Message = notFoundEx.Message
-                }
-            ),
-            ConflictException conflictEx => (
-                StatusCodes.Status409Conflict,
-                new ErrorResponse
-                {
-                    Status = StatusCodes.Status409Conflict,
-                    Message = conflictEx.Message
-                }
-            ),
-            AppException appEx => (
-                appEx.StatusCode,
-                new ErrorResponse
-                {
-                    Status = appEx.StatusCode,
-                    Message = appEx.Message
-                }
-            ),
-            _ => (
-                StatusCodes.Status500InternalServerError,
-                new ErrorResponse
-                {
-                    Status = StatusCodes.Status500InternalServerError,
-                    Message = _environment.IsDevelopment()
-                        ? exception.Message
-                        : "An internal server error occured",
-                    Details = _environment.IsDevelopment()
-                        ? exception.StackTrace
-                        : null
-                }
-            )
-
-        };
-
-        context.Response.StatusCode = statusCode;
-
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-
-        var json = JsonSerializer.Serialize(errorResponse, options);
-        await context.Response.WriteAsync(json);
+        public int Status { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public List<string> Errors { get; set; } = new();
+        public string? Details { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     }
-}
-
-/// <summary>
-/// Standard error response format
-/// </summary>
-public class ErrorResponse
-{
-    public int Status { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public List<string>? Errors { get; set; }
-    public string? Details { get; set; }
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
