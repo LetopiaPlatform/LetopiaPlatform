@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Bokra.API.Validators
 {
-    public class SignUpDtoValidator : AbstractValidator<SignUpDtos>
+    public class SignUpDtoValidator : AbstractValidator<SignUpDto>
     {
         public SignUpDtoValidator()
         {
@@ -26,6 +26,10 @@ namespace Bokra.API.Validators
                 .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter")
                 .Matches(@"[0-9]").WithMessage("Password must contain at least one number")
                 .Matches(@"[\W_]").WithMessage("Password must contain at least one special character");
+
+            RuleFor(x => x.ConfirmPassword)
+                .NotEmpty().WithMessage("Confirm password is required")
+                .Equal(x => x.Password).WithMessage("Passwords do not match");
 
             RuleFor(x => x.PhoneNumber)
                 .NotEmpty().WithMessage("Phone number is required")
