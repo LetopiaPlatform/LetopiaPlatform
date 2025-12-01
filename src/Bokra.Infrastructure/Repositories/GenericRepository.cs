@@ -2,16 +2,17 @@
 using System.Linq.Expressions;
 
 using Bokra.Core.Interfaces;
+using Bokra.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bokra.Infrastructure.Repositories
 {
     internal class GenericRepository<T> : IGenericRepository<T> where T : class
     {
-        private readonly DbContext _context;
+        private readonly ApplicationDbContext _context;
         private readonly DbSet<T> _dbSet;
 
-        public GenericRepository(DbContext context)
+        public GenericRepository(ApplicationDbContext context)
         {
             _context = context;
             _dbSet = _context.Set<T>();

@@ -1,10 +1,12 @@
 ﻿using Bokra.Core.AppSettings;
 using Bokra.Core.Entities.Identity;
 using Bokra.Core.Interfaces;
+using Bokra.Core.Services;
 using Bokra.Core.Services.Interfaces;
 using Bokra.Infrastructure.Data;
 using Bokra.Infrastructure.Identity;
 using Bokra.Infrastructure.Repositories;
+using Bokra.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -111,6 +113,7 @@ namespace Bokra.Infrastructure
             services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
             services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IFileStorageService, FileStorageService>();
 
             return services;
         }

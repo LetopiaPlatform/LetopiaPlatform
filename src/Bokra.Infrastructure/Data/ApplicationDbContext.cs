@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Bokra.Infrastructure.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<User, Role, int>
+    public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -20,12 +20,13 @@ namespace Bokra.Infrastructure.Data
 
             builder.Entity<User>(entity => { entity.ToTable("AspNetUsers"); });
             builder.Entity<Role>(entity => { entity.ToTable("AspNetRoles"); });
-            builder.Entity<IdentityUserRole<int>>(entity => { entity.ToTable("AspNetUserRoles"); });
-            builder.Entity<IdentityUserClaim<int>>(entity => { entity.ToTable("AspNetUserClaims"); });
-            builder.Entity<IdentityUserLogin<int>>(entity => { entity.ToTable("AspNetUserLogins"); });
-            builder.Entity<IdentityRoleClaim<int>>(entity => { entity.ToTable("AspNetRoleClaims"); });
-            builder.Entity<IdentityUserToken<int>>(entity => { entity.ToTable("AspNetUserTokens"); });
+            builder.Entity<IdentityUserRole<Guid>>(entity => { entity.ToTable("AspNetUserRoles"); });
+            builder.Entity<IdentityUserClaim<Guid>>(entity => { entity.ToTable("AspNetUserClaims"); });
+            builder.Entity<IdentityUserLogin<Guid>>(entity => { entity.ToTable("AspNetUserLogins"); });
+            builder.Entity<IdentityRoleClaim<Guid>>(entity => { entity.ToTable("AspNetRoleClaims"); });
+            builder.Entity<IdentityUserToken<Guid>>(entity => { entity.ToTable("AspNetUserTokens"); });
         }
+  
 
     }
 }

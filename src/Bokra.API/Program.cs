@@ -1,8 +1,11 @@
 using Bokra.API.Middleware;
+using Bokra.API.Validators;
 using Bokra.Core.Entities.Identity;
 using Bokra.Infrastructure;
 using Bokra.Infrastructure.Data;
 using Bokra.Infrastructure.Seeder;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 public class Program
@@ -11,9 +14,13 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Services.AddControllers();
+        builder.Services.AddControllers()
+        ;
         builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddHttpContextAccessor();
 
+        /// reigister fluentValidations
+        builder.Services.AddValidatorsFromAssemblyContaining<LoginDtoValidator>();
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.

@@ -2,7 +2,7 @@
 
 namespace Bokra.Core.Entities.Identity
 {
-    public class User : IdentityUser<int>
+    public class User : IdentityUser<Guid>
     {
         public string? FullName { get; set; }
         public string? AvatarUrl { get; set; }
@@ -16,7 +16,7 @@ namespace Bokra.Core.Entities.Identity
         public int CurrentStreak { get; set; } = 0;
 
         public DateTime? LastLoginAt { get; set; }
-
+        public DateTime? DateOfBirth { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }

@@ -16,5 +16,21 @@
             public const string SignUp = $"{Prefix}/signup";
             public const string Login =  $"{Prefix}/login";
         }
+        public static class User
+        {
+            public const string Prefix = $"{Rule}/user";
+            public const string Me = $"{Prefix}/me";
+            public const string Update = $"{Prefix}/update";
+
+        }
+        public static class File
+        {
+            public const string Prefix = $"{Rule}/file";
+            public const string Upload = $"{Prefix}/upload";
+            public const string UploadMultiple = $"{Prefix}/upload-multiple";
+            public const string Replace = $"{Prefix}/replace";
+            public const string Delete = $"{Prefix}/delete";
+
+        }
     }
 }

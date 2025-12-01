@@ -33,6 +33,7 @@
   <ItemGroup>
     <Folder Include="Middleware\" />
     <Folder Include="Filters\" />
+    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

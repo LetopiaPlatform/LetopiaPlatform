@@ -2,12 +2,14 @@
 using Bokra.API.Middleware;
 using Bokra.Core.Common;
 using Bokra.Core.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bokra.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+
 public abstract class BaseController : ControllerBase
 {
     /// <summary>
