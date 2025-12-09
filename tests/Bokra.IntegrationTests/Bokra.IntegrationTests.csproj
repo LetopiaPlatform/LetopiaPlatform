@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bokra.API\Bokra.API.csproj" />
+    <ProjectReference Include="..\..\src\Bokra.Infrastructure\Bokra.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
