@@ -1,5 +1,5 @@
 # Auth & User Management - Software Requirements Specification (SRS)
-## Bokra Learning Platform - Phase 1
+## LetopiaPlatform Learning Platform - Phase 1
 
 **Module:** Authentication & User Management  
 **Priority:** Critical - Foundation Module  
@@ -63,7 +63,7 @@ _"As a registered user, I want to verify my email address so that I can activate
 **Acceptance Criteria:**
 
 **Verification Email:**
-- Subject: "Verify your Bokra account"
+- Subject: "Verify your LetopiaPlatform account"
 - Contains: Welcome message, verification link, expiry time (24 hours)
 - Branded email template with logo
 - Plain text alternative included
@@ -245,7 +245,7 @@ _"As a user who forgot my password, I want to reset it so that I can regain acce
 4. Message displayed: "If email exists, reset link sent"
 
 **Password Reset Email:**
-- Subject: "Reset your Bokra password"
+- Subject: "Reset your LetopiaPlatform password"
 - Contains: Reset link, expiry time (1 hour)
 - "Didn't request this?" note included
 - Security note: "Link expires in 1 hour"

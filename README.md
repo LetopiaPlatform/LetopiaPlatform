@@ -1,13 +1,13 @@
-# BokraPlatform-Backend
+# LetopiaPlatform-Backend
 
-A comprehensive backend platform for Bokra, built with .NET 8.0 and following clean architecture principles.
+A comprehensive backend platform for Letopia, built with .NET 8.0 and following clean architecture principles.
 
 ## Project Structure
 
 ```
-Bokra.sln
+LetopiaPlatform.sln
 │
-├── Bokra.API/
+├── LetopiaPlatform.API/
 │   ├── Controllers/
 │   ├── Middleware/
 │   ├── Filters/
@@ -22,7 +22,7 @@ Bokra.sln
 │   ├── appsettings.json
 │   └── appsettings.Development.json
 │
-├── Bokra.Core/
+├── LetopiaPlatform.Core/
 │   ├── Common/
 │   │   ├── BaseEntity.cs
 │   │   └── Result.cs
@@ -36,7 +36,7 @@ Bokra.sln
 │       ├── PostType.cs
 │       └── VoteType.cs
 │
-├── Bokra.Infrastructure/
+├── LetopiaPlatform.Infrastructure/
 │   ├── Data/
 │   │   ├── Configurations/
 │   │   └── Migrations/
@@ -45,15 +45,15 @@ Bokra.sln
 │   ├── External/
 │   └── Caching/
 │
-└── Bokra.Tests/
-    ├── Bokra.UnitTests/
-    └── Bokra.IntegrationTests/
+└── LetopiaPlatform.Tests/
+    ├── LetopiaPlatform.UnitTests/
+    └── LetopiaPlatform.IntegrationTests/
 ```
 
 ### Layer Descriptions
 
-- **Bokra.API**: Presentation layer containing controllers, middleware, filters, DTOs, and validators
-- **Bokra.Core**: Domain layer with business logic, entities, services, and interfaces
-- **Bokra.Infrastructure**: Infrastructure layer handling data access, repositories, identity, external services, and caching
-- **Bokra.Tests**: Test projects including unit and integration tests
+- **LetopiaPlatform.API**: Presentation layer containing controllers, middleware, filters, DTOs, and validators
+- **LetopiaPlatform.Core**: Domain layer with business logic, entities, services, and interfaces
+- **LetopiaPlatform.Infrastructure**: Infrastructure layer handling data access, repositories, identity, external services, and caching
+- **LetopiaPlatform.Tests**: Test projects including unit and integration tests
 
