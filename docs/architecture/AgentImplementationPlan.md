@@ -1,7 +1,6 @@
 # Letopia AI Agents - Implementation Plan
 
-> **Project:** Multi-Agent Conversational AI Platform  
-> **Estimated Duration:** 6-8 weeks  
+> **Feature:** Multi-Agent Conversational AI Platform   
 > **Teams:** Backend, AI, Frontend, Mobile
 
 ---
@@ -140,7 +139,7 @@ LetopiaPlatform/
 
 ---
 
-## 🎯 Phase 0: Project Setup & Multi-Agent Foundation (Week 1)
+## Phase 0: Project Setup & Multi-Agent Foundation (Week 1)
 
 ### 0.1 NuGet Package Installation
 | Task | Owner | Priority | File/Location |
@@ -162,7 +161,7 @@ LetopiaPlatform/
 </ItemGroup>
 ```
 
-### 0.2 Multi-Agent Abstractions ⭐ NEW
+### 0.2 Multi-Agent Abstractions
 | Task | Owner | Priority | File/Location |
 |------|-------|----------|---------------|
 | Create `IAgentService` interface | Backend | 🔴 High | `Agent/Abstractions/` |
@@ -481,7 +480,7 @@ builder.Services.AddAgentServices(builder.Configuration);
 
 ---
 
-## 🗃️ Phase 1: DTOs & Data Layer (Week 1-2)
+## Phase 1: DTOs & Data Layer (Week 1-2)
 
 ### 1.1 API DTOs - Chat Communication (Multi-Agent)
 | Task | Owner | Priority | File/Location |
@@ -1319,7 +1318,7 @@ function handleResponse(response: ChatResponse) {
 
 ---
 
-## 📊 Phase 7: Post-Launch (Week 7+)
+## Phase 7: Post-Launch (Week 7+)
 
 | Task | Owner | Priority |
 |------|-------|----------|
@@ -1328,70 +1327,6 @@ function handleResponse(response: ChatResponse) {
 | Gather user feedback | Product | 🟡 Medium |
 | Optimize prompts based on feedback | AI | 🟡 Medium |
 | Add roadmap sharing feature | Backend | 🟢 Low |
-
----
-
-## 📅 Timeline Summary
-
-```
-Week 1    [████████████████████] Phase 0 (Setup) + Phase 1 (DTOs)
-Week 2    [████████████████████] Phase 1 + Phase 2 (Agent Core)
-Week 3    [████████████████████] Phase 2 + Phase 3 (API Layer)
-Week 4    [████████████████████] Phase 3 + Phase 4 (Client Integration)
-Week 5    [████████████████████] Phase 4 + Phase 5 (Testing)
-Week 6    [████████████████████] Phase 5 + Phase 6 (Deployment)
-Week 7+   [████████████████████] Phase 7 (Post-Launch)
-```
-
----
-
-## 📁 Files to Create Summary
-
-### New Files
-
-| File | Location | Phase |
-|------|----------|-------|
-| `AgentSettings.cs` | `Agent/Configuration/` | 0 |
-| `TracingConfiguration.cs` | `Agent/Configuration/` | 0 |
-| `DependencyInjection.cs` | `Agent/` | 0 |
-| `ChatRequest.cs` | `API/DTOs/Agent/Request/` | 1 |
-| `ChatResponse.cs` | `API/DTOs/Agent/Response/` | 1 |
-| `IRoadmapAgentService.cs` | `Core/Services/Interfaces/` | 1 |
-| `IConversationService.cs` | `Core/Services/Interfaces/` | 1 |
-| `IWebSearchService.cs` | `Core/Services/Interfaces/` | 1 |
-| `IConversationCache.cs` | `Core/Interfaces/` | 1 |
-| `RedisConversationCache.cs` | `Infrastructure/Services/` | 1 |
-| `WebSearchService.cs` | `Agent/Services/` | 2 |
-| `WebSearchTools.cs` | `Agent/Tools/` | 2 |
-| `RoadmapTools.cs` | `Agent/Tools/` | 2 |
-| `RoadmapAgentService.cs` | `Agent/Services/` | 2 |
-| `ConversationService.cs` | `Infrastructure/Services/` | 3 |
-
-### Files to Update
-
-| File | Location | Phase |
-|------|----------|-------|
-| `LetopiaPlatform.Agent.csproj` | `Agent/` | 0 |
-| `appsettings.json` | `API/` | 0 |
-| `Program.cs` | `API/` | 0 |
-| `DependencyInjection.cs` | `Infrastructure/` | 0 |
-| `Roadmap.cs` (add Id, UserId) | `Core/Entities/AIModels/` | 1 |
-| `RoadmapGeneratorPrompt.md` | `Agent/Prompts/` | 2 |
-| `AgentController.cs` | `API/Controllers/` | 3 |
-| `ApplicationDbContext.cs` | `Infrastructure/Data/` | 3 |
-
----
-
-## 👥 Team Responsibilities
-
-| Team | Primary Phases | Key Deliverables |
-|------|----------------|------------------|
-| **Backend** | 0, 1, 2, 3 | DTOs, Services, APIs, Agent |
-| **AI** | 2 | Prompts, Function Schemas |
-| **Frontend** | 4 | Web Chat UI, Roadmap Visualization |
-| **Mobile** | 4 | Flutter Chat Screen, Graph Widget |
-| **DevOps** | 0, 6 | Infrastructure, Secrets, Deployment |
-| **QA** | 5 | Test Plans, E2E Testing |
 
 ---
 
@@ -1421,6 +1356,6 @@ A task is **DONE** when:
 
 ## 🔗 Quick Links
 
-- [System Prompt](../../src/LetopiaPlatform.Agent/Prompts/RoadmapGeneratorPrompt.md)
+- [Sample System Prompt](../../src/LetopiaPlatform.Agent/Prompts/sample.md)
 - [API DTOs](../../src/LetopiaPlatform.API/DTOs/Agent/)
 - [Agent Services](../../src/LetopiaPlatform.Agent/Services/)
