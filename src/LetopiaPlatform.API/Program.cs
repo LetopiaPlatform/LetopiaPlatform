@@ -1,5 +1,6 @@
 using LetopiaPlatform.API.Middleware;
 using LetopiaPlatform.API.Validators;
+using LetopiaPlatform.Agent;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Infrastructure;
 using LetopiaPlatform.Infrastructure.Data;
@@ -17,6 +18,7 @@ public class Program
         builder.Services.AddControllers()
         ;
         builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddAgentServices(builder.Configuration);
         builder.Services.AddHttpContextAccessor();
 
         /// reigister fluentValidations

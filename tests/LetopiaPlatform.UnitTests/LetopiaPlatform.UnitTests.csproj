@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\LetopiaPlatform.Core\LetopiaPlatform.Core.csproj" />
+    <ProjectReference Include="..\..\src\LetopiaPlatform.Agent\LetopiaPlatform.Agent.csproj" />
   </ItemGroup>
 
 </Project>
