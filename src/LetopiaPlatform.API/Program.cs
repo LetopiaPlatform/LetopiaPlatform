@@ -1,5 +1,6 @@
 using LetopiaPlatform.API.Middleware;
 using LetopiaPlatform.API.Validators;
+using LetopiaPlatform.Agent;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Infrastructure;
 using LetopiaPlatform.Infrastructure.Data;
