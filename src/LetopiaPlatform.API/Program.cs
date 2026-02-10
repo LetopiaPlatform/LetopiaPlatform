@@ -35,6 +35,7 @@ public class Program
             await UserSeeder.SeedAsync(userManager, configuration);
         }
         
+        app.UseMiddleware<WideEventMiddleware>();
         app.UseMiddleware<ExceptionMiddleware>();
         app.UseHttpsRedirection();
         app.UseStaticFiles();
