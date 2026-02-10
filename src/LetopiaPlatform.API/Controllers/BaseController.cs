@@ -1,8 +1,6 @@
 using LetopiaPlatform.API.Common;
-using LetopiaPlatform.API.Middleware;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Exceptions;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LetopiaPlatform.API.Controllers;
