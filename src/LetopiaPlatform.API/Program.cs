@@ -1,49 +1,84 @@
+using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.API.Middleware;
-using LetopiaPlatform.API.Validators;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Infrastructure;
 using LetopiaPlatform.Infrastructure.Seeder;
-using FluentValidation;
 using Microsoft.AspNetCore.Identity;
-using FluentValidation.AspNetCore;
+using Serilog;
 
 public class Program
 {
     public static async Task Main(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(args);
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .CreateBootstrapLogger();
 
-        builder.Services.AddControllers()
-        ;
-        builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
-        builder.Services.AddAgentServices(builder.Configuration);
-        builder.Services.AddHttpContextAccessor();
-
-        /// Fluent Validation: register validators + wire into MVC pipeline
-        builder.Services.AddFluentValidationAutoValidation();
-        builder.Services.AddValidatorsFromAssemblyContaining<LoginDtoValidator>();
-
-        var app = builder.Build();
-
-        // Seed data
-        using (var scope = app.Services.CreateScope())
+        try
         {
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-            await RoleSeeder.SeedAsync(roleManager);
-            await UserSeeder.SeedAsync(userManager, configuration);
-        }
-        
-        app.UseMiddleware<WideEventMiddleware>();
-        app.UseMiddleware<ExceptionMiddleware>();
-        app.UseHttpsRedirection();
-        app.UseStaticFiles();
-        app.UseRouting();
-        app.UseAuthentication();
-        app.UseAuthorization();
-        app.MapControllers();
+            Log.Information("Starting Letopia Platform API");
 
-        app.Run();
+            var builder = WebApplication.CreateBuilder(args);
+
+            builder.Host.UseSerilog((context, services, configuration) => configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services));
+
+            // ── Service registration ──────────────────────────────────────
+            builder.Services
+                .AddApiServices(builder.Configuration)
+                .AddInfrastructure(builder.Configuration, builder.Environment)
+                .AddAgentServices(builder.Configuration);
+
+            var app = builder.Build();
+
+            // ── Seed data ─────────────────────────────────────────────────
+            await SeedDataAsync(app);
+
+            // ── Middleware pipeline — order matters ───────────────────────
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI(options =>
+                {
+                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Letopia Platform API v1");
+                    options.DisplayRequestDuration();
+                });
+            }
+
+            app.UseSerilogRequestLogging();
+            app.UseMiddleware<ExceptionMiddleware>();
+
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
+
+            app.UseRouting();
+            app.UseCors("DefaultPolicy");
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.MapControllers();
+            app.Run();
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Application terminated unexpectedly");
+        }
+        finally
+        {
+            await Log.CloseAndFlushAsync();
+        }
+    }
+
+    private static async Task SeedDataAsync(WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+
+        await RoleSeeder.SeedAsync(services.GetRequiredService<RoleManager<Role>>());
+        await UserSeeder.SeedAsync(
+            services.GetRequiredService<UserManager<User>>(),
+            services.GetRequiredService<IConfiguration>());
     }
 }
