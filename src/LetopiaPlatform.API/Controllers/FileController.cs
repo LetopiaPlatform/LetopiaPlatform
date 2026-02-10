@@ -22,7 +22,7 @@ public class FileController : BaseController
     /// Upload a single file
     /// </summary>
     [HttpPost(Router.File.Upload)]
-    public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromQuery] string directory = "uploads")
+    public async Task<IActionResult> Upload(IFormFile file, [FromQuery] string directory = "uploads")
     {
         var result = await _fileService.UploadAsync(file, directory);
         return HandleResult(result);
@@ -32,7 +32,7 @@ public class FileController : BaseController
     /// Upload multiple files
     /// </summary>
     [HttpPost(Router.File.UploadMultiple)]
-    public async Task<IActionResult> UploadMultiple([FromForm] List<IFormFile> files, [FromQuery] string directory = "uploads")
+    public async Task<IActionResult> UploadMultiple(List<IFormFile> files, [FromQuery] string directory = "uploads")
     {
         var result = await _fileService.UploadManyAsync(files, directory);
         return HandleResult(result);
