@@ -1,6 +1,5 @@
 
 using System.Linq.Expressions;
-
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -18,71 +17,64 @@ namespace LetopiaPlatform.Infrastructure.Repositories
             _dbSet = _context.Set<T>();
         }
 
-        private IQueryable<T> IncludeProperties(IQueryable<T> query, string[] includes)
-        {
-            if (includes != null)
-            {
-                foreach (var include in includes)
-                    query = query.Include(include);
-            }
-            return query;
-        }
-
-        
         public async Task<T> AddAsync(T entity)
         {
-            if (entity == null) throw new ArgumentNullException(nameof(entity));
+            ArgumentNullException.ThrowIfNull(entity);
             await _dbSet.AddAsync(entity);
+            await _context.SaveChangesAsync();
             return entity;
         }
 
-        //  Count
         public async Task<int> CountAsync()
         {
             return await _dbSet.CountAsync();
         }
 
-        // Delete
-        public Task DeleteAsync(T entity)
+        public async Task DeleteAsync(T entity)
         {
-            if (entity == null)
-                throw new KeyNotFoundException("Entity is null.");
-
+            ArgumentNullException.ThrowIfNull(entity);
             _dbSet.Remove(entity);
-            return Task.CompletedTask;
+            await _context.SaveChangesAsync();
         }
 
-        // Find (database-side filtering using Expression)
         public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate, params string[] includes)
         {
-            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
-
-            var query = IncludeProperties(_dbSet.AsQueryable(), includes);
+            IQueryable<T> query = ApplyIncludes(_dbSet.AsQueryable(), includes);
             return await query.Where(predicate).ToListAsync();
         }
 
-        //  Get All
         public async Task<IEnumerable<T>> GetAllAsync(params string[] includes)
         {
-            var query = IncludeProperties(_dbSet.AsQueryable(), includes);
+            var query = ApplyIncludes(_dbSet.AsQueryable(), includes);
             return await query.ToListAsync();
         }
 
-        //  Get By Id (Guid PK)
-        public async Task<T> GetByIdAsync(Guid id, params string[] includes)
+        public async Task<T?> GetByIdAsync(Guid id, params string[] includes)
         {
-            var query = IncludeProperties(_dbSet.AsQueryable(), includes);
+            var query = ApplyIncludes(_dbSet.AsQueryable(), includes);
             return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id);
         }
 
-        //  Update
-        public Task UpdateAsync(T entity)
+        public async Task UpdateAsync(T entity)
         {
-            if (entity == null)
-                throw new KeyNotFoundException("Entity is null.");
-
+            ArgumentNullException.ThrowIfNull(entity);
             _dbSet.Update(entity);
-            return Task.CompletedTask;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        private static IQueryable<T> ApplyIncludes(IQueryable<T> query, string[] includes)
+        {
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return query;
         }
     }
 }

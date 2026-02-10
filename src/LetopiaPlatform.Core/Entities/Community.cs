@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using LetopiaPlatform.Core.Entities.Identity;
 
 namespace LetopiaPlatform.Core.Entities
 {
@@ -13,41 +14,38 @@ namespace LetopiaPlatform.Core.Entities
         [Required]
         [MaxLength(100)]
         [Column("name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [Required]
         [MaxLength(100)]
         [Column("slug")]
-        public string Slug { get; set; }
+        public required string Slug { get; set; }
 
         [Required]
         [Column("description")]
-        public string Description { get; set; }
+        public required string Description { get; set; }
 
         [Required]
         [MaxLength(50)]
         [Column("topic_category")]
-        public string TopicCategory { get; set; }
+        public required string TopicCategory { get; set; }
 
         [MaxLength(500)]
         [Column("icon_url")]
         public string? IconUrl { get; set; }
 
-        // FK to users table
         [Required]
         [Column("created_by")]
         public Guid CreatedBy { get; set; }
 
-        //// Navigation property
-        
-        //[ForeignKey("CreatedBy")]
-        //public User CreatedByUser { get; set; }
+        [ForeignKey("CreatedBy")]
+        public User CreatedByUser { get; set; } = null!;
 
         [Column("member_count")]
-        public int MemberCount { get; set; } = 0;
+        public int MemberCount { get; set; }
 
         [Column("post_count")]
-        public int PostCount { get; set; } = 0;
+        public int PostCount { get; set; }
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -55,14 +53,12 @@ namespace LetopiaPlatform.Core.Entities
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        //add some exter columns
-
         [MaxLength(500)]
         [Column("cover_image_url")]
         public string? CoverImageUrl { get; set; }
 
         [Column("is_private")]
-        public bool IsPrivate { get; set; } = false;
+        public bool IsPrivate { get; set; }
 
         [Column("last_post_at")]
         public DateTime? LastPostAt { get; set; }

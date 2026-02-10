@@ -9,7 +9,7 @@ namespace LetopiaPlatform.Infrastructure.Repositories
         where TContext : DbContext
     {
         private readonly TContext _context;
-        private IDbContextTransaction _transaction;
+        private IDbContextTransaction? _transaction;
 
         public UnitOfWork(TContext context)
         {

@@ -1,9 +1,7 @@
-using System;
-
-using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Enums;
-
 
 namespace LetopiaPlatform.Core.Entities
 {
@@ -14,40 +12,38 @@ namespace LetopiaPlatform.Core.Entities
         [Column("id")]
         public Guid Id { get; set; }
 
-        // FK to Community
         [Required]
         [Column("community_id")]
         public Guid CommunityId { get; set; }
 
-        //[ForeignKey("CommunityId")]
-        //public Community Community { get; set; }
+        [ForeignKey("CommunityId")]
+        public Community Community { get; set; } = null!;
 
-        // FK to User (Author)
         [Required]
         [Column("author_id")]
         public Guid AuthorId { get; set; }
 
-        //[ForeignKey("AuthorId")]
-        //public User Author { get; set; }
+        [ForeignKey("AuthorId")]
+        public User Author { get; set; } = null!;
 
         [Required]
         [MaxLength(200)]
         [Column("title")]
-        public string Title { get; set; }
+        public required string Title { get; set; }
 
         [Required]
         [Column("content")]
-        public string Content { get; set; }
+        public required string Content { get; set; }
 
         [MaxLength(20)]
         [Column("post_type")]
-        public PostType PostType { get; set; } = PostType.Discussion; // Discussion, Question, Resource
+        public PostType PostType { get; set; } = PostType.Discussion;
 
         [Column("upvotes")]
-        public int Upvotes { get; set; } = 0;
+        public int Upvotes { get; set; }
 
         [Column("comment_count")]
-        public int CommentCount { get; set; } = 0;
+        public int CommentCount { get; set; }
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -55,15 +51,13 @@ namespace LetopiaPlatform.Core.Entities
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        //exter columns
         [Column("is_pinned")]
-        public bool IsPinned { get; set; } = false;
+        public bool IsPinned { get; set; }
 
         [Column("is_deleted")]
-        public bool IsDeleted { get; set; } = false;
+        public bool IsDeleted { get; set; }
 
         [Column("views_count")]
-        public int ViewsCount { get; set; } = 0;
-
+        public int ViewsCount { get; set; }
     }
 }

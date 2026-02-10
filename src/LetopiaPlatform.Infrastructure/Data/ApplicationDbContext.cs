@@ -1,8 +1,8 @@
+using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-//using StackExchange.Redis;
 
 namespace LetopiaPlatform.Infrastructure.Data
 {
@@ -13,6 +13,11 @@ namespace LetopiaPlatform.Infrastructure.Data
 
 
         }
+
+        public DbSet<Community> Communities => Set<Community>();
+        public DbSet<Post> Posts => Set<Post>();
+        public DbSet<Comment> Comments => Set<Comment>();
+        public DbSet<UserCommunity> UserCommunities => Set<UserCommunity>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
