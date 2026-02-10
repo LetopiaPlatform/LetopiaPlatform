@@ -1,7 +1,6 @@
 using LetopiaPlatform.Core.AppSettings;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Interfaces;
-using LetopiaPlatform.Core.Services;
 using LetopiaPlatform.Core.Services.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Identity;

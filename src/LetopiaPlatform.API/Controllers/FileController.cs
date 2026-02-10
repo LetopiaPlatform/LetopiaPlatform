@@ -1,6 +1,7 @@
 
 using LetopiaPlatform.API.AppMetaData;
 using LetopiaPlatform.API.DTOs.File;
+using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
