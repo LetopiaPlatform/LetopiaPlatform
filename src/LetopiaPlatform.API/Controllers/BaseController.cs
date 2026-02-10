@@ -29,7 +29,7 @@ public abstract class BaseController : ControllerBase
     protected IActionResult HandleResult(Result result)
     {
         if (result.IsSuccess)
-            return SuccessResponse<object>(null, "Success", result.StatusCode);
+            return SuccessResponse<object?>(null, "Success", result.StatusCode);
 
         return StatusCode(result.StatusCode, new ErrorResponse
         {

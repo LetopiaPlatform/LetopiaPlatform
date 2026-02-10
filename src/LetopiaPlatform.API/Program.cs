@@ -2,12 +2,11 @@ using LetopiaPlatform.API.Middleware;
 using LetopiaPlatform.API.Validators;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Infrastructure;
-using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Seeder;
 using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using FluentValidation.AspNetCore;
+
 public class Program
 {
     public static async Task Main(string[] args)
@@ -16,33 +15,32 @@ public class Program
 
         builder.Services.AddControllers()
         ;
-        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
         builder.Services.AddAgentServices(builder.Configuration);
         builder.Services.AddHttpContextAccessor();
 
-        /// reigister fluentValidations
+        /// Fluent Validation: register validators + wire into MVC pipeline
+        builder.Services.AddFluentValidationAutoValidation();
         builder.Services.AddValidatorsFromAssemblyContaining<LoginDtoValidator>();
+
         var app = builder.Build();
 
-        // Configure the HTTP request pipeline.
-
-        #region DataSeeding
+        // Seed data
         using (var scope = app.Services.CreateScope())
         {
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
+            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
             await RoleSeeder.SeedAsync(roleManager);
-            await UserSeeder.SeedAsync(userManager);
+            await UserSeeder.SeedAsync(userManager, configuration);
         }
-        #endregion
+        
         app.UseMiddleware<ExceptionMiddleware>();
-        app.UseRouting();
         app.UseHttpsRedirection();
         app.UseStaticFiles();
+        app.UseRouting();
         app.UseAuthentication();
         app.UseAuthorization();
-
-
         app.MapControllers();
 
         app.Run();

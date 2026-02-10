@@ -1,7 +1,6 @@
 using LetopiaPlatform.Core.AppSettings;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Interfaces;
-using LetopiaPlatform.Core.Services;
 using LetopiaPlatform.Core.Services.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Identity;
@@ -12,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -21,11 +21,12 @@ namespace LetopiaPlatform.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IHostEnvironment environment)
         {
             services.AddDatabase(configuration);
             services.AddIdentitySystem();
-            services.AddJwtAuthentication(configuration);
+            services.AddJwtAuthentication(configuration, environment);
             services.AddAppServices();
 
             return services;
@@ -52,9 +53,20 @@ namespace LetopiaPlatform.Infrastructure
         {
             services.AddIdentity<User, Role>(options =>
             {
-                options.Password.RequireDigit = false;
-                options.Password.RequireUppercase = false;
+                // Password policy
+                options.Password.RequireDigit = true;
+                options.Password.RequireUppercase = true;
                 options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequiredLength = 8;
+                options.Password.RequiredUniqueChars = 4;
+
+                // Lockout policy
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.AllowedForNewUsers = true;
+
+                // User settings
+                options.User.RequireUniqueEmail = true;
             })
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
@@ -68,7 +80,8 @@ namespace LetopiaPlatform.Infrastructure
         // -----------------------------------------------------------
         private static IServiceCollection AddJwtAuthentication(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IHostEnvironment environment)
         {
             var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>()
                 ?? throw new InvalidOperationException("JwtSettings section missing.");
@@ -86,7 +99,7 @@ namespace LetopiaPlatform.Infrastructure
                 .AddJwtBearer(options =>
                 {
                     options.SaveToken = true;
-                    options.RequireHttpsMetadata = false;
+                    options.RequireHttpsMetadata = !environment.IsDevelopment(); // true in production
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
