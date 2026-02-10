@@ -15,7 +15,7 @@ public class Program
 
         builder.Services.AddControllers()
         ;
-        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
         builder.Services.AddAgentServices(builder.Configuration);
         builder.Services.AddHttpContextAccessor();
 
