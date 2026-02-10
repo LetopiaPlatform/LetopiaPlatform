@@ -1,6 +1,32 @@
 @LetopiaPlatform.API_HostAddress = http://localhost:5256
 
-GET {{LetopiaPlatform.API_HostAddress}}/weatherforecast/
+### Health Check
+GET {{LetopiaPlatform.API_HostAddress}}/api/auth/health
+Accept: application/json
+
+### Sign Up
+POST {{LetopiaPlatform.API_HostAddress}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "fullName": "Test User",
+  "email": "test@example.com",
+  "password": "Test@1234",
+  "confirmPassword": "Test@1234"
+}
+
+### Login
+POST {{LetopiaPlatform.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test@1234"
+}
+
+### Get Current User (requires auth)
+GET {{LetopiaPlatform.API_HostAddress}}/api/userprofile/me
+Authorization: Bearer {{token}}
 Accept: application/json
 
 ###

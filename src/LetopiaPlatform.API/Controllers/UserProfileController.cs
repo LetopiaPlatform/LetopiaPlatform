@@ -1,10 +1,8 @@
 using LetopiaPlatform.API.AppMetaData;
-using LetopiaPlatform.API.Common;
 using LetopiaPlatform.API.DTOs.User;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Interfaces;
-using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

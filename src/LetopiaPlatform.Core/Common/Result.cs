@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace LetopiaPlatform.Core.Common;
 
 public class Result

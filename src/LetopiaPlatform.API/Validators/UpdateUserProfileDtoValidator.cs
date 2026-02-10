@@ -1,7 +1,6 @@
 
 using LetopiaPlatform.API.DTOs.User;
 using FluentValidation;
-using System.IO;
 namespace LetopiaPlatform.API.Validators
 {
 
