@@ -1,30 +1,41 @@
 using LetopiaPlatform.Core.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace LetopiaPlatform.Infrastructure.Seeder
 {
     public static class UserSeeder
     {
-        public static async Task SeedAsync(UserManager<User> _usermanager)
+        public static async Task SeedAsync(UserManager<User> userManager, IConfiguration configuration)
         {
-            var usercount = await _usermanager.Users.CountAsync();
-            if (usercount <= 0)
+            if (await userManager.Users.AnyAsync())
+                return;
+            
+            var adminEmail = configuration["SeedData:AdminEmail"]
+                ?? throw new InvalidOperationException("SeedData:AdminEmail configuration is missing.");
+            var adminPassword = configuration["SeedData:AdminPassword"]
+                ?? throw new InvalidOperationException("SeedData:AdminPassword configuration is missing.");
+            
+            var admin = new User
             {
-                var defaultuser = new User()
-                {
-                    UserName = "admin",
-                    Email = "admin@project.com",
-                    PhoneNumber = "123456",
-                    EmailConfirmed = true,
-                    Role = "Admin",
-                    PhoneNumberConfirmed = true,
-                };
-                await _usermanager.CreateAsync(defaultuser, "Admin@123");
-                await _usermanager.AddToRoleAsync(defaultuser, "Admin");
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true,
+                Role = "Admin",
+                PhoneNumberConfirmed = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
+            var result = await userManager.CreateAsync(admin, adminPassword);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Failed to create admin user: {errors}");
             }
 
+            await userManager.AddToRoleAsync(admin, "Admin");
         }
 
     }

@@ -30,8 +30,9 @@ public class Program
         {
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
+            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
             await RoleSeeder.SeedAsync(roleManager);
-            await UserSeeder.SeedAsync(userManager);
+            await UserSeeder.SeedAsync(userManager, configuration);
         }
         
         app.UseMiddleware<ExceptionMiddleware>();
