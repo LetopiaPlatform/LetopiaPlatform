@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LetopiaPlatform.Core\LetopiaPlatform.Core.csproj" />
+    <ProjectReference Include="..\LetopiaPlatform.Agent\LetopiaPlatform.Agent.csproj" />
   </ItemGroup>
 
   <ItemGroup>
