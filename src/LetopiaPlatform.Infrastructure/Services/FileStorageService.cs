@@ -61,32 +61,7 @@ namespace LetopiaPlatform.Infrastructure.Services
                 return Result<string>.Failure($"Upload failed: {ex.Message}");
             }
         }
-
-        public async Task<Result<List<string>>> UploadManyAsync(IEnumerable<IFormFile> files, string directory)
-        {
-            try
-            {
-                if (files == null || !files.Any())
-                    return Result<List<string>>.Failure("No files provided");
-
-                var urls = new List<string>();
-                foreach (var file in files)
-                {
-                    var result = await UploadAsync(file, directory);
-                    if (!result.IsSuccess)
-                        return Result<List<string>>.Failure(result.Errors);
-
-                    urls.Add(result.Value!);
-                }
-
-                return Result<List<string>>.Success(urls);
-            }
-            catch (Exception ex)
-            {
-                return Result<List<string>>.Failure($"Upload failed: {ex.Message}");
-            }
-        }
-
+        
         public async Task<Result<string>> ReplaceAsync(IFormFile newFile, string directory, string? oldFilePath)
         {
             try
