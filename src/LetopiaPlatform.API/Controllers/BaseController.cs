@@ -53,7 +53,7 @@ public abstract class BaseController : ControllerBase
     /// <summary>
     /// Returns a success response with customizable status code
     /// </summary>
-    private IActionResult SuccessResponse<T>(T data, string message = "Success", int statusCode = 200)
+    private ObjectResult SuccessResponse<T>(T data, string message = "Success", int statusCode = 200)
     {
         var response = ApiResponse<T>.SuccessResponse(data, message, statusCode);
         return StatusCode(statusCode, response);
@@ -62,7 +62,7 @@ public abstract class BaseController : ControllerBase
     /// <summary>
     /// Returns a failure response with multiple errors
     /// </summary>
-    private IActionResult FailureResponse<T>(Result<T> result)
+    private ObjectResult FailureResponse<T>(Result<T> result)
     {
         var response = new ErrorResponse
         {

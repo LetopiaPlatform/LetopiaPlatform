@@ -15,121 +15,120 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace LetopiaPlatform.Infrastructure
+namespace LetopiaPlatform.Infrastructure;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
-        public static IServiceCollection AddInfrastructure(
-            this IServiceCollection services,
-            IConfiguration configuration,
-            IHostEnvironment environment)
+        services.AddDatabase(configuration);
+        services.AddIdentitySystem();
+        services.AddJwtAuthentication(configuration, environment);
+        services.AddAppServices();
+
+        return services;
+    }
+
+    // -----------------------------------------------------------
+    // Database
+    // -----------------------------------------------------------
+    private static IServiceCollection AddDatabase(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+        return services;
+    }
+
+    // -----------------------------------------------------------
+    // Identity
+    // -----------------------------------------------------------
+    private static IServiceCollection AddIdentitySystem(
+        this IServiceCollection services)
+    {
+        services.AddIdentity<User, Role>(options =>
         {
-            services.AddDatabase(configuration);
-            services.AddIdentitySystem();
-            services.AddJwtAuthentication(configuration, environment);
-            services.AddAppServices();
+            // Password policy
+            options.Password.RequireDigit = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequiredLength = 8;
+            options.Password.RequiredUniqueChars = 4;
 
-            return services;
-        }
+            // Lockout policy
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.AllowedForNewUsers = true;
 
-        // -----------------------------------------------------------
-        // Database
-        // -----------------------------------------------------------
-        private static IServiceCollection AddDatabase(
-            this IServiceCollection services,
-            IConfiguration configuration)
-        {
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            // User settings
+            options.User.RequireUniqueEmail = true;
+        })
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddDefaultTokenProviders();
 
-            return services;
-        }
+        services.AddAuthorization();
+        return services;
+    }
 
-        // -----------------------------------------------------------
-        // Identity
-        // -----------------------------------------------------------
-        private static IServiceCollection AddIdentitySystem(
-            this IServiceCollection services)
-        {
-            services.AddIdentity<User, Role>(options =>
+    // -----------------------------------------------------------
+    // JWT
+    // -----------------------------------------------------------
+    private static IServiceCollection AddJwtAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
+    {
+        var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>()
+            ?? throw new InvalidOperationException("JwtSettings section missing.");
+
+        var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
+
+        services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+
+        services
+            .AddAuthentication(options =>
             {
-                // Password policy
-                options.Password.RequireDigit = true;
-                options.Password.RequireUppercase = true;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequiredLength = 8;
-                options.Password.RequiredUniqueChars = 4;
-
-                // Lockout policy
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-                options.Lockout.MaxFailedAccessAttempts = 5;
-                options.Lockout.AllowedForNewUsers = true;
-
-                // User settings
-                options.User.RequireUniqueEmail = true;
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddEntityFrameworkStores<ApplicationDbContext>()
-            .AddDefaultTokenProviders();
-
-            services.AddAuthorization();
-            return services;
-        }
-
-        // -----------------------------------------------------------
-        // JWT
-        // -----------------------------------------------------------
-        private static IServiceCollection AddJwtAuthentication(
-            this IServiceCollection services,
-            IConfiguration configuration,
-            IHostEnvironment environment)
-        {
-            var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>()
-                ?? throw new InvalidOperationException("JwtSettings section missing.");
-
-            var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
-
-            services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
-
-            services
-                .AddAuthentication(options =>
+            .AddJwtBearer(options =>
+            {
+                options.SaveToken = true;
+                options.RequireHttpsMetadata = !environment.IsDevelopment(); // true in production
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(options =>
-                {
-                    options.SaveToken = true;
-                    options.RequireHttpsMetadata = !environment.IsDevelopment(); // true in production
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidateLifetime = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(key),
-                        ValidIssuer = jwtSettings.Issuer,
-                        ValidAudience = jwtSettings.Audience,
-                        ClockSkew = TimeSpan.Zero
-                    };
-                });
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
 
-            return services;
-        }
+        return services;
+    }
 
-        // -----------------------------------------------------------
-        // App Services
-        // -----------------------------------------------------------
-        private static IServiceCollection AddAppServices(
-            this IServiceCollection services)
-        {
-            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-            services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
-            services.AddScoped<IJwtTokenService, JwtTokenService>();
-            services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IFileStorageService, FileStorageService>();
+    // -----------------------------------------------------------
+    // App Services
+    // -----------------------------------------------------------
+    private static IServiceCollection AddAppServices(
+        this IServiceCollection services)
+    {
+        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+        services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IFileStorageService, FileStorageService>();
 
-            return services;
-        }
+        return services;
     }
 }

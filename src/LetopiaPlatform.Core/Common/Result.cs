@@ -54,6 +54,6 @@ public class Result<T> : Result
     public static Result<T> Success(T value, int statusCode = 200) => new(true, value, string.Empty, statusCode);
 
     // Failure factory methods
-    public new static Result<T> Failure(string error, int statusCode = 400) => new(false, default, error, statusCode);
-    public new static Result<T> Failure(List<string> errors, int statusCode = 400) => new(false, default, errors, statusCode);
+    public static new Result<T> Failure(string error, int statusCode = 400) => new(false, default, error, statusCode);
+    public static new Result<T> Failure(List<string> errors, int statusCode = 400) => new(false, default, errors, statusCode);
 }
