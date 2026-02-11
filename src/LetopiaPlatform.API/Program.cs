@@ -1,3 +1,4 @@
+using LetopiaPlatform.Agent;
 using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.API.Middleware;
 using LetopiaPlatform.Core.Entities.Identity;
@@ -5,6 +6,8 @@ using LetopiaPlatform.Infrastructure;
 using LetopiaPlatform.Infrastructure.Seeder;
 using Microsoft.AspNetCore.Identity;
 using Serilog;
+
+namespace LetopiaPlatform.API;
 
 public class Program
 {

@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace LetopiaPlatform.Core.Entities.Identity
+namespace LetopiaPlatform.Core.Entities.Identity;
+
+public class Role : IdentityRole<Guid>
 {
-    public class Role : IdentityRole<Guid>
-    {
-    }
 }

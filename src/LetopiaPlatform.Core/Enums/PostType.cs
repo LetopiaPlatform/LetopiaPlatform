@@ -1,10 +1,9 @@
 
-namespace LetopiaPlatform.Core.Enums
+namespace LetopiaPlatform.Core.Enums;
+
+public enum PostType
 {
-    public enum PostType
-    {
-        Discussion,
-        Question,
-        Resource
-    }
+    Discussion,
+    Question,
+    Resource
 }

@@ -1,7 +1,8 @@
-
 using LetopiaPlatform.Agent.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
+namespace LetopiaPlatform.Agent;
 
 public static class DependencyInjection
 {

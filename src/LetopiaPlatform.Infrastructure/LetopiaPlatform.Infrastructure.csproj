@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Suppress CS8981 for EF Core generated migration class names (e.g. 'init') -->
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <NoWarn>CS8981</NoWarn>
   </PropertyGroup>
-
 
   <ItemGroup>
     <ProjectReference Include="..\LetopiaPlatform.Core\LetopiaPlatform.Core.csproj" />

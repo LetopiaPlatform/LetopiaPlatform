@@ -1,0 +1,34 @@
+<Project>
+
+  <!-- ────────────────────────────────────────────────────────────────────
+       Shared build properties for ALL projects in the solution.
+       Individual .csproj files inherit these — no need to duplicate.
+       ──────────────────────────────────────────────────────────────────── -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- Code quality enforcement -->
+  <PropertyGroup>
+    <!-- Treat all warnings as errors — forces clean code -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- Enable built-in .NET analyzers at the recommended level -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+
+    <!-- Enforce .editorconfig code style rules at build time -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Produce deterministic builds for reproducibility -->
+    <Deterministic>true</Deterministic>
+
+    <!-- Generate XML documentation file (enables CS1591 + Swagger XML docs) -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>
