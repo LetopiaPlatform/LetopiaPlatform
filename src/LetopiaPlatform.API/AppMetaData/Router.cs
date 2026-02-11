@@ -21,8 +21,6 @@ public static class Router
 
         // File operations scoped to the current user
         public const string UploadFile = $"{Prefix}/me/files";
-        public const string UploadMultipleFiles = $"{Prefix}/me/files/batch";
-        public const string ReplaceFile = $"{Prefix}/me/files";
         public const string DeleteFile = $"{Prefix}/me/files";
     }
 }
