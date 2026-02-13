@@ -61,6 +61,7 @@ public class Program
             app.UseAuthentication();
             app.UseAuthorization();
 
+            app.MapHealthChecks("/health");
             app.MapControllers();
             app.Run();
         }
