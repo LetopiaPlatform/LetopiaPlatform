@@ -1,3 +1,4 @@
+using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -10,8 +11,6 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
-
-
     }
 
     public DbSet<Community> Communities => Set<Community>();
@@ -32,5 +31,37 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
         builder.Entity<IdentityUserToken<Guid>>(entity => { entity.ToTable("AspNetUserTokens"); });
     }
 
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyAuditTimestamps();
+        return base.SaveChangesAsync(cancellationToken);
+    }
 
+    public override int SaveChanges()
+    {
+        ApplyAuditTimestamps();
+        return base.SaveChanges();
+    }
+
+    private void ApplyAuditTimestamps()
+    {
+        var entries = ChangeTracker.Entries<AuditableEntity>();
+
+        foreach (var entry in entries)
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.CreatedAt = DateTime.UtcNow;
+                    entry.Entity.UpdatedAt = DateTime.UtcNow;
+                    break;
+
+                case EntityState.Modified:
+                    entry.Entity.UpdatedAt = DateTime.UtcNow;
+                    // Prevent overwriting CreatedAt on updates
+                    entry.Property(nameof(AuditableEntity.CreatedAt)).IsModified = false;
+                    break;
+            }
+        }
+    }
 }

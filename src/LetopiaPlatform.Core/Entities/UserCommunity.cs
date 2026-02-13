@@ -1,16 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Entities.Identity;
 
 namespace LetopiaPlatform.Core.Entities;
 
 [Table("user_communities")]
-public class UserCommunity
+public class UserCommunity : BaseEntity
 {
-    [Key]
-    [Column("id")]
-    public Guid Id { get; set; }
-
     [Required]
     [Column("user_id")]
     public Guid UserId { get; set; }
