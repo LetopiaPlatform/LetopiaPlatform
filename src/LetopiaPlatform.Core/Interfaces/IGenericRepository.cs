@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using LetopiaPlatform.Core.Common;
 
 namespace LetopiaPlatform.Core.Interfaces;
 
@@ -62,4 +63,20 @@ public interface IGenericRepository<T> where T : class
     /// <param name="cancellationToken">Cancellation token for the operation.</param>
     /// <returns>The number of state entries written to the database.</returns>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves a paginated subset of entities with optional filtering and eager loading.
+    /// </summary>
+    /// <param name="query">Pagination parameters (page number, page size).</param>
+    /// <param name="predicate">Optional filter expression to apply.</param>
+    /// <param name="orderBy">Optional sorting expression.</param>
+    /// <param name="ascending">Sort direction. Default is <c>true</c> (ascending).</param>
+    /// <param name="includes">Navigation property names to eagerly load.</param>
+    /// <returns>A <see cref="PaginatedResult{T}"/> containing the paginated entities.</returns>
+    Task<PaginatedResult<T>> GetPagedAsync(
+        PaginatedQuery query,
+        Expression<Func<T, bool>>? predicate = null,
+        Expression<Func<T, object>>? orderBy = null,
+        bool ascending = true,
+        params string[] includes);
 }
