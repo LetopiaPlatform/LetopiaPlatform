@@ -6,5 +6,4 @@ public sealed record UserProfileResponse(
     string Email,
     string? Bio,
     string? PhoneNumber,
-    DateTime? DateOfBirth,
     string? AvatarUrl);
