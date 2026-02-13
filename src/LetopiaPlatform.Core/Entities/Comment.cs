@@ -1,16 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Entities.Identity;
 
 namespace LetopiaPlatform.Core.Entities;
 
 [Table("comments")]
-public class Comment
+public class Comment : AuditableEntity
 {
-    [Key]
-    [Column("id")]
-    public Guid Id { get; set; }
-
     [Required]
     [Column("post_id")]
     public Guid PostId { get; set; }
@@ -31,10 +28,4 @@ public class Comment
 
     [Column("upvotes")]
     public int Upvotes { get; set; }
-
-    [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    [Column("updated_at")]
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

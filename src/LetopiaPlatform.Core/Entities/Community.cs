@@ -1,16 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Entities.Identity;
 
 namespace LetopiaPlatform.Core.Entities;
 
 [Table("communities")]
-public class Community
+public class Community : AuditableEntity
 {
-    [Key]
-    [Column("id")]
-    public Guid Id { get; set; }
-
     [Required]
     [MaxLength(100)]
     [Column("name")]
@@ -46,12 +43,6 @@ public class Community
 
     [Column("post_count")]
     public int PostCount { get; set; }
-
-    [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    [Column("updated_at")]
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     [MaxLength(500)]
     [Column("cover_image_url")]
