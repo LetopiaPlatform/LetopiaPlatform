@@ -1,4 +1,5 @@
 using LetopiaPlatform.Core.Entities;
+using LetopiaPlatform.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,6 +27,12 @@ public class UserCommunityConfiguration : IEntityTypeConfiguration<UserCommunity
 
         builder.Property(uc => uc.JoinedAt)
             .HasColumnName("joined_at");
+
+        builder.Property(uc => uc.Role)
+            .HasColumnName("role")
+            .HasMaxLength(20)
+            .HasConversion<string>()
+            .HasDefaultValue(CommunityRole.Member);
 
         // Indexes
         builder.HasIndex(uc => new { uc.UserId, uc.CommunityId })

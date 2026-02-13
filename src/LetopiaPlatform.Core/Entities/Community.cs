@@ -24,4 +24,5 @@ public class Community : AuditableEntity
     // Navigation collections
     public ICollection<Post> Posts { get; set; } = [];
     public ICollection<UserCommunity> Members { get; set; } = [];
+    public ICollection<Group> Groups { get; set; } = [];
 }
