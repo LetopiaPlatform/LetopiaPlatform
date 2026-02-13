@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.AddIdentitySystem();
         services.AddJwtAuthentication(configuration, environment);
         services.AddAppServices();
+        services.AddHealthCheckServices(configuration);
 
         return services;
     }
