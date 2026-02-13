@@ -21,7 +21,8 @@ public static class ServiceCollectionExtensions
         services.AddCorsPolicy(configuration);
         services.AddValidation();
         services.AddHttpContextAccessor();
-
+        services.AddRateLimitingPolicies();
+        
         return services;
     }
 
