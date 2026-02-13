@@ -47,8 +47,7 @@ public class UsersController : BaseController
             dto.FullName,
             dto.Email,
             dto.Bio,
-            dto.PhoneNumber,
-            dto.DateOfBirth);
+            dto.PhoneNumber);
 
         var result = await _userService.UpdateProfileAsync(GetUserId(), request, dto.AvatarUrl, HttpContext.RequestAborted);
         return HandleResult(result);

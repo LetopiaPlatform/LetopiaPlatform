@@ -32,6 +32,9 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
         builder.Entity<IdentityRoleClaim<Guid>>(entity => { entity.ToTable("AspNetRoleClaims"); });
         builder.Entity<IdentityUserToken<Guid>>(entity => { entity.ToTable("AspNetUserTokens"); });
 
+        // Apply all IEntityTypeConfiguration<T> from this assembly
+        builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
         // Apply global query filter for all soft-deletable entities
         ApplySoftDeleteQueryFilter(builder);
     }
@@ -50,7 +53,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
 
     private void ApplyAuditTimestamps()
     {
-        var entries = ChangeTracker.Entries<AuditableEntity>();
+        var entries = ChangeTracker.Entries<IAuditable>();
 
         foreach (var entry in entries)
         {
@@ -64,7 +67,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = DateTime.UtcNow;
                     // Prevent overwriting CreatedAt on updates
-                    entry.Property(nameof(AuditableEntity.CreatedAt)).IsModified = false;
+                    entry.Property(nameof(IAuditable.CreatedAt)).IsModified = false;
                     break;
             }
         }

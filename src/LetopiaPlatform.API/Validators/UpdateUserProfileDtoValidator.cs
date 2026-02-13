@@ -26,11 +26,6 @@ public class UpdateUserProfileDtoValidator : AbstractValidator<UpdateUserProfile
             .When(x => !string.IsNullOrEmpty(x.PhoneNumber))
             .WithMessage("Invalid phone number.");
 
-        RuleFor(x => x.DateOfBirth)
-            .LessThan(DateTime.Today)
-            .When(x => x.DateOfBirth.HasValue)
-            .WithMessage("Date of birth must be in the past.");
-
         RuleFor(x => x.AvatarUrl)
             .Must(file => file == null ||
                          AllowedAvatarExtensions.Contains(Path.GetExtension(file.FileName), StringComparer.OrdinalIgnoreCase))

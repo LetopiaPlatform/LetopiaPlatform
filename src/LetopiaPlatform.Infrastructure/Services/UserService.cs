@@ -50,7 +50,6 @@ public class UserService : IUserService
         if (request.FullName is not null) user.FullName = request.FullName;
         if (request.Bio is not null) user.Bio = request.Bio;
         if (request.PhoneNumber is not null) user.PhoneNumber = request.PhoneNumber;
-        if (request.DateOfBirth.HasValue) user.DateOfBirth = request.DateOfBirth.Value;
 
         // TODO: Email change should require re-verification (send confirmation link).
         // For now, allow direct update but log it for audit.
@@ -88,6 +87,5 @@ public class UserService : IUserService
         Email: user.Email ?? string.Empty,
         Bio: user.Bio,
         PhoneNumber: user.PhoneNumber,
-        DateOfBirth: user.DateOfBirth,
         AvatarUrl: user.AvatarUrl);
 }

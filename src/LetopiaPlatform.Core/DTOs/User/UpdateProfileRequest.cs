@@ -4,5 +4,4 @@ public sealed record UpdateProfileRequest(
     string? FullName,
     string? Email,
     string? Bio,
-    string? PhoneNumber,
-    DateTime? DateOfBirth);
+    string? PhoneNumber);
