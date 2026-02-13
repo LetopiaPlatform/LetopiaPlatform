@@ -1,5 +1,6 @@
 
 using System.Linq.Expressions;
+using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -65,6 +66,39 @@ internal sealed class GenericRepository<T> : IGenericRepository<T> where T : cla
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<PaginatedResult<T>> GetPagedAsync(
+        PaginatedQuery query,
+        Expression<Func<T, bool>>? predicate = null,
+        Expression<Func<T, object>>? orderBy = null,
+        bool ascending = true,
+        params string[] includes)
+    {
+        IQueryable<T> queryable = _dbSet.AsQueryable();
+
+        queryable = ApplyIncludes(queryable, includes);
+
+        if (predicate is not null)
+        {
+            queryable = queryable.Where(predicate);
+        }
+
+        var totalItems = await queryable.CountAsync();
+
+        if (orderBy is not null)
+        {
+            queryable = ascending
+                ? queryable.OrderBy(orderBy)
+                : queryable.OrderByDescending(orderBy);
+        }
+
+        var items = await queryable
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .ToListAsync();
+
+        return PaginatedResult<T>.Create(items, totalItems, query.Page, query.PageSize);
     }
 
     private static IQueryable<T> ApplyIncludes(IQueryable<T> query, string[] includes)
