@@ -61,6 +61,8 @@ public class Program
             app.UseAuthentication();
             app.UseAuthorization();
 
+            app.UseRateLimiter();
+            
             app.MapHealthChecks("/health");
             app.MapControllers();
             app.Run();

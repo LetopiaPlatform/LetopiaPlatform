@@ -5,6 +5,7 @@ using LetopiaPlatform.Core.DTOs.User;
 using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LetopiaPlatform.API.Controllers;
 
@@ -59,6 +60,7 @@ public class UsersController : BaseController
     /// Upload a single file
     /// </summary>
     [HttpPost(Router.Users.UploadFile)]
+    [EnableRateLimiting(RateLimitingExtensions.FileUploadPolicy)]
     public async Task<IActionResult> UploadFile(IFormFile file, [FromQuery] string directory = "uploads")
     {
         HttpContext.AddBusinessContext("action", "upload_file");
