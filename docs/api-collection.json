@@ -1,0 +1,318 @@
+{
+  "info": {
+    "name": "Letopia Platform API",
+    "description": "API collection for the Letopia learning platform.\n\nBase URL: https://localhost:7003\n\n## Auth Flow\n1. Sign up or log in\n2. Token is auto-saved to `{{token}}` variable\n3. All authenticated endpoints use it automatically",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7003",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints (rate limited: 10 req/min per IP)",
+      "item": [
+        {
+          "name": "Sign Up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data && json.data.jwtToken) {",
+                  "        pm.collectionVariables.set('token', json.data.jwtToken.token);",
+                  "        console.log('Token saved from sign up');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "signup"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"fullName\": \"John Doe\",\n  \"phoneNumber\": \"+1234567890\",\n  \"password\": \"P@ssword123\",\n  \"confirmPassword\": \"P@ssword123\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 — Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": {\n    \"jwtToken\": {\n      \"token\": \"eyJhbGciOiJIUzI1NiIs...\",\n      \"expiresAt\": \"2026-02-13T17:30:00Z\"\n    },\n    \"user\": {\n      \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"email\": \"user@example.com\",\n      \"fullName\": \"John Doe\",\n      \"role\": \"Learner\"\n    }\n  },\n  \"timestamp\": \"2026-02-13T17:00:00Z\"\n}"
+            },
+            {
+              "name": "400 — Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"statusCode\": 400,\n  \"message\": \"Validation failed\",\n  \"errors\": [\"Password must be at least 8 characters\"],\n  \"timestamp\": \"2026-02-13T17:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data && json.data.jwtToken) {",
+                  "        pm.collectionVariables.set('token', json.data.jwtToken.token);",
+                  "        console.log('Token saved from login');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"P@ssword123\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": {\n    \"jwtToken\": {\n      \"token\": \"eyJhbGciOiJIUzI1NiIs...\",\n      \"expiresAt\": \"2026-02-13T17:30:00Z\"\n    },\n    \"user\": {\n      \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"email\": \"user@example.com\",\n      \"fullName\": \"John Doe\",\n      \"role\": \"Learner\"\n    }\n  },\n  \"timestamp\": \"2026-02-13T17:00:00Z\"\n}"
+            },
+            {
+              "name": "401 — Invalid Credentials",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"status\": 401,\n  \"message\": \"Invalid email or password\",\n  \"errors\": [\"Invalid email or password\"],\n  \"timestamp\": \"2026-02-13T17:00:00Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "User profile and file management (requires authentication)",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": {\n    \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"fullName\": \"John Doe\",\n    \"email\": \"user@example.com\",\n    \"bio\": \"Backend developer\",\n    \"phoneNumber\": \"+1234567890\",\n    \"avatarUrl\": \"https://storage.blob.core.windows.net/avatars/abc.jpg\"\n  },\n  \"timestamp\": \"2026-02-13T17:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "fullName",
+                  "value": "Jane Doe",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "jane@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Full-stack developer passionate about .NET",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "+9876543210",
+                  "type": "text"
+                },
+                {
+                  "key": "avatarUrl",
+                  "value": "",
+                  "type": "file",
+                  "description": "JPG, JPEG, or PNG. Max 5MB."
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": {\n    \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"fullName\": \"Jane Doe\",\n    \"email\": \"jane@example.com\",\n    \"bio\": \"Full-stack developer passionate about .NET\",\n    \"phoneNumber\": \"+9876543210\",\n    \"avatarUrl\": \"https://storage.blob.core.windows.net/avatars/new.jpg\"\n  },\n  \"timestamp\": \"2026-02-13T17:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload File",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/files?directory=uploads",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me", "files"],
+              "query": [
+                {
+                  "key": "directory",
+                  "value": "uploads",
+                  "description": "Target directory (default: uploads)"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "value": "",
+                  "type": "file",
+                  "description": "File to upload"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": \"https://storage.blob.core.windows.net/uploads/abc123.pdf\",\n  \"timestamp\": \"2026-02-13T17:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete File",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/files?fileUrl=https://storage.blob.core.windows.net/uploads/abc123.pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me", "files"],
+              "query": [
+                {
+                  "key": "fileUrl",
+                  "value": "https://storage.blob.core.windows.net/uploads/abc123.pdf",
+                  "description": "Full URL of the file to delete"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": null,\n  \"timestamp\": \"2026-02-13T17:00:00Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "description": "Infrastructure endpoints (no auth required)",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 — Healthy",
+              "status": "OK",
+              "code": 200,
+              "body": "Healthy"
+            },
+            {
+              "name": "503 — Unhealthy",
+              "status": "Service Unavailable",
+              "code": 503,
+              "body": "Unhealthy"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
