@@ -131,4 +131,20 @@ public static class DependencyInjection
 
         return services;
     }
+
+    private static IServiceCollection AddHealthCheckServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("DefaultConnection string missing.");
+        
+        services.AddHealthChecks()
+            .AddNpgSql(
+                connectionString,
+                name: "postgresql",
+                tags: ["db", "ready"]);
+        
+        return services;
+    }
 }
