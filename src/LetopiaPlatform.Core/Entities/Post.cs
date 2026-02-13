@@ -1,17 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Enums;
+using LetopiaPlatform.Core.Interfaces;
 
 namespace LetopiaPlatform.Core.Entities;
 
 [Table("posts")]
-public class Post
+public class Post : AuditableEntity, ISoftDeletable
 {
-    [Key]
-    [Column("id")]
-    public Guid Id { get; set; }
-
     [Required]
     [Column("community_id")]
     public Guid CommunityId { get; set; }
@@ -44,12 +42,6 @@ public class Post
 
     [Column("comment_count")]
     public int CommentCount { get; set; }
-
-    [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    [Column("updated_at")]
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     [Column("is_pinned")]
     public bool IsPinned { get; set; }

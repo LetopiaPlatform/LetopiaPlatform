@@ -1,6 +1,8 @@
+using System.Linq.Expressions;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Entities.Identity;
+using LetopiaPlatform.Core.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +31,9 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
         builder.Entity<IdentityUserLogin<Guid>>(entity => { entity.ToTable("AspNetUserLogins"); });
         builder.Entity<IdentityRoleClaim<Guid>>(entity => { entity.ToTable("AspNetRoleClaims"); });
         builder.Entity<IdentityUserToken<Guid>>(entity => { entity.ToTable("AspNetUserTokens"); });
+
+        // Apply global query filter for all soft-deletable entities
+        ApplySoftDeleteQueryFilter(builder);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -62,6 +67,21 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
                     entry.Property(nameof(AuditableEntity.CreatedAt)).IsModified = false;
                     break;
             }
+        }
+    }
+
+    private static void ApplySoftDeleteQueryFilter(ModelBuilder builder)
+    {
+        foreach (var entityType in builder.Model.GetEntityTypes())
+        {
+            if (!typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
+                continue;
+            
+            var parameter = Expression.Parameter(entityType.ClrType, "e");
+            var property = Expression.Property(parameter, nameof(ISoftDeletable.IsDeleted));
+            var filter = Expression.Lambda(Expression.Not(property), parameter);
+
+            builder.Entity(entityType.ClrType).HasQueryFilter(filter);
         }
     }
 }
