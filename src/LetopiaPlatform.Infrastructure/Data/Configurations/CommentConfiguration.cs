@@ -47,11 +47,17 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.HasOne(c => c.Post)
             .WithMany(p => p.Comments)
             .HasForeignKey(c => c.PostId)
+            .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(c => c.Author)
             .WithMany()
             .HasForeignKey(c => c.AuthorId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Matching query filter: exclude comments whose parent post is soft-deleted.
+        // Required because Post has a global ISoftDeletable filter — without this,
+        // EF Core warns about required navigation + filtered principal mismatch.
+        builder.HasQueryFilter(c => !c.Post.IsDeleted);
     }
 }
