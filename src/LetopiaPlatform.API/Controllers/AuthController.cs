@@ -4,10 +4,12 @@ using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.Core.DTOs.Auth.Request;
 using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LetopiaPlatform.API.Controllers;
 
 [ApiController]
+[EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
 public class AuthController : BaseController
 {
     private readonly IAuthService _authService;
