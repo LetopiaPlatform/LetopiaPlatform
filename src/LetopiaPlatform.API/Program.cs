@@ -3,8 +3,10 @@ using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.API.Middleware;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Infrastructure;
+using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Seeder;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace LetopiaPlatform.API;
@@ -34,6 +36,13 @@ public class Program
                 .AddAgentServices(builder.Configuration);
 
             var app = builder.Build();
+
+            // ── Apply pending migrations ────────────────────────────────
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                await db.Database.MigrateAsync();
+            }
 
             // ── Seed data ─────────────────────────────────────────────────
             await SeedDataAsync(app);
