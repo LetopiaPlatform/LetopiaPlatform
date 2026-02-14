@@ -1,12 +1,12 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - letopiaapis
+name: Build and deploy ASP.Net Core app to Azure Web App - letopia-staging
 
 on:
   push:
     branches:
-      - main
+      - develop
   workflow_dispatch:
 
 jobs:
@@ -51,15 +51,15 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1E7CAAE8000D434E8E608182DF1441D6 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7461C2F852144DCE857B3BF7EA9E5E68 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_454942FAFB264A64B432F70C54245FA5 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B3C1FA6567DA40A2804F727428346F80 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C26E555C87944602984ECE3F67CE08D5 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4492FF4435754B99A7D858A005EF3B8E }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'letopiaapis'
+          app-name: 'letopia-staging'
           slot-name: 'Production'
           package: .
           
