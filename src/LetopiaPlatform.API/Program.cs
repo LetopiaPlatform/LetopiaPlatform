@@ -29,6 +29,9 @@ public class Program
                 .ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services));
 
+            // ── Application Insights ──────────────────────────────────────
+            builder.Services.AddApplicationInsightsTelemetry();
+            
             // ── Service registration ──────────────────────────────────────
             builder.Services
                 .AddApiServices(builder.Configuration)
