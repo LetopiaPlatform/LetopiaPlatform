@@ -19,7 +19,6 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<UserCommunity> UserCommunities => Set<UserCommunity>();
-    public DbSet<Group> Groups => Set<Group>();
     
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -9,9 +9,6 @@ public class Post : AuditableEntity, ISoftDeletable
 {
     public Guid CommunityId { get; set; }
     public Community Community { get; set; } = null!;
-
-    public Guid? GroupId { get; set; }
-    public Group? Group { get; set; }
     
     public Guid AuthorId { get; set; }
     public User Author { get; set; } = null!;

@@ -25,9 +25,6 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
             .HasColumnName("community_id")
             .IsRequired();
 
-        builder.Property(p => p.GroupId)
-            .HasColumnName("group_id");
-
         builder.Property(p => p.AuthorId)
             .HasColumnName("author_id")
             .IsRequired();
@@ -79,20 +76,11 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
         builder.HasIndex(p => p.CommunityId)
             .HasDatabaseName("ix_posts_community_id");
 
-        builder.HasIndex(p => p.GroupId)
-            .HasDatabaseName("ix_posts_group_id");
-
         // Relationships
         builder.HasOne(p => p.Community)
             .WithMany(c => c.Posts)
             .HasForeignKey(p => p.CommunityId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasOne(p => p.Group)
-            .WithMany(g => g.Posts)
-            .HasForeignKey(p => p.GroupId)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne(p => p.Author)
             .WithMany()
