@@ -2,6 +2,7 @@ using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Community;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Enums;
+using LetopiaPlatform.Core.Exceptions;
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.Extensions.Logging;
@@ -94,9 +95,35 @@ public class CommunityService : ICommunityService
     {
         return await _communityRepository.ListAsync(query, category, search, sortBy, ct);
     }
-    
+    public async Task<CommunityDetailDto> GetBySlugAsync(
+        string slug,
+        Guid? currentUserId = null,
+        CancellationToken ct = default)
+    {
+        var community = await _communityRepository.GetBySlugAsync(slug, ct)
+            ?? throw new NotFoundException("Community", slug);
+        
+        var channels = await _communityRepository.GetChannelsAsync(community.Id, ct);
+
+        bool isMember = false;
+        string? userRole = null;
+
+        if (currentUserId.HasValue)
+        {
+            var membership = await _communityRepository.GetMembershipAsync(community.Id, currentUserId.Value, ct);
+            if (membership is not null)
+            {
+                isMember = true;
+                userRole = membership.Role.ToString();
+            }
+        }
+
+        var channelDtos = BuildChannelTree(channels);
+        return MapToDetail(community, isMember, userRole, channelDtos);
+    }
+
     public Task ChangeRoleAsync(Guid communityId, Guid targetUserId, ChangeRoleRequest request, Guid callerUserId, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<CommunityDetailDto> GetBySlugAsync(string slug, Guid? currentUserId = null, CancellationToken ct = default) => throw new NotImplementedException();
+
     public Task<PaginatedResult<MemberDto>> GetMembersAsync(Guid communityId, PaginatedQuery query, CancellationToken ct = default) => throw new NotImplementedException();
     public Task JoinAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
     public Task LeaveAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
@@ -132,6 +159,14 @@ public class CommunityService : ICommunityService
         ];
     }
 
+    private static List<ChannelSummaryDto> BuildChannelTree(List<Channel> channels)
+    {
+        var lookup = channels.ToLookup(ch => ch.ParentId);
+
+        return lookup[null]
+            .Select(parent => MapToChannelSummary(parent, lookup))
+            .ToList();
+    }
     private static ChannelSummaryDto MapToChannelSummary(
         Channel ch,
         ILookup<Guid?, Channel>? lookup = null)
