@@ -164,8 +164,18 @@ internal sealed class CommunityRepository : ICommunityRepository
 
         return PaginatedResult<MemberDto>.Create(items, totalItems, query.Page, query.PageSize);
     }
-    
-    public void AddChannels(IEnumerable<Channel> channels) => throw new NotImplementedException();
-    public Task<List<Channel>> GetChannelsAsync(Guid communityId, CancellationToken ct = default) => throw new NotImplementedException();
 
+    public void AddChannels(IEnumerable<Channel> channels)
+    {
+        _dbContext.AddRange(channels);
+    }
+
+    public async Task<List<Channel>> GetChannelsAsync(Guid communityId, CancellationToken ct = default)
+    {
+        return await _dbContext.Channels
+            .Where(ch => ch.CommunityId == communityId && !ch.IsArchived)
+            .OrderBy(ch => ch.DisplayOrder)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
 }
