@@ -95,13 +95,76 @@ internal sealed class CommunityRepository : ICommunityRepository
         return PaginatedResult<CommunitySummaryDto>.Create(items, totalItems, query.Page, query.PageSize);
     }
 
-    public Task<PaginatedResult<MemberDto>> GetMembersAsync(Guid communityId, PaginatedQuery query, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<UserCommunity?> GetMembershipAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
-    public void AddMember(UserCommunity membership) => throw new NotImplementedException();
-    public Task DecrementMemberCountAsync(Guid communityId, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task IncrementMemberCountAsync(Guid communityId, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<bool> IsMemberAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
-    public void RemoveMember(UserCommunity membership) => throw new NotImplementedException();
+    public async Task<UserCommunity?> GetMembershipAsync(
+        Guid communityId,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        return await _dbContext.UserCommunities
+            .FirstOrDefaultAsync(uc => uc.CommunityId == communityId && uc.UserId == userId, ct);
+    }
+
+    public async Task<bool> IsMemberAsync(
+        Guid communityId,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        return await _dbContext.UserCommunities
+            .AnyAsync(uc => uc.CommunityId == communityId && uc.UserId == userId, ct);
+    }
+
+    public void AddMember(UserCommunity membership)
+    {
+        _dbContext.UserCommunities.Add(membership);
+    }
+
+    public void RemoveMember(UserCommunity membership)
+    {
+        _dbContext.UserCommunities.Remove(membership);
+    }
+
+    public async Task IncrementMemberCountAsync(Guid communityId, CancellationToken ct = default)
+    {
+        await _dbContext.Communities
+            .Where(c => c.Id == communityId)
+            .ExecuteUpdateAsync(s => 
+                s.SetProperty(c => c.MemberCount, c => c.MemberCount + 1), ct);
+    }
+
+    public async Task DecrementMemberCountAsync(Guid communityId, CancellationToken ct = default)
+    {
+        await _dbContext.Communities
+            .Where(c => c.Id == communityId)
+            .ExecuteUpdateAsync(s => 
+                s.SetProperty(c => c.MemberCount, c => c.MemberCount - 1), ct);
+    }
+
+    public async Task<PaginatedResult<MemberDto>> GetMembersAsync(
+        Guid communityId,
+        PaginatedQuery query,
+        CancellationToken ct = default)
+    {
+        var queryable = _dbContext.UserCommunities
+            .Where(uc => uc.CommunityId == communityId)
+            .OrderBy(uc => uc.JoinedAt)
+            .AsNoTracking();
+
+        var totalItems = await queryable.CountAsync(ct);
+
+        var items = await queryable
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .Select(uc => new MemberDto(
+                uc.UserId,
+                uc.User.FullName ?? string.Empty,
+                uc.User.AvatarUrl,
+                uc.Role.ToString(),
+                uc.JoinedAt))
+            .ToListAsync(ct);
+
+        return PaginatedResult<MemberDto>.Create(items, totalItems, query.Page, query.PageSize);
+    }
+    
     public void AddChannels(IEnumerable<Channel> channels) => throw new NotImplementedException();
     public Task<List<Channel>> GetChannelsAsync(Guid communityId, CancellationToken ct = default) => throw new NotImplementedException();
 
