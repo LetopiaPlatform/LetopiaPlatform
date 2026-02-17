@@ -84,13 +84,22 @@ public class CommunityService : ICommunityService
             throw;
         }
     }
+
+    public async Task<PaginatedResult<CommunitySummaryDto>> ListAsync(
+        PaginatedQuery query,
+        string? category = null,
+        string? search = null,
+        string? sortBy = null,
+        CancellationToken ct = default)
+    {
+        return await _communityRepository.ListAsync(query, category, search, sortBy, ct);
+    }
     
     public Task ChangeRoleAsync(Guid communityId, Guid targetUserId, ChangeRoleRequest request, Guid callerUserId, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<CommunityDetailDto> GetBySlugAsync(string slug, Guid? currentUserId = null, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<PaginatedResult<MemberDto>> GetMembersAsync(Guid communityId, PaginatedQuery query, CancellationToken ct = default) => throw new NotImplementedException();
     public Task JoinAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
     public Task LeaveAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<PaginatedResult<CommunitySummaryDto>> ListAsync(PaginatedQuery query, string? category = null, string? search = null, string? sortBy = null, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<CommunityDetailDto> UpdateAsync(Guid communityId, UpdateCommunityRequest request, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
 
     // Private helpers
