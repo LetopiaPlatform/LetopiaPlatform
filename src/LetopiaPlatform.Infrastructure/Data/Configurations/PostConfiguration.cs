@@ -25,8 +25,9 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
             .HasColumnName("community_id")
             .IsRequired();
 
-        builder.Property(p => p.GroupId)
-            .HasColumnName("group_id");
+        builder.Property(p => p.ChannelId)
+            .HasColumnName("channel_id")
+            .IsRequired();
 
         builder.Property(p => p.AuthorId)
             .HasColumnName("author_id")
@@ -79,8 +80,8 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
         builder.HasIndex(p => p.CommunityId)
             .HasDatabaseName("ix_posts_community_id");
 
-        builder.HasIndex(p => p.GroupId)
-            .HasDatabaseName("ix_posts_group_id");
+        builder.HasIndex(p => p.ChannelId)
+            .HasDatabaseName("ix_posts_channel_id");
 
         // Relationships
         builder.HasOne(p => p.Community)
@@ -88,11 +89,10 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
             .HasForeignKey(p => p.CommunityId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(p => p.Group)
-            .WithMany(g => g.Posts)
-            .HasForeignKey(p => p.GroupId)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(p => p.Channel)
+            .WithMany(ch => ch.Posts)
+            .HasForeignKey(p => p.ChannelId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(p => p.Author)
             .WithMany()
