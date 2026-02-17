@@ -199,9 +199,18 @@ public class CommunityService : ICommunityService
             "Community Service - User {UserId} left community {CommunityId}", userId, communityId);
     }
 
-    public Task ChangeRoleAsync(Guid communityId, Guid targetUserId, ChangeRoleRequest request, Guid callerUserId, CancellationToken ct = default) => throw new NotImplementedException();
+    public async Task<PaginatedResult<MemberDto>> GetMembersAsync(
+        Guid communityId,
+        PaginatedQuery query,
+        CancellationToken ct = default)
+    {
+        _ = await _communityRepository.GetByIdAsync(communityId, ct)
+            ?? throw new NotFoundException("Community", communityId);
 
-    public Task<PaginatedResult<MemberDto>> GetMembersAsync(Guid communityId, PaginatedQuery query, CancellationToken ct = default) => throw new NotImplementedException();
+        return await _communityRepository.GetMembersAsync(communityId, query, ct);
+    }
+    
+    public Task ChangeRoleAsync(Guid communityId, Guid targetUserId, ChangeRoleRequest request, Guid callerUserId, CancellationToken ct = default) => throw new NotImplementedException();
 
     // Private helpers
     private static List<Channel> CreateDefaultChannels(Guid communityId)
