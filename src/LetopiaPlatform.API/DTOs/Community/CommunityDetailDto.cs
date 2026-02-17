@@ -18,5 +18,4 @@ public sealed record CommunityDetailDto(
     DateTime CreatedAt,
     DateTime? LastPostAt,
     bool IsMember,
-    string? UserRole,
-    List<GroupSummaryDto> Groups);
+    string? UserRole);
