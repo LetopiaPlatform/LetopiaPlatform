@@ -1,5 +1,5 @@
 using FluentValidation;
-using LetopiaPlatform.Core.Community;
+using LetopiaPlatform.Core.DTOs.Community;
 
 namespace LetopiaPlatform.API.Validators;
 
