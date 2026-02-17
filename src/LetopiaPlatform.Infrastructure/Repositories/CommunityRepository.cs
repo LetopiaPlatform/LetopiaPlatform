@@ -41,10 +41,62 @@ internal sealed class CommunityRepository : ICommunityRepository
         _dbContext.Communities.Add(community);
     }
 
+    public async Task<PaginatedResult<CommunitySummaryDto>> ListAsync(
+        PaginatedQuery query,
+        string? category = null,
+        string? search = null,
+        string? sortBy = null,
+        CancellationToken ct = default)
+    {
+        var queryable = _dbContext.Communities
+            .Where(c => c.IsActive)
+            .AsNoTracking();
+        
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            queryable = queryable.Where(c => c.TopicCategory == category);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            queryable = queryable.Where(c => 
+                c.Name.Contains(search, StringComparison.OrdinalIgnoreCase) || 
+                c.Description.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        queryable = sortBy?.ToLowerInvariant() switch
+        {
+            "members" => queryable.OrderByDescending(c => c.MemberCount),
+            "posts" => queryable.OrderByDescending(c => c.PostCount),
+            "name" => queryable.OrderBy(c => c.Name),
+            "oldest" => queryable.OrderBy(c => c.CreatedAt),
+            _ => queryable.OrderByDescending(c => c.CreatedAt) // default to newest
+        };
+
+        var totalItems = await queryable.CountAsync(ct);
+
+        var items = await queryable
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .Select(c => new CommunitySummaryDto(
+                Id: c.Id,
+                Name: c.Name,
+                Slug: c.Slug,
+                Description: c.Description,
+                TopicCategory: c.TopicCategory,
+                IconUrl: c.IconUrl,
+                MemberCount: c.MemberCount,
+                PostCount: c.PostCount,
+                IsPrivate: c.IsPrivate,
+                CreatedAt: c.CreatedAt
+            ))
+            .ToListAsync(ct);
+
+        return PaginatedResult<CommunitySummaryDto>.Create(items, totalItems, query.Page, query.PageSize);
+    }
+
     public Task<PaginatedResult<MemberDto>> GetMembersAsync(Guid communityId, PaginatedQuery query, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<UserCommunity?> GetMembershipAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<PaginatedResult<CommunitySummaryDto>> ListAsync(PaginatedQuery query, string? category = null, string? search = null, string? sortBy = null, CancellationToken ct = default) => throw new NotImplementedException();
-
     public void AddMember(UserCommunity membership) => throw new NotImplementedException();
     public Task DecrementMemberCountAsync(Guid communityId, CancellationToken ct = default) => throw new NotImplementedException();
     public Task IncrementMemberCountAsync(Guid communityId, CancellationToken ct = default) => throw new NotImplementedException();
