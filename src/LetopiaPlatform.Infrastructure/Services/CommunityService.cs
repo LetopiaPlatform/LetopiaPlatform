@@ -122,12 +122,42 @@ public class CommunityService : ICommunityService
         return MapToDetail(community, isMember, userRole, channelDtos);
     }
 
+    public async Task<CommunityDetailDto> UpdateAsync(
+        Guid communityId,
+        UpdateCommunityRequest request,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        var community = await _communityRepository.GetByIdAsync(communityId, ct)
+            ?? throw new NotFoundException("Community", communityId.ToString());
+
+        var membership = await _communityRepository.GetMembershipAsync(communityId, userId, ct)
+            ?? throw new ForbiddenException("You are not a member of this community.");
+        
+        if (membership.Role is not (CommunityRole.Owner or CommunityRole.Moderator))
+            throw new ForbiddenException("Only the owner or a moderator can update community settings.");
+        
+        if (request.Name is not null) community.Name = request.Name;
+        if (request.Description is not null) community.Description = request.Description;
+        if (request.IconUrl is not null) community.IconUrl = request.IconUrl;
+        if (request.CoverImageUrl is not null) community.CoverImageUrl = request.CoverImageUrl;
+        if (request.IsPrivate.HasValue) community.IsPrivate = request.IsPrivate.Value;
+
+        await _unitOfWork.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "Community Service - Community '{CommunityName}' (ID: {CommunityId}) updated by user {UserId}",
+            community.Name, community.Id, userId);
+        
+        var channels = await _communityRepository.GetChannelsAsync(community.Id, ct);
+        return MapToDetail(community, isMember: true, userRole: membership.Role.ToString(), channels: BuildChannelTree(channels));
+    }
+
     public Task ChangeRoleAsync(Guid communityId, Guid targetUserId, ChangeRoleRequest request, Guid callerUserId, CancellationToken ct = default) => throw new NotImplementedException();
 
     public Task<PaginatedResult<MemberDto>> GetMembersAsync(Guid communityId, PaginatedQuery query, CancellationToken ct = default) => throw new NotImplementedException();
     public Task JoinAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
     public Task LeaveAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<CommunityDetailDto> UpdateAsync(Guid communityId, UpdateCommunityRequest request, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
 
     // Private helpers
     private static List<Channel> CreateDefaultChannels(Guid communityId)
