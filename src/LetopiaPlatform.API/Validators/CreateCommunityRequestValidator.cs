@@ -9,7 +9,7 @@ public class CreateCommunityRequestValidator : AbstractValidator<CreateCommunity
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Community name is required.")
-            .MinimumLength(2).WithName("Community name must be at least 2 characters.")
+            .MinimumLength(2).WithMessage("Community name must be at least 2 characters.")
             .MaximumLength(100).WithMessage("Community name must be at most 100 characters.");
         
         RuleFor(x => x.Description)
