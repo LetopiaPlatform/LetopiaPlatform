@@ -153,10 +153,36 @@ public class CommunityService : ICommunityService
         return MapToDetail(community, isMember: true, userRole: membership.Role.ToString(), channels: BuildChannelTree(channels));
     }
 
+    public async Task JoinAsync(
+        Guid communityId,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        var community = await _communityRepository.GetByIdAsync(communityId, ct)
+            ?? throw new NotFoundException("Community", communityId);
+        
+        if (await _communityRepository.IsMemberAsync(communityId, userId, ct))
+            throw new ConflictException("You are already a member of this community.");
+
+        var membership = new UserCommunity
+        {
+            UserId = userId,
+            CommunityId = communityId,
+            Role = CommunityRole.Member,
+            JoinedAt = DateTime.UtcNow
+        };
+
+        _communityRepository.AddMember(membership);
+        await _unitOfWork.SaveChangesAsync(ct);
+        await _communityRepository.IncrementMemberCountAsync(communityId, ct);
+
+        _logger.LogInformation(
+            "Community Service - User {UserId} joined community {CommunityId}", userId, communityId);
+    }
+
     public Task ChangeRoleAsync(Guid communityId, Guid targetUserId, ChangeRoleRequest request, Guid callerUserId, CancellationToken ct = default) => throw new NotImplementedException();
 
     public Task<PaginatedResult<MemberDto>> GetMembersAsync(Guid communityId, PaginatedQuery query, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task JoinAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
     public Task LeaveAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
 
     // Private helpers
