@@ -79,17 +79,8 @@ internal sealed class CommunityRepository : ICommunityRepository
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
             .Select(c => new CommunitySummaryDto(
-                Id: c.Id,
-                Name: c.Name,
-                Slug: c.Slug,
-                Description: c.Description,
-                TopicCategory: c.TopicCategory,
-                IconUrl: c.IconUrl,
-                MemberCount: c.MemberCount,
-                PostCount: c.PostCount,
-                IsPrivate: c.IsPrivate,
-                CreatedAt: c.CreatedAt
-            ))
+                c.Id, c.Name, c.Slug, c.Description, c.TopicCategory,
+                c.IconUrl, c.MemberCount, c.PostCount, c.IsPrivate, c.CreatedAt))
             .ToListAsync(ct);
 
         return PaginatedResult<CommunitySummaryDto>.Create(items, totalItems, query.Page, query.PageSize);
