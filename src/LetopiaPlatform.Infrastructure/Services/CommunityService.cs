@@ -189,7 +189,7 @@ public class CommunityService : ICommunityService
             ?? throw new NotFoundException("You are not a member of this community.");
         
         if (membership.Role == CommunityRole.Owner)
-            throw new AppException("The owner cannot leave the community. Transfer ownership first.");
+            throw new AppException("The owner cannot leave the community. Transfer ownership first.", 400);
         
         _communityRepository.RemoveMember(membership);
         await _unitOfWork.SaveChangesAsync(ct);
@@ -209,8 +209,48 @@ public class CommunityService : ICommunityService
 
         return await _communityRepository.GetMembersAsync(communityId, query, ct);
     }
-    
-    public Task ChangeRoleAsync(Guid communityId, Guid targetUserId, ChangeRoleRequest request, Guid callerUserId, CancellationToken ct = default) => throw new NotImplementedException();
+
+    public async Task ChangeRoleAsync(
+        Guid communityId,
+        Guid targetUserId,
+        ChangeRoleRequest request,
+        Guid callerUserId, CancellationToken ct = default)
+    {
+        if (!Enum.TryParse<CommunityRole>(request.Role, out var newRole))
+            throw new AppException($"Invalid role: {request.Role}", 400);
+
+        var callerMembership = await _communityRepository.GetMembershipAsync(communityId, callerUserId, ct)
+            ?? throw new ForbiddenException("You are not a member of this community.");
+
+        if (callerMembership.Role != CommunityRole.Owner)
+            throw new ForbiddenException("Only the owner can change member roles.");
+
+        var targetMembership = await _communityRepository.GetMembershipAsync(communityId, targetUserId, ct)
+            ?? throw new NotFoundException("Member not found in this community.");
+
+        if (callerUserId == targetUserId && newRole != CommunityRole.Owner)
+            throw new AppException("You cannot demote yourself. Transfer ownership first.", 400);
+
+        if (newRole == CommunityRole.Owner)
+        {
+            callerMembership.Role = CommunityRole.Moderator;
+            targetMembership.Role = CommunityRole.Owner;
+
+            _logger.LogInformation(
+                "Community Service - Ownership of community {CommunityId} transferred from {OldOwner} to {NewOwner}",
+                communityId, callerUserId, targetUserId);
+        }
+        else
+        {
+            targetMembership.Role = newRole;
+
+            _logger.LogInformation(
+                "Community Service -Role of user {TargetUserId} in community {CommunityId} changed to {NewRole} by {CallerId}",
+                targetUserId, communityId, newRole, callerUserId);
+        }
+
+        await _unitOfWork.SaveChangesAsync(ct);
+    }
 
     // Private helpers
     private static List<Channel> CreateDefaultChannels(Guid communityId)
