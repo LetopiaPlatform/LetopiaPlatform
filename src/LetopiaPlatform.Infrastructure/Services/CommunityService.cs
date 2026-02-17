@@ -180,10 +180,28 @@ public class CommunityService : ICommunityService
             "Community Service - User {UserId} joined community {CommunityId}", userId, communityId);
     }
 
+    public async Task LeaveAsync(
+        Guid communityId,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        var membership = await _communityRepository.GetMembershipAsync(communityId, userId, ct)
+            ?? throw new NotFoundException("You are not a member of this community.");
+        
+        if (membership.Role == CommunityRole.Owner)
+            throw new AppException("The owner cannot leave the community. Transfer ownership first.");
+        
+        _communityRepository.RemoveMember(membership);
+        await _unitOfWork.SaveChangesAsync(ct);
+        await _communityRepository.DecrementMemberCountAsync(communityId, ct);
+
+        _logger.LogInformation(
+            "Community Service - User {UserId} left community {CommunityId}", userId, communityId);
+    }
+
     public Task ChangeRoleAsync(Guid communityId, Guid targetUserId, ChangeRoleRequest request, Guid callerUserId, CancellationToken ct = default) => throw new NotImplementedException();
 
     public Task<PaginatedResult<MemberDto>> GetMembersAsync(Guid communityId, PaginatedQuery query, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task LeaveAsync(Guid communityId, Guid userId, CancellationToken ct = default) => throw new NotImplementedException();
 
     // Private helpers
     private static List<Channel> CreateDefaultChannels(Guid communityId)
