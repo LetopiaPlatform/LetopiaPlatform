@@ -54,14 +54,16 @@ internal sealed class CommunityRepository : ICommunityRepository
         
         if (!string.IsNullOrWhiteSpace(category))
         {
-            queryable = queryable.Where(c => c.TopicCategory == category);
+            queryable = queryable.Where(c =>
+                EF.Functions.ILike(c.TopicCategory, category));
         }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            queryable = queryable.Where(c => 
-                c.Name.Contains(search, StringComparison.OrdinalIgnoreCase) || 
-                c.Description.Contains(search, StringComparison.OrdinalIgnoreCase));
+            var pattern = $"%{search}%";
+            queryable = queryable.Where(c =>
+                EF.Functions.ILike(c.Name, pattern) ||
+                EF.Functions.ILike(c.Description, pattern));
         }
 
         queryable = sortBy?.ToLowerInvariant() switch
