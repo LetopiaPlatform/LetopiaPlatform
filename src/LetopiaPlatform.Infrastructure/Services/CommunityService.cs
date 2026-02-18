@@ -160,7 +160,10 @@ public class CommunityService : ICommunityService
     {
         var community = await _communityRepository.GetByIdAsync(communityId, ct)
             ?? throw new NotFoundException("Community", communityId);
-        
+
+        if (community.IsPrivate)
+            throw new ForbiddenException("This community is private. You need an invitation to join.");
+
         if (await _communityRepository.IsMemberAsync(communityId, userId, ct))
             throw new ConflictException("You are already a member of this community.");
 
