@@ -82,8 +82,8 @@ public class AuthService : IAuthService
     private static AuthResponse BuildAuthResponse(User user, TokenResult token)
     {
         return new AuthResponse(
-            jwtToken: token,
-            user: new UserDto(
+            JwtToken: token,
+            User: new UserDto(
                 Id: user.Id.ToString(),
                 Email: user.Email!,
                 FullName: user.FullName!,

@@ -1,8 +1,8 @@
-namespace LetopiaPlatform.Core.Community;
+namespace LetopiaPlatform.Core.DTOs.Community;
 
 /// <summary>
 /// Full community detail for single-resource endpoints.
-/// Extends <see cref="CommunitySummaryDto"/> with membership context and groups.
+/// Includes membership context and channel list.
 /// </summary>
 public sealed record CommunityDetailDto(
     Guid Id,
@@ -18,4 +18,5 @@ public sealed record CommunityDetailDto(
     DateTime CreatedAt,
     DateTime? LastPostAt,
     bool IsMember,
-    string? UserRole);
+    string? UserRole,
+    List<ChannelSummaryDto> Channels);
