@@ -129,7 +129,9 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
-
+        services.AddScoped<ICommunityRepository, CommunityRepository>();
+        services.AddScoped<ICommunityService, CommunityService>();
+        
         return services;
     }
 
