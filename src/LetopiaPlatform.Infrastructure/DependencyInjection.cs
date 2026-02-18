@@ -1,6 +1,8 @@
+using System.Text;
 using LetopiaPlatform.Core.AppSettings;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Interfaces;
+using LetopiaPlatform.Core.Interfaces.Repositories;
 using LetopiaPlatform.Core.Services.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Identity;
@@ -13,7 +15,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace LetopiaPlatform.Infrastructure;
 
@@ -29,7 +30,8 @@ public static class DependencyInjection
         services.AddJwtAuthentication(configuration, environment);
         services.AddAppServices();
         services.AddHealthCheckServices(configuration);
-
+        services.AddScoped<Core.Interfaces.Repositories.IProjectCategoryRepository, ProjectCategoryRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
         return services;
     }
 
@@ -129,7 +131,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
-
+        services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         return services;
     }
 
@@ -139,13 +141,13 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection string missing.");
-        
+
         services.AddHealthChecks()
             .AddNpgSql(
                 connectionString,
                 name: "postgresql",
                 tags: ["db", "ready"]);
-        
+
         return services;
     }
 }
