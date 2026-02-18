@@ -51,4 +51,6 @@ public class ProjectCategoryRepository : GenericRepository<ProjectCategory>, IPr
             .Include(pc => pc.Projects.Where(p => !p.IsFull))
             .FirstOrDefaultAsync(pc => pc.Slug == slug, ct);
     }
+
+
 }

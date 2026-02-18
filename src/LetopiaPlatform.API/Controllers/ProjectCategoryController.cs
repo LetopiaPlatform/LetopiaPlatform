@@ -1,5 +1,6 @@
 using LetopiaPlatform.API.AppMetaData;
 using LetopiaPlatform.API.Extensions;
+using LetopiaPlatform.Core.DTOs.ProjectCategory.Request;
 using LetopiaPlatform.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,29 @@ public class ProjectCategoryController : BaseController
         _projectCategoryService = projectCategoryService;
     }
 
+
+    // ── Create ──────────────────────────────────────────────────────────────
+    [HttpPost(Router.ProjectCategories.Create)]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request)
+    {
+        HttpContext.AddBusinessContext("action", "create_category");
+
+        var result = await _projectCategoryService.CreateCategoryAsync(request, HttpContext.RequestAborted);
+        return HandleResult(result);
+    }
+
+    // ── Update ──────────────────────────────────────────────────────────────
+    [HttpPut(Router.ProjectCategories.Update)]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateCategoryRequest request)
+    {
+        HttpContext.AddBusinessContext("action", "update_category");
+        HttpContext.AddBusinessContext("category_id", id.ToString());
+
+        var result = await _projectCategoryService.UpdateCategoryAsync(id, request, HttpContext.RequestAborted);
+        return HandleResult(result);
+    }
     // ── Get All Categories ───────────────────────────────────────────────────
     /// <summary>
     /// جلب جميع الأقسام مرتبة مع المشاريع المتاحة داخل كل قسم
@@ -73,4 +97,5 @@ public class ProjectCategoryController : BaseController
         var result = await _projectCategoryService.DeleteCategoryAsync(id, HttpContext.RequestAborted);
         return HandleResult(result);
     }
+
 }

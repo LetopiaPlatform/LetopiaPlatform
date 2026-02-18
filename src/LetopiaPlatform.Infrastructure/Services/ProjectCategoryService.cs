@@ -1,4 +1,5 @@
 using LetopiaPlatform.Core.Common;
+using LetopiaPlatform.Core.DTOs.ProjectCategory.Request;
 using LetopiaPlatform.Core.DTOs.ProjectCategory.Response;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Interfaces;
@@ -71,5 +72,50 @@ public class ProjectCategoryService : IProjectCategoryService
         Projects: category.Projects?.Select(p => new ProjectSummaryResponse(p.Id, p.Title)).ToList()
                   ?? new List<ProjectSummaryResponse>()
     );
+    // ── Create Category ──────────────────────────────────────────────────────
+    public async Task<Result<Guid>> CreateCategoryAsync(CreateCategoryRequest request, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Creating new category: {CategoryName}", request.Name);
+
+        // التأكد إن الـ Slug مش مستخدم قبل كدة
+        if (await _projectCategoryRepository.SlugExistsAsync(request.Slug, null, ct))
+        {
+            return Result<Guid>.Failure("This slug is already in use", 400);
+        }
+
+        var category = new ProjectCategory
+        {
+            Name = request.Name,
+            Slug = request.Slug,
+            IconUrl = request.IconUrl,
+            DisplayOrder = request.DisplayOrder
+        };
+
+        await _projectCategoryRepository.AddAsync(category);
+        return Result<Guid>.Success(category.Id);
+    }
+
+    // ── Update Category ──────────────────────────────────────────────────────
+    public async Task<Result<bool>> UpdateCategoryAsync(Guid id, UpdateCategoryRequest request, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Updating category ID: {CategoryId}", id);
+
+        var category = await _projectCategoryRepository.GetByIdAsync(id);
+        if (category is null) return Result<bool>.Failure("Category not found", 404);
+
+        // التأكد إن الـ Slug الجديد مش مستخدم في "قسم تاني" (باستثناء القسم الحالي)
+        if (await _projectCategoryRepository.SlugExistsAsync(request.Slug, id, ct))
+        {
+            return Result<bool>.Failure("This slug is already in use by another category", 400);
+        }
+
+        category.Name = request.Name;
+        category.Slug = request.Slug;
+        category.IconUrl = request.IconUrl;
+        category.DisplayOrder = request.DisplayOrder;
+
+        await _projectCategoryRepository.UpdateAsync(category);
+        return Result<bool>.Success(true);
+    }
 }
 
