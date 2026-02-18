@@ -27,6 +27,8 @@ public static class Router
     {
         public const string Prefix = $"{Rule}/categories";
         public const string GetCategories = $"{Prefix}";
+        public const string Create = $"{Prefix}/Create";
+        public const string Update = $"{Prefix}/Create/{{id:guid}}";
         public const string GetCategoryBySlug = $"{Prefix}/{{slug}}";
         public const string GetCategoryStats = $"{Prefix}/stats";
         public const string DeleteCategory = $"{Prefix}/{{id:guid}}";
