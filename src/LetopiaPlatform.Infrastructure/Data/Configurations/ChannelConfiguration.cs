@@ -46,7 +46,8 @@ public class ChannelConfiguration : IEntityTypeConfiguration<Channel>
             .HasColumnName("channel_type")
             .HasMaxLength(20)
             .HasConversion<string>()
-            .HasDefaultValue(ChannelType.Discussion);
+            .HasDefaultValue(ChannelType.Discussion)
+            .HasSentinel(ChannelType.Discussion);
 
         builder.Property(ch => ch.DisplayOrder)
             .HasColumnName("display_order")
