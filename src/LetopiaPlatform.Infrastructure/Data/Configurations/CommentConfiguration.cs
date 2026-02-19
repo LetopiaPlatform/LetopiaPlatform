@@ -35,7 +35,9 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(c => c.Upvotes)
             .HasColumnName("upvotes")
             .HasDefaultValue(0);
-
+        builder.Property(p => p.IsDeleted)
+          .HasColumnName("is_deleted")
+          .HasDefaultValue(false);
         // Indexes
         builder.HasIndex(c => c.PostId)
             .HasDatabaseName("ix_comments_post_id");
