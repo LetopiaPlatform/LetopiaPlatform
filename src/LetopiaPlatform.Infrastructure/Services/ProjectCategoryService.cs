@@ -4,6 +4,7 @@ using LetopiaPlatform.Core.DTOs.ProjectCategory.Response;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Core.Interfaces.Repositories;
+using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 namespace LetopiaPlatform.Infrastructure.Services;
 
@@ -11,11 +12,12 @@ public class ProjectCategoryService : IProjectCategoryService
 {
     private readonly IProjectCategoryRepository _projectCategoryRepository;
     private readonly ILogger<ProjectCategoryService> _logger;
-    public ProjectCategoryService(IProjectCategoryRepository projectCategoryRepository, ILogger<ProjectCategoryService> logger)
+    private readonly IFileStorageService _fileService;
+    public ProjectCategoryService(IProjectCategoryRepository projectCategoryRepository, ILogger<ProjectCategoryService> logger, IFileStorageService fileStorage)
     {
         _projectCategoryRepository = projectCategoryRepository;
         _logger = logger;
-
+        _fileService = fileStorage;
     }
 
     public async Task<Result<IEnumerable<CategoryResponse>>> GetAllOrderedAsync(CancellationToken ct = default)
@@ -82,12 +84,27 @@ public class ProjectCategoryService : IProjectCategoryService
         {
             return Result<Guid>.Failure("This slug is already in use", 400);
         }
+        //IConUrl
+        string? iconUrl = null;
+        if (request.IconUrl is not null)
+        {
+            var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories");
+
+            // تأكد من نجاح عملية الرفع
+            if (!uploadResult.IsSuccess)
+            {
+                return Result<Guid>.Failure("uploadIconUrlIsFail", uploadResult.StatusCode);
+            }
+
+            iconUrl = uploadResult.Value; // هنا بناخد الـ string المباشر من الـ Result
+        }
+
 
         var category = new ProjectCategory
         {
             Name = request.Name,
             Slug = request.Slug,
-            IconUrl = request.IconUrl,
+            IconUrl = iconUrl,
             DisplayOrder = request.DisplayOrder
         };
 
@@ -109,9 +126,24 @@ public class ProjectCategoryService : IProjectCategoryService
             return Result<bool>.Failure("This slug is already in use by another category", 400);
         }
 
+
+        // التعامل مع الـ UpdateIconUrl
+
+        if (request.IconUrl is not null)
+        {
+            // رفع الصورة الجديدة
+            var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories");
+
+            if (!uploadResult.IsSuccess)
+            {
+                return Result<bool>.Failure("uploadIconUrlIsFail", uploadResult.StatusCode);
+            }
+
+            category.IconUrl = uploadResult.Value;
+        }
+
         category.Name = request.Name;
         category.Slug = request.Slug;
-        category.IconUrl = request.IconUrl;
         category.DisplayOrder = request.DisplayOrder;
 
         await _projectCategoryRepository.UpdateAsync(category);

@@ -21,7 +21,7 @@ public class ProjectCategoryController : BaseController
     // ── Create ──────────────────────────────────────────────────────────────
     [HttpPost(Router.ProjectCategories.Create)]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request)
+    public async Task<IActionResult> Create([FromForm] CreateCategoryRequest request)
     {
         HttpContext.AddBusinessContext("action", "create_category");
 
@@ -32,7 +32,7 @@ public class ProjectCategoryController : BaseController
     // ── Update ──────────────────────────────────────────────────────────────
     [HttpPut(Router.ProjectCategories.Update)]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateCategoryRequest request)
+    public async Task<IActionResult> Update([FromRoute] Guid id, [FromForm] UpdateCategoryRequest request)
     {
         HttpContext.AddBusinessContext("action", "update_category");
         HttpContext.AddBusinessContext("category_id", id.ToString());
