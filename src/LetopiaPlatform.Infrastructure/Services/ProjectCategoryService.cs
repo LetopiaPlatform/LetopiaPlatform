@@ -93,7 +93,7 @@ public class ProjectCategoryService : IProjectCategoryService
             // تأكد من نجاح عملية الرفع
             if (!uploadResult.IsSuccess)
             {
-                return Result<Guid>.Failure("uploadIconUrlIsFail", uploadResult.StatusCode);
+                return Result<Guid>.Failure("Failed to upload icon", uploadResult.StatusCode);
             }
 
             iconUrl = uploadResult.Value; // هنا بناخد الـ string المباشر من الـ Result
@@ -136,7 +136,12 @@ public class ProjectCategoryService : IProjectCategoryService
 
             if (!uploadResult.IsSuccess)
             {
-                return Result<bool>.Failure("uploadIconUrlIsFail", uploadResult.StatusCode);
+                return Result<bool>.Failure("Failed to upload icon", uploadResult.StatusCode);
+            }
+
+            if (!string.IsNullOrEmpty(category.IconUrl))
+            {
+                await _fileService.DeleteAsync(category.IconUrl);
             }
 
             category.IconUrl = uploadResult.Value;
