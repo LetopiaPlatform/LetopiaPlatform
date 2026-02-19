@@ -268,6 +268,50 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("ProjectMember");
                 });
 
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Reaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("ReactionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("reaction_type");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<string>("TargetType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("target_type");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetType", "TargetId")
+                        .HasDatabaseName("ix_reactions_target");
+
+                    b.HasIndex("UserId", "TargetType", "TargetId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_reactions_user_target");
+
+                    b.ToTable("reactions", (string)null);
+                });
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.UserCommunity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -393,6 +437,218 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 b.HasKey("UserId", "RoleId");
                 b.ToTable("AspNetUserRoles", (string)null);
             });
+
+
+
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId", "LoginProvider", "Name");
+
+                    b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Channel", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
+                        .WithMany("Channels")
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Channel", "Parent")
+                        .WithMany("SubChannels")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Community");
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Comment", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Post", "Post")
+                        .WithMany("Comments")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Community", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Category", "Category")
+                        .WithMany("Communities")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Channel", "Channel")
+                        .WithMany("Posts")
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
+                        .WithMany("Posts")
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Channel");
+
+                    b.Navigation("Community");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Reaction", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.UserCommunity", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
+                        .WithMany("Members")
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Community");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Category", b =>
+                {
+                    b.Navigation("Communities");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Channel", b =>
+                {
+                    b.Navigation("Posts");
+
+                    b.Navigation("SubChannels");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Community", b =>
+                {
+                    b.Navigation("Channels");
+
+                    b.Navigation("Members");
+
+                    b.Navigation("Posts");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
+                {
+                    b.Navigation("Comments");
+                });
 
 #pragma warning restore 612, 618
         }
