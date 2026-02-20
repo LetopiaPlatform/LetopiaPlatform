@@ -21,7 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProjectCategory> ProjectCategorys => Set<ProjectCategory>();
-
+    public DbSet<Channel> Channels => Set<Channel>();
+    
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

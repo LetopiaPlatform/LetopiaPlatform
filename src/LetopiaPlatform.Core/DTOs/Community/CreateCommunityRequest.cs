@@ -1,4 +1,4 @@
-namespace LetopiaPlatform.Core.Community;
+namespace LetopiaPlatform.Core.DTOs.Community;
 
 /// <summary>
 /// Request DTO for creating a new community.

@@ -23,6 +23,7 @@ public static class Router
         public const string UploadFile = $"{Prefix}/me/files";
         public const string DeleteFile = $"{Prefix}/me/files";
     }
+  
     public static class ProjectCategories
     {
         public const string Prefix = $"{Rule}/categories";
@@ -32,5 +33,18 @@ public static class Router
         public const string GetCategoryBySlug = $"{Prefix}/{{slug}}";
         public const string GetCategoryStats = $"{Prefix}/stats";
         public const string DeleteCategory = $"{Prefix}/{{id:guid}}";
+    }
+    
+    public static class Communities
+    {
+        public const string Prefix = $"{Rule}/communities";
+        public const string Create = Prefix;
+        public const string List = Prefix;
+        public const string GetBySlug = $"{Prefix}/{{slug}}";
+        public const string Update = $"{Prefix}/{{id}}";
+        public const string Join = $"{Prefix}/{{id}}/join";
+        public const string Leave = $"{Prefix}/{{id}}/leave";
+        public const string Members = $"{Prefix}/{{id}}/members";
+        public const string ChangeRole = $"{Prefix}/{{id}}/members/{{userId}}/role";
     }
 }

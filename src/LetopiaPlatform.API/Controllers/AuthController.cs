@@ -36,7 +36,7 @@ public class AuthController : BaseController
 
         if (result.IsSuccess)
         {
-            HttpContext.AddBusinessContext("new_user_id", result.Value!.user.Id);
+            HttpContext.AddBusinessContext("new_user_id", result.Value!.User.Id);
         }
 
         return HandleResult(result);
@@ -56,7 +56,7 @@ public class AuthController : BaseController
 
         if (result.IsSuccess)
         {
-            HttpContext.AddBusinessContext("login_user_id", result.Value!.user.Id);
+            HttpContext.AddBusinessContext("login_user_id", result.Value!.User.Id);
         }
         
         return HandleResult(result);

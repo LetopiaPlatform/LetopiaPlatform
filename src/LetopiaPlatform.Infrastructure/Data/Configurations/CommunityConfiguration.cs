@@ -94,5 +94,9 @@ public class CommunityConfiguration : IEntityTypeConfiguration<Community>
         builder.HasMany(c => c.Members)
             .WithOne(uc => uc.Community)
             .HasForeignKey(uc => uc.CommunityId);
+
+        builder.HasMany(c => c.Channels)
+            .WithOne(ch => ch.Community)
+            .HasForeignKey(ch => ch.CommunityId);
     }
 }

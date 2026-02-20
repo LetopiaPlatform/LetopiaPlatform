@@ -8,5 +8,5 @@ public enum CommunityRole
 {
     Member,
     Moderator,
-    Admin
+    Owner
 }

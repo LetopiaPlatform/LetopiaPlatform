@@ -1,8 +1,8 @@
 namespace LetopiaPlatform.Core.DTOs.Auth.Response;
 
 public record AuthResponse(
-  TokenResult jwtToken,
-  UserDto user
+  TokenResult JwtToken,
+  UserDto User
 );
 
 public record TokenResult(
