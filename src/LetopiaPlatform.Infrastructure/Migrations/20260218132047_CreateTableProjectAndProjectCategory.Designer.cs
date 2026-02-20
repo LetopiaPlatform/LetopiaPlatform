@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LetopiaPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260218132047_CreateTableProjectAndProjectCategory")]
+    partial class CreateTableProjectAndProjectCategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,104 +25,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Channel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<bool>("AllowComments")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("allow_comments");
-
-                    b.Property<bool>("AllowMemberPosts")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("allow_member_posts");
-
-                    b.Property<string>("ChannelType")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasDefaultValue("Discussion")
-                        .HasColumnName("channel_type");
-
-                    b.Property<Guid>("CommunityId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("community_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("description");
-
-                    b.Property<int>("DisplayOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("display_order");
-
-                    b.Property<bool>("IsArchived")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_archived");
-
-                    b.Property<bool>("IsDefault")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_default");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("name");
-
-                    b.Property<Guid?>("ParentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("parent_id");
-
-                    b.Property<int>("PostCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("post_count");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("slug");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CommunityId")
-                        .HasDatabaseName("ix_channels_community_id");
-
-                    b.HasIndex("ParentId");
-
-                    b.HasIndex("CommunityId", "ParentId", "Slug")
-                        .IsUnique()
-                        .HasDatabaseName("ix_channels_community_parent_slug");
-
-                    b.ToTable("channels", (string)null);
-                });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Comment", b =>
                 {
@@ -259,6 +164,59 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasDatabaseName("ix_communities_topic_category");
 
                     b.ToTable("communities", (string)null);
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Group", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CommunityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("community_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<int>("DisplayOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("PostCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("post_count");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("slug");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommunityId", "Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_groups_community_slug");
+
+                    b.ToTable("groups", (string)null);
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.Role", b =>
@@ -413,10 +371,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("author_id");
 
-                    b.Property<Guid>("ChannelId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("channel_id");
-
                     b.Property<int>("CommentCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -435,6 +389,10 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<Guid?>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
@@ -483,11 +441,11 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.HasIndex("AuthorId")
                         .HasDatabaseName("ix_posts_author_id");
 
-                    b.HasIndex("ChannelId")
-                        .HasDatabaseName("ix_posts_channel_id");
-
                     b.HasIndex("CommunityId")
                         .HasDatabaseName("ix_posts_community_id");
+
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_posts_group_id");
 
                     b.HasIndex("CommunityId", "CreatedAt")
                         .IsDescending(false, true)
@@ -757,24 +715,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Channel", b =>
-                {
-                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
-                        .WithMany("Channels")
-                        .HasForeignKey("CommunityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LetopiaPlatform.Core.Entities.Channel", "Parent")
-                        .WithMany("SubChannels")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Community");
-
-                    b.Navigation("Parent");
-                });
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Comment", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "Author")
@@ -805,17 +745,22 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Group", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
+                        .WithMany("Groups")
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Community");
+                });
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("LetopiaPlatform.Core.Entities.Channel", "Channel")
-                        .WithMany("Posts")
-                        .HasForeignKey("ChannelId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -825,11 +770,16 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("LetopiaPlatform.Core.Entities.Group", "Group")
+                        .WithMany("Posts")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Author");
 
-                    b.Navigation("Channel");
-
                     b.Navigation("Community");
+
+                    b.Navigation("Group");
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Project", b =>
@@ -921,19 +871,17 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Channel", b =>
-                {
-                    b.Navigation("Posts");
-
-                    b.Navigation("SubChannels");
-                });
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Community", b =>
                 {
-                    b.Navigation("Channels");
+                    b.Navigation("Groups");
 
                     b.Navigation("Members");
 
+                    b.Navigation("Posts");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Group", b =>
+                {
                     b.Navigation("Posts");
                 });
 

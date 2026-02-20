@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LetopiaPlatform.Infrastructure.Repositories;
 
-internal sealed class GenericRepository<T> : IGenericRepository<T> where T : class
+public class GenericRepository<T> : IGenericRepository<T> where T : class
 {
     private readonly ApplicationDbContext _context;
     private readonly DbSet<T> _dbSet;
