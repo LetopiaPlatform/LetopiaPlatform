@@ -20,6 +20,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<UserCommunity> UserCommunities => Set<UserCommunity>();
     public DbSet<Channel> Channels => Set<Channel>();
+    public DbSet<Category> Categories => Set<Category>();
     
     protected override void OnModelCreating(ModelBuilder builder)
     {
