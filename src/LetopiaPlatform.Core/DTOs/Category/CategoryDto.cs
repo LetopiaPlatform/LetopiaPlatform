@@ -1,4 +1,4 @@
-namespace LetopiaPlatform.Core.DTOs;
+namespace LetopiaPlatform.Core.DTOs.Category;
 
 /// <summary>
 /// Read-only category representation for API responses.
