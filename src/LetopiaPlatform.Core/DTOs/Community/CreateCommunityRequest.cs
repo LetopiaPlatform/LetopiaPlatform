@@ -13,4 +13,3 @@ public sealed record CreateCommunityRequest(
     bool IsPrivate = false,
     IFormFile? CoverImage = null!,
     List<string>? Rules = null);
-    IFormFile? CoverImage = null!);
