@@ -11,6 +11,7 @@ public sealed record CommunitySummaryDto(
     Guid CategoryId,
     string CategoryName,
     string? IconUrl,
+    string? CoverImageUrl,
     int MemberCount,
     int PostCount,
     bool IsPrivate,

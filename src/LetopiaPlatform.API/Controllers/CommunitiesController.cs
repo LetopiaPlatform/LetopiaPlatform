@@ -27,7 +27,7 @@ public class CommunitiesController : BaseController
     [HttpPost(Router.Communities.Create)]
     [ProducesResponseType(typeof(ApiResponse<CommunityDetailDto>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(
-        [FromBody] CreateCommunityRequest request,
+        [FromForm] CreateCommunityRequest request,
         CancellationToken ct)
     {
         HttpContext.AddBusinessContext("action", "create_community");
@@ -90,7 +90,7 @@ public class CommunitiesController : BaseController
     [ProducesResponseType(typeof(ApiResponse<CommunityDetailDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(
         Guid id,
-        [FromBody] UpdateCommunityRequest request,
+        [FromForm] UpdateCommunityRequest request,
         CancellationToken ct)
     {
         HttpContext.AddBusinessContext("action", "update_community");

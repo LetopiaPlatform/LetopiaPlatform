@@ -10,8 +10,6 @@ public class Community : AuditableEntity
     public required string Description { get; set; }
     public Guid CategoryId { get; set; }
     public Category Category { get; set; } = null!;
-    public string? IconUrl { get; set; }
-
     public Guid CreatedBy { get; set; }
     public User CreatedByUser { get; set; } = null!;
 
