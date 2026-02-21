@@ -12,15 +12,18 @@ namespace LetopiaPlatform.Infrastructure.Services;
 public class CommunityService : ICommunityService
 {
     private readonly ICommunityRepository _communityRepository;
+    private readonly ICategoryService _categoryService;
     private readonly IUnitOfWork<ApplicationDbContext> _unitOfWork;
     private readonly ILogger<CommunityService> _logger;
     
     public CommunityService(
         ICommunityRepository communityRepository,
+        ICategoryService categoryService,
         IUnitOfWork<ApplicationDbContext> unitOfWork,
         ILogger<CommunityService> logger)
     {
         _communityRepository = communityRepository;
+        _categoryService = categoryService;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -30,6 +33,9 @@ public class CommunityService : ICommunityService
         Guid userId,
         CancellationToken ct = default)
     {
+        // Validate category exists (delegates to CategoryService)
+        await _categoryService.GetByIdAsync(request.CategoryId, ct);
+
         var slug = await SlugGenerator.GenerateUniqueAsync(
             request.Name,
             async candidate => await _communityRepository.SlugExistsAsync(candidate, ct));

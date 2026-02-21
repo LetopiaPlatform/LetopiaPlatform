@@ -99,6 +99,14 @@ public class CategoryService : ICategoryService
         _logger.LogInformation("Deleted {Type} category '{Name}' (slug: {Slug})", category.Type, category.Name, category.Slug);
     }
 
+    public async Task<CategoryDto> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var category = await _categoryRepository.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException("Category", id);
+
+        return MapToDto(category);
+    }
+
     public async Task<IEnumerable<CategoryDto>> GetByTypeAsync(
         string type, CancellationToken ct = default)
     {
