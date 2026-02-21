@@ -20,4 +20,5 @@ public sealed record CommunityDetailDto(
     DateTime? LastPostAt,
     bool IsMember,
     string? UserRole,
+    List<string> Rules,
     List<ChannelSummaryDto> Channels);
