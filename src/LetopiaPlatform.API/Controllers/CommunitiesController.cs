@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LetopiaPlatform.API.AppMetaData;
 using LetopiaPlatform.API.Common;
 using LetopiaPlatform.API.Extensions;
@@ -33,7 +34,7 @@ public class CommunitiesController : BaseController
         HttpContext.AddBusinessContext("action", "create_community");
         HttpContext.AddBusinessContext("community_name", request.Name);
 
-        var result = await _communityService.CreateAsync(request, GetUserId(), ct);
+        var result = await _communityService.CreateAsync(request, GetUserId(User), ct);
 
         HttpContext.AddBusinessContext("community_id", result.Id);
         HttpContext.AddBusinessContext("community_slug", result.Slug);
@@ -57,10 +58,26 @@ public class CommunitiesController : BaseController
     {
         HttpContext.AddBusinessContext("action", "list_communities");
 
-        var result = await _communityService.ListAsync(query, category, search, sortBy, ct);
+        Guid? currentUserId = User.Identity?.IsAuthenticated == true ? GetUserId(User) : null;
+
+        var result = await _communityService.ListAsync(query, category, search, sortBy, currentUserId, ct);
 
         return Ok(ApiResponse<PaginatedResult<CommunitySummaryDto>>
             .SuccessResponse(result));
+    }
+
+    /// <summary>
+    /// List all communities the current user has joined.
+    /// </summary>
+    [HttpGet(Router.Communities.MyCommunities)]
+    [ProducesResponseType(typeof(ApiResponse<List<JoinedCommunitySummaryDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> MyCommunities(CancellationToken ct)
+    {
+        HttpContext.AddBusinessContext("action", "get_my_communities");
+
+        var result = await _communityService.GetJoinedCommunitiesAsync(GetUserId(User), ct);
+
+        return Ok(ApiResponse<List<JoinedCommunitySummaryDto>>.SuccessResponse(result));
     }
 
     /// <summary>
@@ -76,7 +93,7 @@ public class CommunitiesController : BaseController
         HttpContext.AddBusinessContext("action", "get_community");
         HttpContext.AddBusinessContext("community_slug", slug);
 
-        Guid? currentUserId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+        Guid? currentUserId = User.Identity?.IsAuthenticated == true ? GetUserId(User) : null;
 
         var result = await _communityService.GetBySlugAsync(slug, currentUserId, ct);
 
@@ -96,7 +113,7 @@ public class CommunitiesController : BaseController
         HttpContext.AddBusinessContext("action", "update_community");
         HttpContext.AddBusinessContext("community_id", id);
 
-        var result = await _communityService.UpdateAsync(id, request, GetUserId(), ct);
+        var result = await _communityService.UpdateAsync(id, request, GetUserId(User), ct);
 
         return Ok(ApiResponse<CommunityDetailDto>.SuccessResponse(result, "Community updated successfully"));
     }
@@ -111,7 +128,7 @@ public class CommunitiesController : BaseController
         HttpContext.AddBusinessContext("action", "join_community");
         HttpContext.AddBusinessContext("community_id", id);
 
-        await _communityService.JoinAsync(id, GetUserId(), ct);
+        await _communityService.JoinAsync(id, GetUserId(User), ct);
 
         return NoContent();
     }
@@ -126,7 +143,7 @@ public class CommunitiesController : BaseController
         HttpContext.AddBusinessContext("action", "leave_community");
         HttpContext.AddBusinessContext("community_id", id);
 
-        await _communityService.LeaveAsync(id, GetUserId(), ct);
+        await _communityService.LeaveAsync(id, GetUserId(User), ct);
 
         return NoContent();
     }
@@ -167,8 +184,13 @@ public class CommunitiesController : BaseController
         HttpContext.AddBusinessContext("target_user_id", userId);
         HttpContext.AddBusinessContext("new_role", request.Role);
 
-        await _communityService.ChangeRoleAsync(id, userId, request, GetUserId(), ct);
+        await _communityService.ChangeRoleAsync(id, userId, request, GetUserId(User), ct);
 
         return NoContent();
+    }
+
+    private static Guid GetUserId(ClaimsPrincipal claimsPrincipal)
+    {
+        return Guid.Parse(claimsPrincipal.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
     }
 }

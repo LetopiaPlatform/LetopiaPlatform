@@ -27,6 +27,7 @@ public static class Router
     public static class Communities
     {
         public const string Prefix = $"{Rule}/communities";
+        public const string MyCommunities = $"{Prefix}/me";
         public const string Create = Prefix;
         public const string List = Prefix;
         public const string GetBySlug = $"{Prefix}/{{slug}}";
