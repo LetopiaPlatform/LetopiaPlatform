@@ -61,4 +61,9 @@ public interface ICategoryRepository
     /// </summary>
     /// <param name="category">The category entity to delete.</param>
     void Delete(Category category);
+
+    /// <summary>
+    /// Checks if a category has any dependent communities or projects.
+    /// </summary>
+    Task<bool> HasDependentsAsync(Guid categoryId, CancellationToken ct = default);
 }

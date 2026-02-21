@@ -88,10 +88,23 @@ public class CategoryService : ICategoryService
         var category = await _categoryRepository.GetByIdAsync(id, ct)
             ?? throw new NotFoundException("Category", id);
 
+        if (await _categoryRepository.HasDependentsAsync(id, ct))
+        {
+            throw new ConflictException("Cannot delete a category that has communities linked to it.");
+        }
+
         _categoryRepository.Delete(category);
         await _unitOfWork.SaveChangesAsync(ct);
 
         _logger.LogInformation("Deleted {Type} category '{Name}' (slug: {Slug})", category.Type, category.Name, category.Slug);
+    }
+
+    public async Task<CategoryDto> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var category = await _categoryRepository.GetByIdAsync(id, ct)
+            ?? throw new NotFoundException("Category", id);
+
+        return MapToDto(category);
     }
 
     public async Task<IEnumerable<CategoryDto>> GetByTypeAsync(
@@ -111,7 +124,6 @@ public class CategoryService : ICategoryService
 
         return MapToDto(category);
     }
-
     private static CategoryDto MapToDto(Category category)
     {
         return new CategoryDto(

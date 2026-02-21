@@ -17,10 +17,9 @@ public class CreateCommunityRequestValidator : AbstractValidator<CreateCommunity
             .MinimumLength(10).WithMessage("Description must be at least 10 characters.")
             .MaximumLength(2000).WithMessage("Description must be at most 2000 characters.");
         
-        RuleFor(x => x.TopicCategory)
-            .NotEmpty().WithMessage("Topic category is required.")
-            .MaximumLength(50).WithMessage("Topic category must be at most 50 characters.");
-        
+        RuleFor(x => x.CategoryId)
+            .NotEmpty().WithMessage("Category is required.");
+
         RuleFor(x => x.IconUrl)
             .Must(BeValidUrl).WithMessage("Icon URL must be a valid URL.")
             .When(x => !string.IsNullOrEmpty(x.IconUrl));

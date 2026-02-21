@@ -43,6 +43,14 @@ public interface ICategoryService
     Task<IEnumerable<CategoryDto>> GetByTypeAsync(string type, CancellationToken ct = default);
     
     /// <summary>
+    /// Gets a category by its unique identifier.
+    /// </summary>
+    /// <param name="id">The category ID.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The category DTO.</returns>
+    Task<CategoryDto> GetByIdAsync(Guid id, CancellationToken ct = default);
+    
+    /// <summary>
     /// Gets a category by its slug and type.
     /// </summary>
     /// <param name="slug">The category slug.</param>

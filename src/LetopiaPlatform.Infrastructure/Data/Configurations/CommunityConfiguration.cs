@@ -34,9 +34,8 @@ public class CommunityConfiguration : IEntityTypeConfiguration<Community>
             .HasColumnName("description")
             .IsRequired();
 
-        builder.Property(c => c.TopicCategory)
-            .HasColumnName("topic_category")
-            .HasMaxLength(50)
+        builder.Property(c => c.CategoryId)
+            .HasColumnName("category_id")
             .IsRequired();
 
         builder.Property(c => c.IconUrl)
@@ -75,8 +74,8 @@ public class CommunityConfiguration : IEntityTypeConfiguration<Community>
             .IsUnique()
             .HasDatabaseName("ix_communities_slug");
 
-        builder.HasIndex(c => c.TopicCategory)
-            .HasDatabaseName("ix_communities_topic_category");
+        builder.HasIndex(c => c.CategoryId)
+            .HasDatabaseName("ix_communities_category_id");
 
         builder.HasIndex(c => c.CreatedBy)
             .HasDatabaseName("ix_communities_created_by");

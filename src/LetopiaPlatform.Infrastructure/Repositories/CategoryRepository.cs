@@ -52,4 +52,9 @@ internal sealed class CategoryRepository : ICategoryRepository
     public void Add(Category category) => _dbContext.Categories.Add(category);
     public void Update(Category category) => _dbContext.Categories.Update(category);
     public void Delete(Category category) => _dbContext.Categories.Remove(category);
+    public async Task<bool> HasDependentsAsync(Guid categoryId, CancellationToken ct = default)
+    {
+        return await _dbContext.Communities
+            .AnyAsync(c => c.CategoryId == categoryId && c.IsActive, ct);
+    }
 }

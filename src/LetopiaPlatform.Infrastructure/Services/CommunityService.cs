@@ -12,15 +12,18 @@ namespace LetopiaPlatform.Infrastructure.Services;
 public class CommunityService : ICommunityService
 {
     private readonly ICommunityRepository _communityRepository;
+    private readonly ICategoryService _categoryService;
     private readonly IUnitOfWork<ApplicationDbContext> _unitOfWork;
     private readonly ILogger<CommunityService> _logger;
     
     public CommunityService(
         ICommunityRepository communityRepository,
+        ICategoryService categoryService,
         IUnitOfWork<ApplicationDbContext> unitOfWork,
         ILogger<CommunityService> logger)
     {
         _communityRepository = communityRepository;
+        _categoryService = categoryService;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -30,6 +33,9 @@ public class CommunityService : ICommunityService
         Guid userId,
         CancellationToken ct = default)
     {
+        // Validate category exists (delegates to CategoryService)
+        await _categoryService.GetByIdAsync(request.CategoryId, ct);
+
         var slug = await SlugGenerator.GenerateUniqueAsync(
             request.Name,
             async candidate => await _communityRepository.SlugExistsAsync(candidate, ct));
@@ -43,7 +49,7 @@ public class CommunityService : ICommunityService
                 Name = request.Name,
                 Slug = slug,
                 Description = request.Description,
-                TopicCategory = request.TopicCategory,
+                CategoryId = request.CategoryId,
                 IconUrl = request.IconUrl,
                 IsPrivate = request.IsPrivate,
                 CreatedBy = userId,
@@ -68,6 +74,9 @@ public class CommunityService : ICommunityService
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync();
+
+            // Load the Category navigation for the response
+            community = await _communityRepository.GetByIdAsync(community.Id, ct) ?? community;
 
             _logger.LogInformation(
                 "Community Service - Community '{CommunityName}' (slug: {Slug}) created by user {UserId}",
@@ -320,7 +329,8 @@ public class CommunityService : ICommunityService
         Community c, bool isMember, string? userRole, List<ChannelSummaryDto> channels)
     {
         return new CommunityDetailDto(
-            c.Id, c.Name, c.Slug, c.Description, c.TopicCategory,
+            c.Id, c.Name, c.Slug, c.Description,
+            c.CategoryId, c.Category?.Name ?? string.Empty,
             c.IconUrl, c.CoverImageUrl,
             c.MemberCount, c.PostCount, c.IsPrivate,
             c.CreatedAt, c.LastPostAt,
