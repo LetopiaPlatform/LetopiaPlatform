@@ -11,4 +11,6 @@ public sealed record CreateCommunityRequest(
     string Description,
     Guid CategoryId,
     bool IsPrivate = false,
+    IFormFile? CoverImage = null!,
+    List<string>? Rules = null);
     IFormFile? CoverImage = null!);
