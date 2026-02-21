@@ -28,6 +28,7 @@ public interface ICommunityService
     /// <param name="category">The category to filter communities by.</param>
     /// <param name="search">The search term to filter communities by name or description.</param>
     /// <param name="sortBy">The field to sort the communities by.</param>
+    /// <param name="currentUserId">The ID of the current user, if available, to include membership context in the results.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A paginated list of community summaries.</returns>
     Task<PaginatedResult<CommunitySummaryDto>> ListAsync(
@@ -35,6 +36,7 @@ public interface ICommunityService
         string? category = null,
         string? search = null,
         string? sortBy = null,
+        Guid? currentUserId = null,
         CancellationToken ct = default);
 
     /// <summary>
@@ -108,5 +110,15 @@ public interface ICommunityService
         Guid targetUserId,
         ChangeRoleRequest request,
         Guid callerUserId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves all communities the current user has joined.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A list of joined community summaries.</returns>
+    Task<List<JoinedCommunitySummaryDto>> GetJoinedCommunitiesAsync(
+        Guid userId,
         CancellationToken ct = default);
 }
