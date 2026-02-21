@@ -131,7 +131,8 @@ public static class DependencyInjection
         services.AddScoped<IFileStorageService, FileStorageService>();
         services.AddScoped<ICommunityRepository, CommunityRepository>();
         services.AddScoped<ICommunityService, CommunityService>();
-        
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<ICategoryService, CategoryService>();
         return services;
     }
 
