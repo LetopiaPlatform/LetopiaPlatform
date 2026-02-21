@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace LetopiaPlatform.Core.DTOs.Community;
 
 /// <summary>
@@ -7,6 +9,5 @@ namespace LetopiaPlatform.Core.DTOs.Community;
 public sealed record UpdateCommunityRequest(
     string? Name,
     string? Description,
-    string? IconUrl,
-    string? CoverImageUrl,
+    IFormFile? CoverImage,
     bool? IsPrivate);

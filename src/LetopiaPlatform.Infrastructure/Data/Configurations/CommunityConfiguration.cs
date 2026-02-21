@@ -38,10 +38,6 @@ public class CommunityConfiguration : IEntityTypeConfiguration<Community>
             .HasColumnName("category_id")
             .IsRequired();
 
-        builder.Property(c => c.IconUrl)
-            .HasColumnName("icon_url")
-            .HasMaxLength(500);
-
         builder.Property(c => c.CreatedBy)
             .HasColumnName("created_by")
             .IsRequired();

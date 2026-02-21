@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace LetopiaPlatform.Core.DTOs.Community;
 
 /// <summary>
@@ -9,4 +11,4 @@ public sealed record CreateCommunityRequest(
     string Description,
     Guid CategoryId,
     bool IsPrivate = false,
-    string? IconUrl = null);
+    IFormFile? CoverImage = null!);

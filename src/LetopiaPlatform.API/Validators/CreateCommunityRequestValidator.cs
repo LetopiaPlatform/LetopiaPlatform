@@ -5,6 +5,9 @@ namespace LetopiaPlatform.API.Validators;
 
 public class CreateCommunityRequestValidator : AbstractValidator<CreateCommunityRequest>
 {
+    private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
+    private const int MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
+
     public CreateCommunityRequestValidator()
     {
         RuleFor(x => x.Name)
@@ -20,14 +23,11 @@ public class CreateCommunityRequestValidator : AbstractValidator<CreateCommunity
         RuleFor(x => x.CategoryId)
             .NotEmpty().WithMessage("Category is required.");
 
-        RuleFor(x => x.IconUrl)
-            .Must(BeValidUrl).WithMessage("Icon URL must be a valid URL.")
-            .When(x => !string.IsNullOrEmpty(x.IconUrl));
-    }
-
-    private static bool BeValidUrl(string? url)
-    {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&
-               (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        RuleFor(x => x.CoverImage)
+            .Must(file => file!.Length <= MaxFileSizeBytes)
+                .WithMessage("Cover image must be at most 5 MB.")
+            .Must(file => AllowedExtensions.Contains(Path.GetExtension(file!.FileName).ToLowerInvariant()))
+                .WithMessage("Cover image must be a .jpg, .jpeg, .png, or .webp file.")
+            .When(x => x.CoverImage is not null);
     }
 }

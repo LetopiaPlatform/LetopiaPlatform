@@ -4,6 +4,7 @@ using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Enums;
 using LetopiaPlatform.Core.Exceptions;
 using LetopiaPlatform.Core.Interfaces;
+using LetopiaPlatform.Core.Services.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.Extensions.Logging;
 
@@ -14,17 +15,20 @@ public class CommunityService : ICommunityService
     private readonly ICommunityRepository _communityRepository;
     private readonly ICategoryService _categoryService;
     private readonly IUnitOfWork<ApplicationDbContext> _unitOfWork;
+    private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<CommunityService> _logger;
     
     public CommunityService(
         ICommunityRepository communityRepository,
         ICategoryService categoryService,
         IUnitOfWork<ApplicationDbContext> unitOfWork,
+        IFileStorageService fileStorageService,
         ILogger<CommunityService> logger)
     {
         _communityRepository = communityRepository;
         _categoryService = categoryService;
         _unitOfWork = unitOfWork;
+        _fileStorageService = fileStorageService;
         _logger = logger;
     }
 
@@ -40,6 +44,13 @@ public class CommunityService : ICommunityService
             request.Name,
             async candidate => await _communityRepository.SlugExistsAsync(candidate, ct));
         
+        string? coverImageUrl = null;
+        if (request.CoverImage is not null)
+        {
+            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers");
+            coverImageUrl = uploadResult.Value;
+        }
+
         await _unitOfWork.BeginTransactionAsync();
 
         try
@@ -50,7 +61,7 @@ public class CommunityService : ICommunityService
                 Slug = slug,
                 Description = request.Description,
                 CategoryId = request.CategoryId,
-                IconUrl = request.IconUrl,
+                CoverImageUrl = coverImageUrl,
                 IsPrivate = request.IsPrivate,
                 CreatedBy = userId,
                 MemberCount = 1
@@ -148,9 +159,19 @@ public class CommunityService : ICommunityService
         
         if (request.Name is not null) community.Name = request.Name;
         if (request.Description is not null) community.Description = request.Description;
-        if (request.IconUrl is not null) community.IconUrl = request.IconUrl;
-        if (request.CoverImageUrl is not null) community.CoverImageUrl = request.CoverImageUrl;
         if (request.IsPrivate.HasValue) community.IsPrivate = request.IsPrivate.Value;
+
+        if (request.CoverImage is not null)
+        {
+            // Delete old cover if exists
+            if (!string.IsNullOrEmpty(community.CoverImageUrl))
+            {
+                await _fileStorageService.DeleteAsync(community.CoverImageUrl);
+            }
+
+            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers");
+            community.CoverImageUrl = uploadResult.Value;
+        }
 
         await _unitOfWork.SaveChangesAsync(ct);
 
@@ -330,8 +351,7 @@ public class CommunityService : ICommunityService
     {
         return new CommunityDetailDto(
             c.Id, c.Name, c.Slug, c.Description,
-            c.CategoryId, c.Category?.Name ?? string.Empty,
-            c.IconUrl, c.CoverImageUrl,
+            c.CategoryId, c.Category?.Name ?? string.Empty, c.Category?.IconUrl, c.CoverImageUrl,
             c.MemberCount, c.PostCount, c.IsPrivate,
             c.CreatedAt, c.LastPostAt,
             isMember, userRole, channels);
