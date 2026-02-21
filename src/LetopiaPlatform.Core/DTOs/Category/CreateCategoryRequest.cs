@@ -7,5 +7,4 @@ namespace LetopiaPlatform.Core.DTOs.Category;
 public sealed record CreateCategoryRequest(
     string Name,
     string Type,
-    string? IconUrl = null,
-    int DisplayOrder = 0);
+    string? IconUrl = null);
