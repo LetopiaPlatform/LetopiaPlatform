@@ -19,6 +19,7 @@ internal sealed class CommunityRepository : ICommunityRepository
     public async Task<Community?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _dbContext.Communities
+            .Include(c => c.Category)
             .FirstOrDefaultAsync(c => c.Id == id && c.IsActive, ct);
     }
 
@@ -26,6 +27,7 @@ internal sealed class CommunityRepository : ICommunityRepository
     {
         return await _dbContext.Communities
             .AsNoTracking()
+            .Include(c => c.Category)
             .FirstOrDefaultAsync(c => c.Slug == slug && c.IsActive, ct);
     }
 
@@ -55,15 +57,12 @@ internal sealed class CommunityRepository : ICommunityRepository
         if (!string.IsNullOrWhiteSpace(category))
         {
             queryable = queryable.Where(c =>
-                EF.Functions.ILike(c.TopicCategory, category));
+                EF.Functions.ILike(c.Category.Name, category));
         }
 
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(category))
         {
-            var pattern = $"%{search}%";
-            queryable = queryable.Where(c =>
-                EF.Functions.ILike(c.Name, pattern) ||
-                EF.Functions.ILike(c.Description, pattern));
+            queryable = queryable.Where(c => c.Category.Slug == category);
         }
 
         queryable = sortBy?.ToLowerInvariant() switch
@@ -81,7 +80,8 @@ internal sealed class CommunityRepository : ICommunityRepository
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
             .Select(c => new CommunitySummaryDto(
-                c.Id, c.Name, c.Slug, c.Description, c.TopicCategory,
+                c.Id, c.Name, c.Slug, c.Description,
+                c.CategoryId, c.Category.Name,
                 c.IconUrl, c.MemberCount, c.PostCount, c.IsPrivate, c.CreatedAt))
             .ToListAsync(ct);
 

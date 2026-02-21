@@ -43,7 +43,7 @@ public class CommunityService : ICommunityService
                 Name = request.Name,
                 Slug = slug,
                 Description = request.Description,
-                TopicCategory = request.TopicCategory,
+                CategoryId = request.CategoryId,
                 IconUrl = request.IconUrl,
                 IsPrivate = request.IsPrivate,
                 CreatedBy = userId,
@@ -68,6 +68,9 @@ public class CommunityService : ICommunityService
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync();
+
+            // Load the Category navigation for the response
+            community = await _communityRepository.GetByIdAsync(community.Id, ct) ?? community;
 
             _logger.LogInformation(
                 "Community Service - Community '{CommunityName}' (slug: {Slug}) created by user {UserId}",
@@ -320,7 +323,8 @@ public class CommunityService : ICommunityService
         Community c, bool isMember, string? userRole, List<ChannelSummaryDto> channels)
     {
         return new CommunityDetailDto(
-            c.Id, c.Name, c.Slug, c.Description, c.TopicCategory,
+            c.Id, c.Name, c.Slug, c.Description,
+            c.CategoryId, c.Category?.Name ?? string.Empty,
             c.IconUrl, c.CoverImageUrl,
             c.MemberCount, c.PostCount, c.IsPrivate,
             c.CreatedAt, c.LastPostAt,

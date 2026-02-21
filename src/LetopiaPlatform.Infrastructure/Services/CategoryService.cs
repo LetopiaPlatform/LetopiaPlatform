@@ -88,6 +88,11 @@ public class CategoryService : ICategoryService
         var category = await _categoryRepository.GetByIdAsync(id, ct)
             ?? throw new NotFoundException("Category", id);
 
+        if (await _categoryRepository.HasDependentsAsync(id, ct))
+        {
+            throw new ConflictException("Cannot delete a category that has communities linked to it.");
+        }
+
         _categoryRepository.Delete(category);
         await _unitOfWork.SaveChangesAsync(ct);
 
@@ -111,7 +116,6 @@ public class CategoryService : ICategoryService
 
         return MapToDto(category);
     }
-
     private static CategoryDto MapToDto(Category category)
     {
         return new CategoryDto(
