@@ -40,7 +40,7 @@ public interface ICategoryService
     /// <param name="type">The category type.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A collection of category DTOs.</returns>
-    Task<IEnumerable<CategoryDto>> GetByTypeAsync(CategoryType type, CancellationToken ct = default);
+    Task<IEnumerable<CategoryDto>> GetByTypeAsync(string type, CancellationToken ct = default);
     
     /// <summary>
     /// Gets a category by its slug and type.
@@ -49,5 +49,5 @@ public interface ICategoryService
     /// <param name="type">The category type.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The category DTO.</returns>
-    Task<CategoryDto> GetBySlugAsync(string slug, CategoryType type, CancellationToken ct = default);
+    Task<CategoryDto> GetBySlugAsync(string slug, string type, CancellationToken ct = default);
 }

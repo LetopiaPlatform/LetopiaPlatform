@@ -95,16 +95,18 @@ public class CategoryService : ICategoryService
     }
 
     public async Task<IEnumerable<CategoryDto>> GetByTypeAsync(
-        CategoryType type, CancellationToken ct = default)
+        string type, CancellationToken ct = default)
     {
-        var categories = await _categoryRepository.GetByTypeOrderedAsync(type, ct);
+        var categoryType = ParseType(type);
+        var categories = await _categoryRepository.GetByTypeOrderedAsync(categoryType, ct);
         return categories.Select(MapToDto);
     }
 
     public async Task<CategoryDto> GetBySlugAsync(
-        string slug, CategoryType type, CancellationToken ct = default)
+        string slug, string type, CancellationToken ct = default)
     {
-        var category = await _categoryRepository.GetBySlugAsync(slug, type, ct)
+        var categoryType = ParseType(type);
+        var category = await _categoryRepository.GetBySlugAsync(slug, categoryType, ct)
             ?? throw new NotFoundException("Category", slug);
 
         return MapToDto(category);
@@ -119,5 +121,14 @@ public class CategoryService : ICategoryService
             category.IconUrl,
             category.Type.ToString()
         );
+    }
+
+    private static CategoryType ParseType(string type)
+    {
+        if (!Enum.TryParse<CategoryType>(type, ignoreCase: true, out var categoryType))
+        {
+            throw new AppException($"Invalid category type '{type}'.", 400);
+        }
+        return categoryType;
     }
 }
