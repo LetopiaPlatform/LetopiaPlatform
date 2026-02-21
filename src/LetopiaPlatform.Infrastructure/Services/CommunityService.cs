@@ -175,6 +175,18 @@ public class CommunityService : ICommunityService
             community.CoverImageUrl = uploadResult.Value;
         }
 
+        if (request.CoverImage is not null)
+        {
+            // Delete old cover if exists
+            if (!string.IsNullOrEmpty(community.CoverImageUrl))
+            {
+                await _fileStorageService.DeleteAsync(community.CoverImageUrl);
+            }
+
+            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers");
+            community.CoverImageUrl = uploadResult.Value;
+        }
+
         await _unitOfWork.SaveChangesAsync(ct);
 
         _logger.LogInformation(
