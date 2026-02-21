@@ -64,7 +64,8 @@ public class CommunityService : ICommunityService
                 CoverImageUrl = coverImageUrl,
                 IsPrivate = request.IsPrivate,
                 CreatedBy = userId,
-                MemberCount = 1
+                MemberCount = 1,
+                Rules = request.Rules ?? []
             };
 
             _communityRepository.AddCommunity(community);
@@ -160,6 +161,7 @@ public class CommunityService : ICommunityService
         if (request.Name is not null) community.Name = request.Name;
         if (request.Description is not null) community.Description = request.Description;
         if (request.IsPrivate.HasValue) community.IsPrivate = request.IsPrivate.Value;
+        if (request.Rules is not null) community.Rules = request.Rules;
 
         if (request.CoverImage is not null)
         {
@@ -354,6 +356,6 @@ public class CommunityService : ICommunityService
             c.CategoryId, c.Category?.Name ?? string.Empty, c.Category?.IconUrl, c.CoverImageUrl,
             c.MemberCount, c.PostCount, c.IsPrivate,
             c.CreatedAt, c.LastPostAt,
-            isMember, userRole, channels);
+            isMember, userRole, c.Rules, channels);
     }
 }

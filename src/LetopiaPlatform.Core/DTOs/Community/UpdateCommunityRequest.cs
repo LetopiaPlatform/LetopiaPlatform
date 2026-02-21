@@ -10,4 +10,5 @@ public sealed record UpdateCommunityRequest(
     string? Name,
     string? Description,
     IFormFile? CoverImage,
-    bool? IsPrivate);
+    bool? IsPrivate,
+    List<string>? Rules = null);

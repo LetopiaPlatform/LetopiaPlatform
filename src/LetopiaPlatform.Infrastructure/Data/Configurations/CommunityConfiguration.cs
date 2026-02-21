@@ -65,6 +65,13 @@ public class CommunityConfiguration : IEntityTypeConfiguration<Community>
             .HasColumnName("is_active")
             .HasDefaultValue(true);
 
+        builder.Property(c => c.Rules)
+            .HasColumnName("rules")
+            .HasConversion(
+                v => string.Join("||", v), // Convert List<string> to a single string for storage
+                v => v.Split("||", StringSplitOptions.RemoveEmptyEntries).ToList()) // Convert stored string back to List<string>
+            .HasColumnType("text"); // Store as text in the database
+
         // Indexes
         builder.HasIndex(c => c.Slug)
             .IsUnique()

@@ -19,6 +19,7 @@ public class Community : AuditableEntity
     public bool IsPrivate { get; set; }
     public DateTime? LastPostAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public List<string> Rules { get; set; } = [];
 
     // Navigation collections
     public ICollection<Post> Posts { get; set; } = [];
