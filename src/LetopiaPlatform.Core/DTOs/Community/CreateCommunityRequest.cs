@@ -7,6 +7,6 @@ namespace LetopiaPlatform.Core.DTOs.Community;
 public sealed record CreateCommunityRequest(
     string Name,
     string Description,
-    string TopicCategory,
+    Guid CategoryId,
     bool IsPrivate = false,
     string? IconUrl = null);
