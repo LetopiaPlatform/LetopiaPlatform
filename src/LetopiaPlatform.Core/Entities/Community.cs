@@ -8,7 +8,8 @@ public class Community : AuditableEntity
     public required string Name { get; set; }
     public required string Slug { get; set; }
     public required string Description { get; set; }
-    public required string TopicCategory { get; set; }
+    public Guid CategoryId { get; set; }
+    public Category Category { get; set; } = null!;
     public string? IconUrl { get; set; }
 
     public Guid CreatedBy { get; set; }

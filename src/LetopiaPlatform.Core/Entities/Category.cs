@@ -13,4 +13,7 @@ public class Category : BaseEntity
     public required string Slug { get; set; }
     public string? IconUrl { get; set; }
     public CategoryType Type { get; set; }
+
+    // Navigation properties
+    public virtual ICollection<Community> Communities { get; set; } = [];
 }

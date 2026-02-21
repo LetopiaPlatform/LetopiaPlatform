@@ -40,5 +40,11 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.HasIndex(c => c.Type)
             .HasDatabaseName("ix_categories_type");
+
+        // Relationships
+        builder.HasMany(c => c.Communities)
+            .WithOne(cm => cm.Category)
+            .HasForeignKey(cm => cm.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
