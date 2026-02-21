@@ -36,4 +36,13 @@ public static class Router
         public const string Members = $"{Prefix}/{{id}}/members";
         public const string ChangeRole = $"{Prefix}/{{id}}/members/{{userId}}/role";
     }
+    
+    public static class Categories
+    {
+        public const string Prefix = $"{Rule}/categories";
+        public const string GetByType = $"{Prefix}";
+        public const string GetBySlug = $"{Prefix}/{{slug}}";
+        public const string Update = $"{Prefix}/{{id}}";
+        public const string Delete = $"{Prefix}/{{id}}";
+    }
 }
