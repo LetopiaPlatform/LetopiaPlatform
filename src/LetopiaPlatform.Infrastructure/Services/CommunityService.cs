@@ -64,8 +64,7 @@ public class CommunityService : ICommunityService
                 CoverImageUrl = coverImageUrl,
                 IsPrivate = request.IsPrivate,
                 CreatedBy = userId,
-                MemberCount = 1,
-                Rules = request.Rules ?? []
+                MemberCount = 1
             };
 
             _communityRepository.AddCommunity(community);
@@ -161,19 +160,6 @@ public class CommunityService : ICommunityService
         if (request.Name is not null) community.Name = request.Name;
         if (request.Description is not null) community.Description = request.Description;
         if (request.IsPrivate.HasValue) community.IsPrivate = request.IsPrivate.Value;
-        if (request.Rules is not null) community.Rules = request.Rules;
-
-        if (request.CoverImage is not null)
-        {
-            // Delete old cover if exists
-            if (!string.IsNullOrEmpty(community.CoverImageUrl))
-            {
-                await _fileStorageService.DeleteAsync(community.CoverImageUrl);
-            }
-
-            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers");
-            community.CoverImageUrl = uploadResult.Value;
-        }
 
         if (request.CoverImage is not null)
         {
@@ -368,6 +354,6 @@ public class CommunityService : ICommunityService
             c.CategoryId, c.Category?.Name ?? string.Empty, c.Category?.IconUrl, c.CoverImageUrl,
             c.MemberCount, c.PostCount, c.IsPrivate,
             c.CreatedAt, c.LastPostAt,
-            isMember, userRole, c.Rules, channels);
+            isMember, userRole, channels);
     }
 }

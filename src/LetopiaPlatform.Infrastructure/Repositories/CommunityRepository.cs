@@ -53,6 +53,12 @@ internal sealed class CommunityRepository : ICommunityRepository
         var queryable = _dbContext.Communities
             .Where(c => c.IsActive)
             .AsNoTracking();
+        
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            queryable = queryable.Where(c =>
+                EF.Functions.ILike(c.Category.Name, category));
+        }
 
         if (!string.IsNullOrWhiteSpace(category))
         {
