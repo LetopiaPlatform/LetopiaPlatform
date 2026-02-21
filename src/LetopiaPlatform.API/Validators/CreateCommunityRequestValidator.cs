@@ -29,15 +29,5 @@ public class CreateCommunityRequestValidator : AbstractValidator<CreateCommunity
             .Must(file => AllowedExtensions.Contains(Path.GetExtension(file!.FileName).ToLowerInvariant()))
                 .WithMessage("Cover image must be a .jpg, .jpeg, .png, or .webp file.")
             .When(x => x.CoverImage is not null);
-
-        RuleFor(x => x.Rules)
-            .Must(rules => rules!.Count <= 20)
-                .WithMessage("A maximum of 20 rules are allowed.")
-            .When(x => x.Rules is not null);
-        
-        RuleForEach(x => x.Rules)
-            .NotEmpty().WithMessage("Rule text cannot be empty.")
-            .MaximumLength(500).WithMessage("Each rule must be at most 500 characters.")
-            .When(x => x.Rules is not null);
     }
 }

@@ -270,11 +270,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasDefaultValue(0)
                         .HasColumnName("post_count");
 
-                    b.Property<string>("Rules")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("rules");
-
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(100)
