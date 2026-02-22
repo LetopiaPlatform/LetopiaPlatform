@@ -1,4 +1,5 @@
 using LetopiaPlatform.API.AppMetaData;
+using LetopiaPlatform.API.Common;
 using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.Core.DTOs.Category;
 using LetopiaPlatform.Core.Interfaces;
@@ -24,7 +25,7 @@ public class CategoriesController : BaseController
         HttpContext.AddBusinessContext("action", "get_categories_by_type");
 
         var categories = await _categoryService.GetByTypeAsync(type, ct);
-        return Ok(categories);
+        return Ok(ApiResponse<IEnumerable<CategoryDto>>.SuccessResponse(categories));
     }
 
     [HttpGet(Router.Categories.GetBySlug)]
@@ -34,7 +35,7 @@ public class CategoriesController : BaseController
         HttpContext.AddBusinessContext("action", "get_category_by_slug");
 
         var category = await _categoryService.GetBySlugAsync(slug, type, ct);
-        return Ok(category);
+        return Ok(ApiResponse<CategoryDto>.SuccessResponse(category));
     }
     
     [HttpPost(Router.Categories.Prefix)]
@@ -44,7 +45,8 @@ public class CategoriesController : BaseController
         HttpContext.AddBusinessContext("action", "create_category");
 
         var category = await _categoryService.CreateAsync(request, ct);
-        return CreatedAtAction(nameof(GetBySlug), new { slug = category.Slug, type = category.Type }, category);
+        return StatusCode(StatusCodes.Status201Created,
+            ApiResponse<CategoryDto>.SuccessResponse(category, "Category created successfully", 201));
     }
 
     [HttpPut(Router.Categories.Update)]
@@ -55,7 +57,7 @@ public class CategoriesController : BaseController
         HttpContext.AddBusinessContext("category_id", id.ToString());
 
         var category = await _categoryService.UpdateAsync(id, request, ct);
-        return Ok(category);
+        return Ok(ApiResponse<CategoryDto>.SuccessResponse(category, "Category updated successfully"));
     }
 
     [HttpDelete(Router.Categories.Delete)]
