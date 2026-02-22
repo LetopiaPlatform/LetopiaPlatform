@@ -71,7 +71,7 @@ public class R2FileStorageService : IFileStorageService
 
             await _s3Client.PutObjectAsync(putRequest);
 
-            var publicUrl = $"{_settings.PublicUrl.TrimEnd("/")}/{key}";
+            var publicUrl = $"{_settings.PublicUrl.TrimEnd('/')}/{key}";
 
             _logger.LogInformation(
                 "File uploaded to R2: {Key} ({Size} bytes)", key, file.Length);
