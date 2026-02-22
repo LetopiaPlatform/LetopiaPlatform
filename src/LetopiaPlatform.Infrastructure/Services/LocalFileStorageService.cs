@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace LetopiaPlatform.Infrastructure.Services;
 
-public class FileStorageService : IFileStorageService
+public class LocalFileStorageService : IFileStorageService
 {
     private readonly IWebHostEnvironment _env;
     private readonly IHttpContextAccessor _accessor;
@@ -18,7 +18,7 @@ public class FileStorageService : IFileStorageService
 
     private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
 
-    public FileStorageService(IWebHostEnvironment env, IHttpContextAccessor accessor)
+    public LocalFileStorageService(IWebHostEnvironment env, IHttpContextAccessor accessor)
     {
         _env = env;
         _accessor = accessor;
