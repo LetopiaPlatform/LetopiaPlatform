@@ -112,9 +112,10 @@ public class CommunityService : ICommunityService
         string? category = null,
         string? search = null,
         string? sortBy = null,
+        Guid? currentUserId = null,
         CancellationToken ct = default)
     {
-        return await _communityRepository.ListAsync(query, category, search, sortBy, ct);
+        return await _communityRepository.ListAsync(query, category, search, sortBy, currentUserId, ct);
     }
     public async Task<CommunityDetailDto> GetBySlugAsync(
         string slug,
@@ -297,6 +298,13 @@ public class CommunityService : ICommunityService
         }
 
         await _unitOfWork.SaveChangesAsync(ct);
+    }
+
+    public async Task<List<JoinedCommunitySummaryDto>> GetJoinedCommunitiesAsync(
+    Guid userId,
+    CancellationToken ct = default)
+    {
+        return await _communityRepository.GetJoinedCommunitiesAsync(userId, ct);
     }
 
     // Private helpers

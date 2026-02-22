@@ -48,11 +48,18 @@ internal sealed class CommunityRepository : ICommunityRepository
         string? category = null,
         string? search = null,
         string? sortBy = null,
+        Guid? currentUserId = null,
         CancellationToken ct = default)
     {
         var queryable = _dbContext.Communities
             .Where(c => c.IsActive)
             .AsNoTracking();
+
+        if (currentUserId.HasValue)
+        {
+            queryable = queryable.Where(c => 
+                !c.Members.Any(m => m.UserId == currentUserId.Value));
+        }
 
         if (!string.IsNullOrWhiteSpace(category))
         {
@@ -170,6 +177,32 @@ internal sealed class CommunityRepository : ICommunityRepository
         return await _dbContext.Channels
             .Where(ch => ch.CommunityId == communityId && !ch.IsArchived)
             .OrderBy(ch => ch.DisplayOrder)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<JoinedCommunitySummaryDto>> GetJoinedCommunitiesAsync(
+        Guid userId, CancellationToken ct = default)
+    {
+        return await _dbContext.UserCommunities
+            .Where(uc => uc.UserId == userId)
+            .Where(uc => uc.Community.IsActive)
+            .OrderByDescending(uc => uc.JoinedAt)
+            .Select(uc => new JoinedCommunitySummaryDto(
+                new CommunitySummaryDto(
+                    uc.Community.Id,
+                    uc.Community.Name,
+                    uc.Community.Slug,
+                    uc.Community.Description,
+                    uc.Community.CategoryId,
+                    uc.Community.Category.Name,
+                    uc.Community.Category.IconUrl,
+                    uc.Community.CoverImageUrl,
+                    uc.Community.MemberCount,
+                    uc.Community.PostCount,
+                    uc.Community.IsPrivate,
+                    uc.Community.CreatedAt),
+                uc.JoinedAt))
             .AsNoTracking()
             .ToListAsync(ct);
     }

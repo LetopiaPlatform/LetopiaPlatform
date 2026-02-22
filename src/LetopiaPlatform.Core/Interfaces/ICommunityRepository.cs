@@ -48,11 +48,16 @@ public interface ICommunityRepository
     /// <param name="category">Optional category filter.</param>
     /// <param name="search">Optional search term.</param>
     /// <param name="sortBy">Optional sort field.</param>
+    /// <param name="currentUserId">The ID of the current user, if available, to include membership context in the results.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A paginated result of community summaries.</returns>
     Task<PaginatedResult<CommunitySummaryDto>> ListAsync(
-        PaginatedQuery query, string? category = null, string? search = null,
-        string? sortBy = null, CancellationToken ct = default);
+        PaginatedQuery query,
+        string? category = null,
+        string? search = null,
+        string? sortBy = null,
+        Guid? currentUserId = null,
+        CancellationToken ct = default);
 
     // Membership
     /// <summary>
@@ -123,4 +128,14 @@ public interface ICommunityRepository
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A list of channels for the community.</returns>
     Task<List<Channel>> GetChannelsAsync(Guid communityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves all communities the user has joined, with membership context.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A list of joined community summaries.</returns>
+    Task<List<JoinedCommunitySummaryDto>> GetJoinedCommunitiesAsync(
+        Guid userId,
+        CancellationToken ct = default);
 }
