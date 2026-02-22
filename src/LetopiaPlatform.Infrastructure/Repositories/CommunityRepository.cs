@@ -66,6 +66,14 @@ internal sealed class CommunityRepository : ICommunityRepository
             queryable = queryable.Where(c => c.Category.Slug == category);
         }
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = $"%{search.Trim()}%";
+            queryable = queryable.Where(c => 
+                EF.Functions.ILike(c.Name, pattern) || 
+                EF.Functions.ILike(c.Description, pattern));
+        }
+
         queryable = sortBy?.ToLowerInvariant() switch
         {
             "members" => queryable.OrderByDescending(c => c.MemberCount),
