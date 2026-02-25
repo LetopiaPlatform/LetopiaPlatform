@@ -23,6 +23,7 @@ public static class Router
         public const string UploadFile = $"{Prefix}/me/files";
         public const string DeleteFile = $"{Prefix}/me/files";
     }
+<<<<<<< HEAD
 
     public static class Communities
     {
@@ -47,3 +48,16 @@ public static class Router
         public const string Delete = $"{Prefix}/{{id}}";
     }
 }
+=======
+    public static class ProjectCategories
+    {
+        public const string Prefix = $"{Rule}/categories";
+        public const string GetCategories = $"{Prefix}";
+        public const string Create = $"{Prefix}/Create";
+        public const string Update = $"{Prefix}/Update/{{id:guid}}";
+        public const string GetCategoryBySlug = $"{Prefix}/{{slug}}";
+        public const string GetCategoryStats = $"{Prefix}/stats";
+        public const string DeleteCategory = $"{Prefix}/{{id:guid}}";
+    }
+}
+>>>>>>> 4e86daf (CompleteProjects-lookUp-Categories)

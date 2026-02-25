@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Interfaces;
@@ -19,9 +18,16 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<UserCommunity> UserCommunities => Set<UserCommunity>();
+<<<<<<< HEAD
     public DbSet<Channel> Channels => Set<Channel>();
     public DbSet<Category> Categories => Set<Category>();
     
+=======
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectCategory> ProjectCategorys => Set<ProjectCategory>();
+
+>>>>>>> 72aa86e (RefactryGenericRepoInterfaceSeparation)
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -81,7 +87,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
         {
             if (!typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
                 continue;
-            
+
             var parameter = Expression.Parameter(entityType.ClrType, "e");
             var property = Expression.Property(parameter, nameof(ISoftDeletable.IsDeleted));
             var filter = Expression.Lambda(Expression.Not(property), parameter);
