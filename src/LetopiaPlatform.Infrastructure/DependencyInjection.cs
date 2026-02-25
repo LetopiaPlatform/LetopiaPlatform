@@ -131,14 +131,11 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
-<<<<<<< HEAD
         services.AddScoped<ICommunityRepository, CommunityRepository>();
         services.AddScoped<ICommunityService, CommunityService>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ICategoryService, CategoryService>();
-=======
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
->>>>>>> 4e86daf (CompleteProjects-lookUp-Categories)
         return services;
     }
 
