@@ -138,6 +138,7 @@ public static class DependencyInjection
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IReactionRepository, ReactionRepository>();
         services.AddScoped<IPostService, PostService>();
+        services.AddScoped<IPostAuthorizationService, PostAuthorizationService>();
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<IReactionService, ReactionService>();
         return services;
