@@ -36,13 +36,14 @@ public interface IPostService
     /// Retrieves a paginated list of posts for a community.
     /// </summary>
     /// <param name="communityId">The ID of the community.</param>
+    /// <param name="channelId">The ID of the channel.</param>
     /// <param name="page">The page number (1-based).</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="search">Optional search keyword.</param>
     /// <param name="sortBy">Optional sort field (createdAt, upvotes, comments).</param>
     /// <param name="ct">Optional cancellation token.</param>
     /// <returns>A paginated list of post summaries.</returns>
-    Task<PaginatedResult<PostSummaryDto>> ListAsync(Guid communityId, int page, int pageSize, string? search, string? sortBy, CancellationToken ct = default);
+    Task<PaginatedResult<PostSummaryDto>> ListAsync(Guid communityId, Guid channelId, int page, int pageSize, string? search, string? sortBy, CancellationToken ct = default);
 
     /// <summary>
     /// Retrieves the details of a post, including the current user's reaction if provided.

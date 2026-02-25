@@ -107,6 +107,7 @@ public class PostService : IPostService
 
     public async Task<PaginatedResult<PostSummaryDto>> ListAsync(
         Guid communityId,
+        Guid channelId,
         int page,
         int pageSize,
         string? search,
@@ -121,6 +122,7 @@ public class PostService : IPostService
 
         Expression<Func<Post, bool>> filter = p =>
             p.CommunityId == communityId &&
+            p.ChannelId == channelId &&
             !p.IsDeleted &&
             (
                 !hasSearch ||
