@@ -23,8 +23,7 @@ public static class Router
         public const string UploadFile = $"{Prefix}/me/files";
         public const string DeleteFile = $"{Prefix}/me/files";
     }
-<<<<<<< HEAD
-
+    
     public static class Communities
     {
         public const string Prefix = $"{Rule}/communities";
@@ -47,8 +46,7 @@ public static class Router
         public const string Update = $"{Prefix}/{{id}}";
         public const string Delete = $"{Prefix}/{{id}}";
     }
-}
-=======
+
     public static class ProjectCategories
     {
         public const string Prefix = $"{Rule}/categories";
@@ -60,4 +58,3 @@ public static class Router
         public const string DeleteCategory = $"{Prefix}/{{id:guid}}";
     }
 }
->>>>>>> 4e86daf (CompleteProjects-lookUp-Categories)
