@@ -990,8 +990,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Posts");
                 });
 
-<<<<<<< HEAD
-=======
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Group", b =>
                 {
                     b.Navigation("Posts");
@@ -1002,7 +1000,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("OwnedProjects");
                 });
 
->>>>>>> 72aa86e (RefactryGenericRepoInterfaceSeparation)
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
                 {
                     b.Navigation("Comments");
