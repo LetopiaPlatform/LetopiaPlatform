@@ -18,16 +18,11 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<UserCommunity> UserCommunities => Set<UserCommunity>();
-<<<<<<< HEAD
     public DbSet<Channel> Channels => Set<Channel>();
     public DbSet<Category> Categories => Set<Category>();
-    
-=======
-    public DbSet<Group> Groups => Set<Group>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProjectCategory> ProjectCategorys => Set<ProjectCategory>();
 
->>>>>>> 72aa86e (RefactryGenericRepoInterfaceSeparation)
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
