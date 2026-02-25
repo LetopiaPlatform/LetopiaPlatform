@@ -152,7 +152,7 @@ public class CommentService : ICommentService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var comment = await _commentRepo.GetByIdAsync(commentId, "Author,Post.Community.Members");
+        var comment = await _commentRepo.GetByIdAsync(commentId, "Author","Post.Community.Members");
         if (comment == null || comment.IsDeleted) throw new KeyNotFoundException("Comment not found.");
 
         var memberRole = comment.Post?.Community?.Members?.FirstOrDefault(m => m.UserId == userId)?.Role;
