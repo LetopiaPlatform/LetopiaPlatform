@@ -136,6 +136,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
+        services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         return services;
     }
 

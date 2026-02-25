@@ -24,6 +24,7 @@ public static class Router
         public const string DeleteFile = $"{Prefix}/me/files";
     }
     
+
     public static class Communities
     {
         public const string Prefix = $"{Rule}/communities";
@@ -47,6 +48,7 @@ public static class Router
         public const string Delete = $"{Prefix}/{{id}}";
     }
 
+}
     public static class ProjectCategories
     {
         public const string Prefix = $"{Rule}/categories";
