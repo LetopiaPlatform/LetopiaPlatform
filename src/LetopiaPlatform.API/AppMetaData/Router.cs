@@ -46,4 +46,37 @@ public static class Router
         public const string Update = $"{Prefix}/{{id}}";
         public const string Delete = $"{Prefix}/{{id}}";
     }
+    public static class Comments
+    {
+        public const string Prefix = $"{Rule}/comments";
+
+        // Base actions
+        public const string Update = $"{Prefix}/{{commentId:guid}}";
+        public const string Delete = $"{Prefix}/{{commentId:guid}}";
+
+        // Interactions
+        public const string React = $"{Prefix}/{{commentId:guid}}/react";
+
+        // If you plan to add fetching sub-comments/replies later:
+        public const string GetReplies = $"{Prefix}/{{commentId:guid}}/replies";
+    }
+    public static class Posts
+    {
+        public const string Prefix = $"{Rule}/posts";
+
+        // Creation & Listing (Scoped to Community/Channel)
+        // Note: Using a different prefix for creation/listing to accommodate parent IDs
+        public const string Base = $"{Rule}/communities/{{communityId:guid}}";
+        public const string Create = $"{Base}/channels/{{channelId:guid}}/posts";
+        public const string List = $"{Base}/channels/{{channelId:guid}}/posts";
+
+        // Resource Specific
+        public const string GetById = $"{Prefix}/{{postId:guid}}";
+        public const string Update = $"{Prefix}/{{postId:guid}}";
+        public const string Delete = $"{Prefix}/{{postId:guid}}";
+
+        // Nested Resources
+        public const string Comments = $"{Prefix}/{{postId:guid}}/comments";
+        public const string React = $"{Prefix}/{{postId:guid}}/react";
+    }
 }
