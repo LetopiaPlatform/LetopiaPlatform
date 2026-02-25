@@ -47,8 +47,7 @@ public static class Router
         public const string Update = $"{Prefix}/{{id}}";
         public const string Delete = $"{Prefix}/{{id}}";
     }
-
-}
+    
     public static class ProjectCategories
     {
         public const string Prefix = $"{Rule}/categories";
