@@ -42,10 +42,10 @@ public class ProjectCategoryController : BaseController
     }
     // ── Get All Categories ───────────────────────────────────────────────────
     /// <summary>
-    /// جلب جميع الأقسام مرتبة مع المشاريع المتاحة داخل كل قسم
+    /// Define if a category exists by slug and return its details along with non-full projects in that category
     /// </summary>
     [HttpGet(Router.ProjectCategories.GetCategories)]
-    [AllowAnonymous] // متاح للزوار
+    [AllowAnonymous]
     public async Task<IActionResult> GetCategories()
     {
         HttpContext.AddBusinessContext("action", "get_all_categories_with_projects");
@@ -56,7 +56,7 @@ public class ProjectCategoryController : BaseController
 
     // ── Get Category By Slug ─────────────────────────────────────────────────
     /// <summary>
-    /// جلب تفاصيل قسم معين عن طريق الـ Slug
+    /// Define if a category exists by slug and return its details along with non-full projects in that category
     /// </summary>
     [HttpGet(Router.ProjectCategories.GetCategoryBySlug)]
     [AllowAnonymous]
@@ -71,7 +71,7 @@ public class ProjectCategoryController : BaseController
 
     // ── Get Statistics ──────────────────────────────────────────────────────
     /// <summary>
-    /// جلب إحصائيات عدد المشاريع في كل قسم
+    /// Determine if a category exists by slug and return its details along with non-full projects in that category
     /// </summary>
     [HttpGet(Router.ProjectCategories.GetCategoryStats)]
     [AllowAnonymous]
@@ -85,7 +85,7 @@ public class ProjectCategoryController : BaseController
 
     // ── Delete Category ──────────────────────────────────────────────────────
     /// <summary>
-    /// حذف قسم (للأدمن فقط وبشرط عدم وجود مشاريع مرتبطة)
+    /// Determine if a category exists by slug and return its details along with non-full projects in that category
     /// </summary>
     [HttpDelete(Router.ProjectCategories.DeleteCategory)]
     //[Authorize(Roles = "Admin")]
