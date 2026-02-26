@@ -23,6 +23,7 @@ public static class Router
         public const string UploadFile = $"{Prefix}/me/files";
         public const string DeleteFile = $"{Prefix}/me/files";
     }
+    
 
     public static class Communities
     {
@@ -78,5 +79,15 @@ public static class Router
         // Nested Resources
         public const string Comments = $"{Prefix}/{{postId:guid}}/comments";
         public const string React = $"{Prefix}/{{postId:guid}}/react";
+    
+    public static class ProjectCategories
+    {
+        public const string Prefix = $"{Rule}/categories";
+        public const string GetCategories = $"{Prefix}";
+        public const string Create = $"{Prefix}/Create";
+        public const string Update = $"{Prefix}/Update/{{id:guid}}";
+        public const string GetCategoryBySlug = $"{Prefix}/{{slug}}";
+        public const string GetCategoryStats = $"{Prefix}/stats";
+        public const string DeleteCategory = $"{Prefix}/{{id:guid}}";
     }
 }
