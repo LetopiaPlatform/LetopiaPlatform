@@ -79,7 +79,6 @@ public class ProjectCategoryService : IProjectCategoryService
     {
         _logger.LogInformation("Creating new category: {CategoryName}", request.Name);
 
-        // التأكد إن الـ Slug مش مستخدم قبل كدة
         if (await _projectCategoryRepository.SlugExistsAsync(request.Slug, null, ct))
         {
             return Result<Guid>.Failure("This slug is already in use", 400);
@@ -90,13 +89,12 @@ public class ProjectCategoryService : IProjectCategoryService
         {
             var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories");
 
-            // تأكد من نجاح عملية الرفع
             if (!uploadResult.IsSuccess)
             {
                 return Result<Guid>.Failure("Failed to upload icon", uploadResult.StatusCode);
             }
 
-            iconUrl = uploadResult.Value; // هنا بناخد الـ string المباشر من الـ Result
+            iconUrl = uploadResult.Value;
         }
 
 
@@ -120,18 +118,15 @@ public class ProjectCategoryService : IProjectCategoryService
         var category = await _projectCategoryRepository.GetByIdAsync(id);
         if (category is null) return Result<bool>.Failure("Category not found", 404);
 
-        // التأكد إن الـ Slug الجديد مش مستخدم في "قسم تاني" (باستثناء القسم الحالي)
         if (await _projectCategoryRepository.SlugExistsAsync(request.Slug, id, ct))
         {
             return Result<bool>.Failure("This slug is already in use by another category", 400);
         }
 
 
-        // التعامل مع الـ UpdateIconUrl
 
         if (request.IconUrl is not null)
         {
-            // رفع الصورة الجديدة
             var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories");
 
             if (!uploadResult.IsSuccess)

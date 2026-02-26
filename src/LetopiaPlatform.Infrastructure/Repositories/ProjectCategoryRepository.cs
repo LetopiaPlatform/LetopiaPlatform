@@ -33,7 +33,7 @@ public class ProjectCategoryRepository : GenericRepository<ProjectCategory>, IPr
 
     public async Task<Dictionary<Guid, int>> GetCategoryProjectCountsAsync(CancellationToken ct = default)
     {
-        // استخدام GroupBy مباشرة على جدول المشاريع لأفضل أداء SQL
+
         return await _context.Projects
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() })

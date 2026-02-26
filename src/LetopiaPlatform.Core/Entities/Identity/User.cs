@@ -21,4 +21,6 @@ public class User : IdentityUser<Guid>, IAuditable
     public DateTime UpdatedAt { get; set; }
     //Navigation property for projects owned by the user
     public virtual ICollection<Project> OwnedProjects { get; set; } = new HashSet<Project>();
+
+    public virtual ICollection<ProjectMember> ProjectMemberships { get; set; } = new HashSet<ProjectMember>();
 }
