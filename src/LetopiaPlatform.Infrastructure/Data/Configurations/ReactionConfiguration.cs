@@ -24,6 +24,7 @@ public class ReactionConfiguration : IEntityTypeConfiguration<Reaction>
         builder.Property(r => r.TargetType)
             .HasColumnName("target_type")
             .HasMaxLength(50)
+            .HasConversion<string>()
             .IsRequired(false); // nullable as per your entity
 
         builder.Property(r => r.TargetId)
