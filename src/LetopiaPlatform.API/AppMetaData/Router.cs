@@ -47,6 +47,10 @@ public static class Router
         public const string Update = $"{Prefix}/{{id}}";
         public const string Delete = $"{Prefix}/{{id}}";
     }
+<<<<<<< HEAD
+=======
+    
+>>>>>>> eeec4d0f62539ce78957c48a48b49ccccad4d099
     public static class ProjectCategories
     {
         public const string Prefix = $"{Rule}/ProjectCategories";
