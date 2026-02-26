@@ -102,5 +102,12 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
         builder.HasMany(p => p.Comments)
             .WithOne(c => c.Post)
             .HasForeignKey(c => c.PostId);
+
+
+
+
+
+
+
     }
 }

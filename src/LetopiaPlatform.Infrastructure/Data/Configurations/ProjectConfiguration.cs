@@ -15,14 +15,12 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         // 2. Basic Properties (Snake Case Mapping)
         builder.Property(p => p.Title).HasColumnName("title").IsRequired();
         builder.Property(p => p.Description).HasColumnName("description").IsRequired();
-        builder.Property(p => p.DifficultyLevel).HasColumnName("difficulty_level");
+        builder.Property(p => p.DifficultyLevel).HasConversion<string>();
         builder.Property(p => p.Deadline).HasColumnName("deadline").IsRequired();
         builder.Property(p => p.IsFull).HasColumnName("is_full").HasDefaultValue(false);
 
         builder.Property(p => p.Status)
-            .HasColumnName("status")
-            .HasMaxLength(20)
-            .HasDefaultValue("Recruiting");
+               .HasConversion<string>();
 
         builder.Property(p => p.MaxMembers)
             .HasColumnName("max_members")

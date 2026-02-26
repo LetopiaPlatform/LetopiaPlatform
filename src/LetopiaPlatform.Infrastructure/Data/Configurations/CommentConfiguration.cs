@@ -43,7 +43,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.HasIndex(c => c.AuthorId)
             .HasDatabaseName("ix_comments_author_id");
 
-        // Relationships
+        //// Relationships
         builder.HasOne(c => c.Post)
             .WithMany(p => p.Comments)
             .HasForeignKey(c => c.PostId)
@@ -59,5 +59,8 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         // Required because Post has a global ISoftDeletable filter — without this,
         // EF Core warns about required navigation + filtered principal mismatch.
         builder.HasQueryFilter(c => !c.Post.IsDeleted);
+
+
+
     }
 }
