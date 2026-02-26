@@ -79,7 +79,7 @@ public static class Router
         // Nested Resources
         public const string Comments = $"{Prefix}/{{postId:guid}}/comments";
         public const string React = $"{Prefix}/{{postId:guid}}/react";
-    
+    }
     public static class ProjectCategories
     {
         public const string Prefix = $"{Rule}/categories";
