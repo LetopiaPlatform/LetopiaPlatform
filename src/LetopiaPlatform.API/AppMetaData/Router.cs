@@ -47,10 +47,7 @@ public static class Router
         public const string Update = $"{Prefix}/{{id}}";
         public const string Delete = $"{Prefix}/{{id}}";
     }
-<<<<<<< HEAD
-=======
-    
->>>>>>> eeec4d0f62539ce78957c48a48b49ccccad4d099
+
     public static class ProjectCategories
     {
         public const string Prefix = $"{Rule}/ProjectCategories";
@@ -60,6 +57,18 @@ public static class Router
         public const string GetCategoryBySlug = $"{Prefix}/{{slug}}";
         public const string GetCategoryStats = $"{Prefix}/stats";
         public const string DeleteCategory = $"{Prefix}/{{id:guid}}";
+    }
+
+    public static class Projects
+    {
+        public const string Prefix = $"{Rule}/projects";
+
+        // Project Operations
+        public const string Create = $"{Prefix}/Create";
+        public const string Discover = $"{Prefix}/discover";
+        public const string GetDetailsById = $"{Prefix}/{{id}}";
+        public const string Update = $"{Prefix}/Update/{{id}}";
+        public const string Delete = $"{Prefix}/Delete/{{id}}";
     }
 }
 
