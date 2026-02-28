@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace LetopiaPlatform.Core.DTOs.Project.Request;
 public record UpdateProjectRequestDto(
-    Guid Id,
+
     string Title,
     string Description,
     Guid CategoryId,

@@ -61,10 +61,9 @@ public class ProjectController : BaseController
 
     // PUT: api/v1/projects/{id}
     [HttpPut(Router.Projects.Update)]
-    [Authorize]
+
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromForm] UpdateProjectRequestDto request)
     {
-        if (id != request.Id) return BadRequest("Project ID mismatch.");
 
         HttpContext.AddBusinessContext("action", "update_project");
         HttpContext.AddBusinessContext("project_id", id.ToString());
@@ -75,7 +74,7 @@ public class ProjectController : BaseController
 
     // DELETE: api/v1/projects/{id}
     [HttpDelete(Router.Projects.Delete)]
-    [Authorize]
+
     public async Task<IActionResult> Delete([FromRoute] Guid id)
     {
         HttpContext.AddBusinessContext("action", "delete_project");
