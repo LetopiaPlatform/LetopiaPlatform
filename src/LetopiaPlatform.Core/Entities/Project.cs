@@ -14,9 +14,19 @@ public class Project : AuditableEntity
     public DateTime Deadline { get; set; }
 
     public bool IsFull { get; set; }
+    //-------------
+    // ── التواريخ (Timeline) ────────────────────────
+    public DateTime StartDate { get; set; }
+
+    // ── الإحصائيات (UI Data) ────────────────────────
+    public int ProgressPercentage { get; set; }
+
+    // ── القوائم (Lists) ─────────────────────────────
+    public List<string> Goals { get; set; } = [];
 
 
 
+    //-----------------------
     public ProjectStatus Status { get; set; }
 
 
