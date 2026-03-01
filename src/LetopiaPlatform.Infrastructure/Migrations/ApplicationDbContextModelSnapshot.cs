@@ -238,16 +238,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-<<<<<<< HEAD
-=======
-                    b.HasIndex("Type")
-                        .HasDatabaseName("ix_categories_type");
 
-                    b.HasIndex("Slug", "Type")
-                        .IsUnique()
-                        .HasDatabaseName("ix_categories_slug_type");
-
-                    b.ToTable("categories", (string)null);
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Channel", b =>
@@ -485,7 +476,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_communities_created_by");
 
->>>>>>> bc3ce35 (feat(comment):add isdelted column for soft delete)
+
                     b.HasIndex("Slug")
                         .IsUnique()
                         .HasDatabaseName("ix_project_categories_slug");
