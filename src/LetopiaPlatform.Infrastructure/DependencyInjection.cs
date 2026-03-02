@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddHealthCheckServices(configuration);
         services.AddScoped<Core.Interfaces.Repositories.IProjectCategoryRepository, ProjectCategoryRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
         return services;
     }
 
@@ -138,6 +139,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IProjectMemberService, ProjectMemberService>();
         return services;
     }
 

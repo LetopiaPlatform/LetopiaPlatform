@@ -70,6 +70,17 @@ public static class Router
         public const string Update = $"{Prefix}/Update/{{id}}";
         public const string Delete = $"{Prefix}/Delete/{{id}}";
     }
+    public static class ProjectMembers
+    {
+        public const string Prefix = $"{Rule}/project-members";
+
+        public const string Join = $"{Prefix}/join/{{projectTitle}}";
+        public const string Leave = $"{Prefix}/leave/{{projectTitle}}";
+
+        public const string GetMembers = $"{Prefix}/members/{{projectId}}";
+        public const string MyProjects = $"{Prefix}/my-projects";
+
+    }
 }
 
 
