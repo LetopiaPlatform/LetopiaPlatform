@@ -26,7 +26,7 @@ public class ProjectService : IProjectService
     {
         var paginatedProjects = await _projectRepo.GetFilteredProjectsAsync(filter, ct);
 
-        var responses = paginatedProjects.Items.Select(MapToDiscover).ToList();
+        var responses = paginatedProjects.Items.Select(MapToProjectDto).ToList();
 
         var result = PaginatedResult<ProjectDiscoverResponseDto>.Create(
             responses,
@@ -116,10 +116,18 @@ public class ProjectService : IProjectService
 
 
     // ── Mapping Helpers ────────────────────────────────────────────────────
-    private static ProjectDiscoverResponseDto MapToDiscover(Project p) => new(
-        p.Id, p.Title, p.Category?.Name ?? "General", p.DifficultyLevel?.ToString(),
-        p.Status.ToString(), p.RequiredSkills, p.CoverImageUrl
-    );
+    private static ProjectDiscoverResponseDto MapToProjectDto(Project p) => new(
+         p.Id,
+         p.Title,
+         p.Category?.Name ?? "General",
+         p.DifficultyLevel?.ToString(),
+         p.Status.ToString(),
+         p.RequiredSkills,
+         p.CoverImageUrl,
+         p.ProgressPercentage,
+         p.Members.Count,
+         CalculateTimeLeft(p.Deadline)
+     );
 
     private static ProjectDetailsResponseDto MapToDetails(Project p) => new(
         p.Id, p.Title, p.Description, p.Category?.Name ?? "General",

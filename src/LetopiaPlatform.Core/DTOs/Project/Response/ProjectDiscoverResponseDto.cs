@@ -6,5 +6,8 @@ public record ProjectDiscoverResponseDto(
     string? DifficultyLevel,
     string Status,
     List<string> Skills,
-    string? CoverImageUrl
+    string? CoverImageUrl,
+    int ProgressPercentage,
+    int MembersCount,
+    string TimeLeft
 );
