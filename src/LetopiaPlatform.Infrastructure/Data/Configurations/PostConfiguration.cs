@@ -43,7 +43,7 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
             .IsRequired();
         builder.Property(p => p.PostImageUrl)
         .HasColumnName("Post_image_url")
-        .IsRequired();
+        .IsRequired(false);
 
         builder.Property(p => p.PostType)
             .HasColumnName("post_type")

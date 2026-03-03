@@ -25,7 +25,7 @@ public class Post : AuditableEntity, ISoftDeletable
     public bool IsPinned { get; set; }
     public bool IsDeleted { get; set; }
     public int ViewsCount { get; set; }
-    public int PostImageUrl { get; set; }
+    public string? PostImageUrl { get; set; }
 
     // Navigation collections
     public ICollection<Comment> Comments { get; set; } = [];
