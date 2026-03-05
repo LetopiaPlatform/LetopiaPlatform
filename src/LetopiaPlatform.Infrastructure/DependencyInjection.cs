@@ -135,6 +135,16 @@ public static class DependencyInjection
         services.AddScoped<ICommunityRepository, CommunityRepository>();
         services.AddScoped<ICommunityService, CommunityService>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+
+        services.AddScoped<IPostRepository, PostRepository>();
+        services.AddScoped<ICommentRepository, CommentRepository>();
+        services.AddScoped<IReactionRepository, ReactionRepository>();
+
+        services.AddScoped<IPostAuthorizationService, PostAuthorizationService>();
+        services.AddScoped<IPostService, PostService>();
+        services.AddScoped<ICommentService, CommentService>();
+        services.AddScoped<IReactionService, ReactionService>();
+
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();

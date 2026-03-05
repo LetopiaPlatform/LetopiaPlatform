@@ -1,4 +1,3 @@
-using LetopiaPlatform.Agent;
 using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.API.Middleware;
 using LetopiaPlatform.Core.Entities.Identity;
@@ -31,12 +30,11 @@ public class Program
 
             // ── Application Insights ──────────────────────────────────────
             builder.Services.AddApplicationInsightsTelemetry();
-            
+
             // ── Service registration ──────────────────────────────────────
             builder.Services
                 .AddApiServices(builder.Configuration)
-                .AddInfrastructure(builder.Configuration, builder.Environment)
-                .AddAgentServices(builder.Configuration);
+                .AddInfrastructure(builder.Configuration, builder.Environment);
 
             var app = builder.Build();
 
@@ -74,7 +72,7 @@ public class Program
             app.UseAuthorization();
 
             app.UseRateLimiter();
-            
+
             app.MapHealthChecks("/health");
             app.MapControllers();
             app.Run();
