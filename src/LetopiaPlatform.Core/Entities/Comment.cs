@@ -1,9 +1,10 @@
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Entities.Identity;
+using LetopiaPlatform.Core.Interfaces;
 
 namespace LetopiaPlatform.Core.Entities;
 
-public class Comment : AuditableEntity
+public class Comment : AuditableEntity,ISoftDeletable
 {
     public Guid PostId { get; set; }
     public Post Post { get; set; } = null!;
@@ -13,4 +14,5 @@ public class Comment : AuditableEntity
 
     public required string Content { get; set; }
     public int Upvotes { get; set; }
+    public bool IsDeleted { get ; set ; }
 }

@@ -41,6 +41,9 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
         builder.Property(p => p.Content)
             .HasColumnName("content")
             .IsRequired();
+        builder.Property(p => p.PostImageUrl)
+        .HasColumnName("Post_image_url")
+        .IsRequired(false);
 
         builder.Property(p => p.PostType)
             .HasColumnName("post_type")
@@ -102,5 +105,12 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
         builder.HasMany(p => p.Comments)
             .WithOne(c => c.Post)
             .HasForeignKey(c => c.PostId);
+
+
+
+
+
+
+
     }
 }
