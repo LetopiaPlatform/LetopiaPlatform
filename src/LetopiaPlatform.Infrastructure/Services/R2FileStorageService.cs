@@ -113,7 +113,7 @@ public class R2FileStorageService : IFileStorageService
         }
         catch (AmazonS3Exception ex)
         {
-            _logger.LogError(ex, "R2 delete failed for path {FilePath}", filePath);
+            _logger.LogError(ex, "R2 delete failed for path {FilePath}", SanitizeForLog(filePath));
             return Result.Failure("File deletion failed. Please try again.");
         }
     }
