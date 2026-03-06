@@ -23,7 +23,7 @@ public class AgentConversation : AuditableEntity
     /// <summary>
     /// The type of agent handling this conversation (e.g., "RoadmapGenerator").
     /// </summary>
-    public required string AgentType { get; set; }
+    public required AgentType AgentType { get; set; }
 
     /// <summary>
     /// The current status of the conversation.
