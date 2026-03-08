@@ -313,8 +313,9 @@ public class PostService : IPostService
         return new PostSummaryDto(
             post.Id,
             post.Title ?? string.Empty,
+                summary,
             post.PostImageUrl ?? string.Empty,
-            summary,
+        
             MapAuthor(post),
             post.PostType,
             post.Upvotes,
