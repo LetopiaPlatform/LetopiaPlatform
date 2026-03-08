@@ -21,6 +21,7 @@ public class ExceptionMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        context.Request.EnableBuffering();
         try
         {
             await _next(context);
@@ -81,7 +82,28 @@ public class ExceptionMiddleware
             default:
                 statusCode = StatusCodes.Status500InternalServerError;
                 message = "An internal server error occurred.";
-                _logger.LogError(exception, "Unhandled exception on: {Method} {Path}", context.Request.Method, context.Request.Path);
+
+                var innerExceptionMessage = exception.InnerException?.Message;
+                var rootCause = GetInnermostException(exception);
+                var requestBody = await ReadRequestBodyAsync(context);
+
+                _logger.LogError(exception,
+                    "Unhandled exception on: {Method} {Path}{QueryString} | " +
+                    "ExceptionType: {ExceptionType} | Message: {Message} | " +
+                    "InnerException: {InnerException} | RootCause: {RootCauseType}: {RootCauseMessage} | " +
+                    "RequestBody: {RequestBody} | " +
+                    "User: {UserId} | TraceId: {TraceId}",
+                    context.Request.Method,
+                    context.Request.Path,
+                    context.Request.QueryString,
+                    exception.GetType().FullName,
+                    exception.Message,
+                    innerExceptionMessage ?? "N/A",
+                    rootCause.GetType().FullName,
+                    rootCause.Message,
+                    requestBody,
+                    context.User?.FindFirst("sub")?.Value ?? "anonymous",
+                    context.TraceIdentifier);
                 break;
         }
 
@@ -100,5 +122,27 @@ public class ExceptionMiddleware
 
         context.Response.StatusCode = statusCode;
         await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
+    }
+
+    private static async Task<string> ReadRequestBodyAsync(HttpContext context)
+    {
+        try
+        {
+            context.Request.Body.Position = 0;
+            using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
+            var body = await reader.ReadToEndAsync();
+            return string.IsNullOrWhiteSpace(body) ? "N/A" : body.Length > 4096 ? body[..4096] + "...(truncated)" : body;
+        }
+        catch
+        {
+            return "N/A";
+        }
+    }
+
+    private static Exception GetInnermostException(Exception exception)
+    {
+        while (exception.InnerException != null)
+            exception = exception.InnerException;
+        return exception;
     }
 }
