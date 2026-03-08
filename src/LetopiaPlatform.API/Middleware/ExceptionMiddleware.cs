@@ -83,25 +83,24 @@ public class ExceptionMiddleware
                 statusCode = StatusCodes.Status500InternalServerError;
                 message = "An internal server error occurred.";
 
-                var innerExceptionMessage = exception.InnerException?.Message;
                 var rootCause = GetInnermostException(exception);
                 var requestBody = await ReadRequestBodyAsync(context);
 
                 _logger.LogError(exception,
                     "Unhandled exception on: {Method} {Path}{QueryString} | " +
-                    "ExceptionType: {ExceptionType} | Message: {Message} | " +
+                    "ExceptionType: {ExceptionType} | Message: {ExceptionMessage} | " +
                     "InnerException: {InnerException} | RootCause: {RootCauseType}: {RootCauseMessage} | " +
                     "RequestBody: {RequestBody} | " +
                     "User: {UserId} | TraceId: {TraceId}",
                     context.Request.Method,
                     context.Request.Path,
-                    context.Request.QueryString,
+                    Sanitize(context.Request.QueryString.ToString()),
                     exception.GetType().FullName,
-                    exception.Message,
-                    innerExceptionMessage ?? "N/A",
+                    Sanitize(exception.Message),
+                    Sanitize(exception.InnerException?.Message ?? "N/A"),
                     rootCause.GetType().FullName,
-                    rootCause.Message,
-                    requestBody,
+                    Sanitize(rootCause.Message),
+                    Sanitize(requestBody),
                     context.User?.FindFirst("sub")?.Value ?? "anonymous",
                     context.TraceIdentifier);
                 break;
@@ -144,5 +143,19 @@ public class ExceptionMiddleware
         while (exception.InnerException != null)
             exception = exception.InnerException;
         return exception;
+    }
+
+    /// <summary>
+    /// Strips newlines and control characters to prevent log injection / log forging.
+    /// </summary>
+    private static string Sanitize(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value;
+
+        return value
+            .Replace("\r", "", StringComparison.Ordinal)
+            .Replace("\n", "", StringComparison.Ordinal)
+            .Replace("\t", " ", StringComparison.Ordinal);
     }
 }
