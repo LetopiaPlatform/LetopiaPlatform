@@ -10,6 +10,5 @@ public sealed record ConversationSummaryDto(
     string Title,
     string AgentType,
     ConversationStatus Status,
-    int MessageCount,
     DateTime CreatedAt,
     DateTime UpdatedAt);
