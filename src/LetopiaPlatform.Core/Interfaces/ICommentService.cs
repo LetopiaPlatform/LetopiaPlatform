@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Comment;
+using LetopiaPlatform.Core.Exceptions;
 
 namespace LetopiaPlatform.Core.Interfaces;
 /// <summary>
@@ -23,9 +24,9 @@ public interface ICommentService
     /// <param name="userId">The ID of the user creating the comment.</param>
     /// <param name="ct">Optional cancellation token.</param>
     /// <returns>The created comment data.</returns>
-    /// <exception cref="KeyNotFoundException">Thrown if the post does not exist or is deleted.</exception>
+    /// <exception cref="NotFoundException">Thrown if the post does not exist or is deleted.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the post type does not allow comments.</exception>
-    /// <exception cref="UnauthorizedAccessException">Thrown if the user is not allowed to comment.</exception>
+    /// <exception cref="ForbiddenException">Thrown if the user is not allowed to comment.</exception>
     Task<CommentDto> CreateAsync(Guid postId, CreateCommentRequest request, Guid userId, CancellationToken ct = default);
 
     #endregion
@@ -62,8 +63,8 @@ public interface ICommentService
     /// <param name="userId">The ID of the user performing the update.</param>
     /// <param name="ct">Optional cancellation token.</param>
     /// <returns>The updated comment data.</returns>
-    /// <exception cref="KeyNotFoundException">Thrown if the comment does not exist or is deleted.</exception>
-    /// <exception cref="UnauthorizedAccessException">Thrown if the user is not authorized to update the comment.</exception>
+    /// <exception cref="NotFoundException">Thrown if the comment does not exist or is deleted.</exception>
+    /// <exception cref="ForbiddenException">Thrown if the user is not authorized to update the comment.</exception>
     Task<CommentDto> UpdateAsync(Guid commentId, UpdateCommentRequest request, Guid userId, CancellationToken ct = default);
 
     #endregion
@@ -76,8 +77,8 @@ public interface ICommentService
     /// <param name="commentId">The ID of the comment to delete.</param>
     /// <param name="userId">The ID of the user performing the deletion.</param>
     /// <param name="ct">Optional cancellation token.</param>
-    /// <exception cref="KeyNotFoundException">Thrown if the comment does not exist or is already deleted.</exception>
-    /// <exception cref="UnauthorizedAccessException">Thrown if the user is not authorized to delete the comment.</exception>
+    /// <exception cref="NotFoundException">Thrown if the comment does not exist or is already deleted.</exception>
+    /// <exception cref="ForbiddenException">Thrown if the user is not authorized to delete the comment.</exception>
     Task DeleteAsync(Guid commentId, Guid userId, CancellationToken ct = default);
 
     #endregion

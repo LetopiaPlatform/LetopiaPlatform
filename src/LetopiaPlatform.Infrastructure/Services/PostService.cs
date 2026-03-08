@@ -4,6 +4,7 @@ using LetopiaPlatform.Core.DTOs.Author;
 using LetopiaPlatform.Core.DTOs.Post;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Enums;
+using LetopiaPlatform.Core.Exceptions;
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Core.Interfaces.Repositories;
 using LetopiaPlatform.Core.Services.Interfaces;
@@ -64,13 +65,13 @@ public class PostService : IPostService
         );
 
         if (community == null)
-            throw new KeyNotFoundException("Community not found");
+            throw new NotFoundException("Community not found");
 
         var userCommunity = community.Members?
             .FirstOrDefault(m => m.UserId == userId);
 
         if (!_postAuthorization.CanCreate(request.PostType, userCommunity!))
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenException(
                 "You are not allowed to create this type of post.");
         string? postImageUrl = null;
         if (request.PostImage is not null)
@@ -182,7 +183,7 @@ public class PostService : IPostService
     {
         var post = await _postRepo.GetByIdAsync(postId, "Author");
         if (post == null || post.IsDeleted)
-            throw new KeyNotFoundException("Post not found");
+            throw new NotFoundException("Post not found");
 
         post.ViewsCount++;
         await _unitOfWork.SaveChangesAsync(ct);
@@ -216,14 +217,14 @@ public class PostService : IPostService
         );
 
         if (post == null || post.IsDeleted)
-            throw new KeyNotFoundException("Post not found");
+            throw new NotFoundException("Post not found");
 
         var userCommunity = post.Community?.Members?
             .FirstOrDefault(m => m.UserId == userId);
 
         if (post.AuthorId != userId &&
             !_postAuthorization.CanUpdate(post.PostType, userCommunity!))
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenException(
                 "You are not allowed to update this post.");
 
         if (!string.IsNullOrWhiteSpace(request.Title))
@@ -259,14 +260,14 @@ public class PostService : IPostService
         );
 
         if (post == null || post.IsDeleted)
-            throw new KeyNotFoundException("Post not found");
+            throw new NotFoundException("Post not found");
 
         var userCommunity = post.Community?.Members?
             .FirstOrDefault(m => m.UserId == userId);
 
         if (post.AuthorId != userId &&
             !_postAuthorization.CanDelete(post.PostType, userCommunity!))
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenException(
                 "You are not allowed to delete this post.");
 
         post.IsDeleted = true;

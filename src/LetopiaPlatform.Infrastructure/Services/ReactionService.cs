@@ -3,6 +3,7 @@ using LetopiaPlatform.API.Core.Reaction;
 using LetopiaPlatform.Core.DTOs.Reaction;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Enums;
+using LetopiaPlatform.Core.Exceptions;
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Core.Interfaces.Repositories;
 using LetopiaPlatform.Infrastructure.Data;
@@ -52,7 +53,7 @@ public class ReactionService : IReactionService
         {
             var post = await _postRepo.GetByIdAsync(targetId);
             if (post == null || post.IsDeleted)
-                throw new KeyNotFoundException("Post not found.");
+                throw new NotFoundException("Post not found.");
 
             return await ToggleReactionForTarget(postId: post.Id, commentId: null, targetType: TargetType.Post, request.ReactionType, userId, ct);
         }
@@ -60,7 +61,7 @@ public class ReactionService : IReactionService
         {
             var comment = await _commentRepo.GetByIdAsync(targetId);
             if (comment == null || comment.IsDeleted)
-                throw new KeyNotFoundException("Comment not found.");
+                throw new NotFoundException("Comment not found.");
 
             return await ToggleReactionForTarget(postId: comment.PostId, commentId: comment.Id, targetType: TargetType.Comment, request.ReactionType, userId, ct);
         }
