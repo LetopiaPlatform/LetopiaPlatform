@@ -151,9 +151,12 @@ public static class DependencyInjection
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
+
+        services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
+
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
-        services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
+        
         return services;
     }
 
