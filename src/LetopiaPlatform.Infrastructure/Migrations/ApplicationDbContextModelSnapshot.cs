@@ -691,7 +691,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.HasIndex("MemberId");
 
-                    b.ToTable("ProjectMember");
+                    b.ToTable("ProjectMember", (string)null);
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Reaction", b =>
