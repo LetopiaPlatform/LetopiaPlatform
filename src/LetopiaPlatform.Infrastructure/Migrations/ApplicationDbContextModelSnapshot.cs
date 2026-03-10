@@ -307,7 +307,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("communities", (string)null);
                 });
 
-<<<<<<< HEAD
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
                 {
                     b.Property<Guid>("Id")
@@ -369,7 +368,8 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.HasIndex("CreatedBy");
 
                     b.ToTable("CommunityResources", (string)null);
-=======
+                });
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTask", b =>
                 {
                     b.Property<Guid>("Id")
@@ -470,7 +470,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasDatabaseName("ix_community_task_categories_community_id");
 
                     b.ToTable("community_task_categories", (string)null);
->>>>>>> c79eed6 (AddComunityTasksEntitesAndConfigration)
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.Role", b =>
@@ -1185,27 +1184,14 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
-<<<<<<< HEAD
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
                         .WithMany()
-=======
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTask", b =>
-                {
-                    b.HasOne("LetopiaPlatform.Core.Entities.CommunityTaskCategory", "Category")
-                        .WithMany("Tasks")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
-                        .WithMany("Tasks")
->>>>>>> c79eed6 (AddComunityTasksEntitesAndConfigration)
                         .HasForeignKey("CommunityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-<<<<<<< HEAD
                     b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "UploadedBy")
                         .WithMany()
                         .HasForeignKey("CreatedBy")
@@ -1215,7 +1201,21 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Community");
 
                     b.Navigation("UploadedBy");
-=======
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTask", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.CommunityTaskCategory", "Category")
+                        .WithMany("Tasks")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
+                        .WithMany("Tasks")
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Category");
 
                     b.Navigation("Community");
@@ -1230,7 +1230,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Community");
->>>>>>> c79eed6 (AddComunityTasksEntitesAndConfigration)
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
@@ -1453,6 +1452,13 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Tasks");
                 });
 
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
+                {
+                    b.Navigation("Likes");
+
+                    b.Navigation("Tags");
+                });
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTask", b =>
                 {
                     b.Navigation("UserProgresses");
@@ -1461,13 +1467,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTaskCategory", b =>
                 {
                     b.Navigation("Tasks");
-                });
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
-                {
-                    b.Navigation("Likes");
-
-                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.User", b =>
