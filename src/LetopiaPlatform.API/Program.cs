@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.API.Middleware;
 using LetopiaPlatform.Core.Entities.Identity;
@@ -35,7 +36,16 @@ public class Program
             builder.Services
                 .AddApiServices(builder.Configuration)
                 .AddInfrastructure(builder.Configuration, builder.Environment);
+            // __add http client ---------------------------------------------------
+            builder.Services.AddHttpClient();
 
+
+            // --- add convert enum to string -----------------
+            builder.Services.AddControllers()
+               .AddJsonOptions(options =>
+          {
+             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+       });
             var app = builder.Build();
 
             // ── Apply pending migrations ────────────────────────────────

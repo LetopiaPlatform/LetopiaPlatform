@@ -145,6 +145,11 @@ public static class DependencyInjection
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<IReactionService, ReactionService>();
 
+        services.AddScoped<IResourceRepository, ResourceRepository>();
+        services.AddScoped<IResourceService, ResourceService>();
+        services.AddScoped<ILinkPreviewService, LinkPreviewService>();
+
+
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
