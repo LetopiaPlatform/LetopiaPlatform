@@ -47,6 +47,15 @@ public class LinkPreviewService : ILinkPreviewService
 
     private async Task<LinkPreviewDto> ScrapeMetaAsync(string url)
     {
+        // sanitize for logging only
+        var safeUrlForLog = url
+            .Replace("\r", "")
+            .Replace("\n", "");
+
+        // optional: limit length
+        if (safeUrlForLog.Length > 200)
+            safeUrlForLog = safeUrlForLog.Substring(0, 200);
+
         try
         {
             var html = await _httpClient.GetStringAsync(url);
@@ -69,17 +78,17 @@ public class LinkPreviewService : ILinkPreviewService
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning(ex, "HTTP error scraping preview for {Url}", url);
+            _logger.LogWarning(ex, "HTTP error scraping preview for {Url}", safeUrlForLog);
             return new LinkPreviewDto { Url = url };
         }
         catch (TaskCanceledException ex)
         {
-            _logger.LogWarning(ex, "Timeout scraping preview for {Url}", url);
+            _logger.LogWarning(ex, "Timeout scraping preview for {Url}", safeUrlForLog);
             return new LinkPreviewDto { Url = url };
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Unexpected error scraping preview for {Url}", url);
+            _logger.LogWarning(ex, "Unexpected error scraping preview for {Url}", safeUrlForLog);
             return new LinkPreviewDto { Url = url };
         }
     }
