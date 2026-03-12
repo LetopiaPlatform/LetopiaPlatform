@@ -9,6 +9,7 @@ using LetopiaPlatform.Core.DTOs.Author;
 using LetopiaPlatform.Core.DTOs.Comment;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Enums;
+using LetopiaPlatform.Core.Exceptions;
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Core.Interfaces.Repositories;
 using LetopiaPlatform.Infrastructure.Data;
@@ -54,7 +55,7 @@ public class CommentService : ICommentService
 
         var post = await _postRepo.GetByIdAsync(postId, "Community.Members");
         if (post == null || post.IsDeleted)
-            throw new KeyNotFoundException("Post not found.");
+            throw new NotFoundException("Post not found.");
 
         if (post.PostType != PostType.Discussion)
             throw new InvalidOperationException("Comments are only allowed on discussion posts.");
@@ -64,7 +65,7 @@ public class CommentService : ICommentService
             memberRole != CommunityRole.Moderator &&
             memberRole != CommunityRole.Owner)
         {
-            throw new UnauthorizedAccessException("User does not have permission to create comment.");
+            throw new ForbiddenException("User does not have permission to create comment.");
         }
 
         await _unitOfWork.BeginTransactionAsync();
@@ -154,11 +155,11 @@ public class CommentService : ICommentService
         ArgumentNullException.ThrowIfNull(request);
 
         var comment = await _commentRepo.GetByIdAsync(commentId, "Author","Post.Community.Members");
-        if (comment == null || comment.IsDeleted) throw new KeyNotFoundException("Comment not found.");
+        if (comment == null || comment.IsDeleted) throw new NotFoundException("Comment not found.");
 
         var memberRole = comment.Post?.Community?.Members?.FirstOrDefault(m => m.UserId == userId)?.Role;
         if (comment.AuthorId != userId && memberRole != CommunityRole.Moderator)
-            throw new UnauthorizedAccessException("Only the author or a moderator can update this comment.");
+            throw new ForbiddenException("Only the author or a moderator can update this comment.");
 
         comment.Content = request.Content;
         comment.UpdatedAt = DateTime.UtcNow;
@@ -176,12 +177,12 @@ public class CommentService : ICommentService
     public async Task DeleteAsync(Guid commentId, Guid userId, CancellationToken ct = default)
     {
         var comment = await _commentRepo.GetByIdAsync(commentId, "Post.Community.Members");
-        if (comment == null || comment.IsDeleted) throw new KeyNotFoundException("Comment not found.");
+        if (comment == null || comment.IsDeleted) throw new NotFoundException("Comment not found.");
 
         var memberRole = comment?.Post?.Community?.Members?.FirstOrDefault(m => m.UserId == userId)?.Role;
         bool canDelete = comment?.AuthorId == userId || memberRole == CommunityRole.Moderator;
 
-        if (!canDelete) throw new UnauthorizedAccessException("Insufficient permissions to delete this comment.");
+        if (!canDelete) throw new ForbiddenException("Insufficient permissions to delete this comment.");
 
         await _unitOfWork.BeginTransactionAsync();
         try
@@ -209,7 +210,7 @@ public class CommentService : ICommentService
     private async Task<CommentDto> GetByIdInternalAsync(Guid commentId, Guid? currentUserId, CancellationToken ct)
     {
         var comment = await _commentRepo.GetByIdAsync(commentId, "Author");
-        if (comment == null) throw new KeyNotFoundException("Comment not found.");
+        if (comment == null) throw new NotFoundException("Comment not found.");
 
         string? reactionType = null;
         if (currentUserId.HasValue)

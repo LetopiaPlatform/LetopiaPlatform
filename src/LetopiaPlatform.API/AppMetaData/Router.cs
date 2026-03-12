@@ -114,6 +114,20 @@ public static class Router
         public const string Comments = $"{Prefix}/{{postId:guid}}/comments";
         public const string React = $"{Prefix}/{{postId:guid}}/react";
     }
+
+    public static class CommunityTaskCategory
+    {
+        public const string Prefix = $"{Rule}/CommunityTaskCategory";
+
+        public const string GetAll = $"{Prefix}/{{communityId:guid}}/GetAll";
+        public const string Create = $"{Prefix}/{{communityId:guid}}/Create";
+
+
+        public const string GetCategoryById = $"{Prefix}/{{communityId:guid}}/{{categoryid:guid}}";
+
+        public const string Update = $"{Prefix}/Update/{{id:guid}}";
+        public const string Delete = $"{Prefix}/Delete/{{id:guid}}";
+    }
 }
 
 

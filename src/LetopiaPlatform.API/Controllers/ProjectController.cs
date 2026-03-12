@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LetopiaPlatform.API.AppMetaData;
 using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.Core.DTOs.Project.Request;
@@ -15,6 +16,11 @@ public class ProjectController : BaseController
     public ProjectController(IProjectService projectService)
     {
         _projectService = projectService;
+    }
+    private Guid GetUserIdFromToken()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.Parse(userId!);
     }
 
     // GET: api/projects/discover
@@ -42,14 +48,16 @@ public class ProjectController : BaseController
 
     // POST: api/projects/create
     [HttpPost(Router.Projects.Create)]
-    [AllowAnonymous]
+    [Authorize]
     public async Task<IActionResult> CreateProject([FromForm] CreateProjectRequestDto request)
     {
+
+        var ownerId = GetUserIdFromToken();
         HttpContext.AddBusinessContext("action", "create_project");
-        HttpContext.AddBusinessContext("owner_id", request.OwnerId.ToString());
+        HttpContext.AddBusinessContext("owner_id", ownerId.ToString());
 
 
-        var result = await _projectService.CreateAsync(request, HttpContext.RequestAborted);
+        var result = await _projectService.CreateAsync(ownerId, request, HttpContext.RequestAborted);
 
         if (result.IsSuccess)
         {
@@ -61,26 +69,28 @@ public class ProjectController : BaseController
 
     // PUT: api/v1/projects/{id}
     [HttpPut(Router.Projects.Update)]
+    [Authorize]
 
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromForm] UpdateProjectRequestDto request)
     {
-
+        var ownerId = GetUserIdFromToken();
         HttpContext.AddBusinessContext("action", "update_project");
         HttpContext.AddBusinessContext("project_id", id.ToString());
 
-        var result = await _projectService.UpdateAsync(id, request, HttpContext.RequestAborted);
+        var result = await _projectService.UpdateAsync(id, ownerId, request, HttpContext.RequestAborted);
         return HandleResult(result);
     }
 
     // DELETE: api/v1/projects/{id}
     [HttpDelete(Router.Projects.Delete)]
-
+    [Authorize]
     public async Task<IActionResult> Delete([FromRoute] Guid id)
     {
+        var ownerId = GetUserIdFromToken();
         HttpContext.AddBusinessContext("action", "delete_project");
         HttpContext.AddBusinessContext("project_id", id.ToString());
 
-        var result = await _projectService.DeleteAsync(id, HttpContext.RequestAborted);
+        var result = await _projectService.DeleteAsync(id, ownerId, HttpContext.RequestAborted);
         return HandleResult(result);
     }
 

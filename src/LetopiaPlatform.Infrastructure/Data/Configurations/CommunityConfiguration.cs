@@ -101,7 +101,17 @@ public class CommunityConfiguration : IEntityTypeConfiguration<Community>
             .WithOne(ch => ch.Community)
             .HasForeignKey(ch => ch.CommunityId);
 
+        // Tasks Relationship
+        builder.HasMany(c => c.Tasks)
+            .WithOne(t => t.Community)
+            .HasForeignKey(t => t.CommunityId)
+            .OnDelete(DeleteBehavior.Cascade);
 
+        // Task Categories Relationship
+        builder.HasMany(c => c.TaskCategories)
+            .WithOne(tc => tc.Community)
+            .HasForeignKey(tc => tc.CommunityId)
+            .OnDelete(DeleteBehavior.Cascade);
 
 
 
