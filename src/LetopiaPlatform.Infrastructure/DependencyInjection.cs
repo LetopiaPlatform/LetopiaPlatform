@@ -1,5 +1,5 @@
-using Amazon.S3;
 using System.Text;
+using Amazon.S3;
 using LetopiaPlatform.Core.AppSettings;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Interfaces;
@@ -31,7 +31,7 @@ public static class DependencyInjection
         services.AddJwtAuthentication(configuration, environment);
         services.AddAppServices(configuration);
         services.AddHealthCheckServices(configuration);
-        services.AddScoped<Core.Interfaces.Repositories.IProjectCategoryRepository, ProjectCategoryRepository>();
+        services.AddScoped<IProjectCategoryRepository, ProjectCategoryRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
         services.AddScoped<ICommunityTaskCategoryRepository, CommunityTaskCategoryRepository>();
@@ -147,14 +147,14 @@ public static class DependencyInjection
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<IReactionService, ReactionService>();
-
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
-
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
-
+        services.AddScoped<IRoadmapRepository, RoadmapRepository>();
+        services.AddScoped<IConversationRepository, ConversationRepository>(); 
+        services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
         
