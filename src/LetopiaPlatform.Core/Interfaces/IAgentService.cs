@@ -1,5 +1,6 @@
 using LetopiaPlatform.Core.DTOs.Agent;
 using LetopiaPlatform.Core.Entities;
+using LetopiaPlatform.Core.Enums;
 
 namespace LetopiaPlatform.Core.Interfaces;
 
@@ -12,7 +13,7 @@ public interface IAgentService
     /// <summary>
     /// Gets the agent type identifier handled by this service (e.g., "RoadmapGenerator").
     /// </summary>
-    string AgentType { get; }
+    AgentType AgentType { get; }
 
     /// <summary>
     /// Starts a new conversation session for the specified user.
@@ -37,4 +38,3 @@ public interface IAgentService
         Guid userId,
         CancellationToken ct);
 }
-

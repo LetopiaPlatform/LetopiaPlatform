@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LetopiaPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312114848_AddAgentAndRoadmapEntities")]
+    partial class AddAgentAndRoadmapEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -357,8 +360,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("communities", (string)null);
                 });
 
-<<<<<<< HEAD
-=======
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
                 {
                     b.Property<Guid>("Id")
@@ -524,7 +525,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("community_task_categories", (string)null);
                 });
 
->>>>>>> main
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -994,8 +994,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("reactions", (string)null);
                 });
 
-<<<<<<< HEAD
-=======
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1045,7 +1043,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("ResourceTags", (string)null);
                 });
 
->>>>>>> main
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1421,8 +1418,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
-<<<<<<< HEAD
-=======
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
@@ -1471,7 +1466,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Community");
                 });
 
->>>>>>> main
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.AgentConversation", "Conversation")
@@ -1559,8 +1553,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-<<<<<<< HEAD
-=======
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.CommunityResource", "Resource")
@@ -1591,7 +1583,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Resource");
                 });
 
->>>>>>> main
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.AgentConversation", "Conversation")
