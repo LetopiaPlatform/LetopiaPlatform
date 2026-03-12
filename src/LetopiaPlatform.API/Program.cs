@@ -6,6 +6,7 @@ using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Seeder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using LetopiaPlatform.Agent;
 using Serilog;
 
 namespace LetopiaPlatform.API;
@@ -34,7 +35,8 @@ public class Program
             // ── Service registration ──────────────────────────────────────
             builder.Services
                 .AddApiServices(builder.Configuration)
-                .AddInfrastructure(builder.Configuration, builder.Environment);
+                .AddInfrastructure(builder.Configuration, builder.Environment)
+                .AddAgentServices(builder.Configuration);
 
             var app = builder.Build();
 

@@ -8,7 +8,7 @@ namespace LetopiaPlatform.Core.DTOs.Agent;
 public sealed record ConversationDto(
     Guid Id,
     string Title,
-    string AgentType,
+    AgentType AgentType,
     ConversationStatus Status,
     Guid? RoadmapId,
     DateTime CreatedAt,
