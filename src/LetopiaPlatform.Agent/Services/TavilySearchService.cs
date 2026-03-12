@@ -13,8 +13,6 @@ namespace LetopiaPlatform.Agent.Services;
 /// </summary>
 public class TavilySearchService : IWebSearchService
 {
-    private const string TavilySearchUrl = "https://api.tavily.com/search";
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
@@ -28,6 +26,9 @@ public class TavilySearchService : IWebSearchService
     /// <summary>
     /// Initializes a new instance of the <see cref="TavilySearchService"/> class.
     /// </summary>
+    /// <param name="httpClient">Typed HTTP client used to communicate with the Tavily API.</param>
+    /// <param name="settings">Web search configuration settings.</param>
+    /// <param name="logger">Logger instance.</param>
     public TavilySearchService(
         HttpClient httpClient,
         IOptions<WebSearchSettings> settings,
@@ -41,20 +42,31 @@ public class TavilySearchService : IWebSearchService
     /// <summary>
     /// Executes a search query against the Tavily API and returns structured results.
     /// </summary>
-    public async Task<List<SearchResult>> SearchAsync(
-        string query, int maxResults = 5, CancellationToken ct = default)
-    {
-        try
+    /// <param name="query">Search query.</param>
+    /// <param name="maxResults">Maximum number of results requested.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>List of mapped <see cref="SearchResult"/> objects.</returns>
+        public async Task<List<SearchResult>> SearchAsync(
+            string query,
+            int maxResults = 0,
+            CancellationToken ct = default)
         {
-            var requestBody = new TavilySearchRequest
+            try
             {
-                Query = query,
-                MaxResults = maxResults,
-                ApiKey = _settings.TavilyApiKey
-            };
+                var resultsLimit = maxResults > 0 ? maxResults : _settings.MaxResults;
 
-            using var response = await _httpClient.PostAsJsonAsync(
-                TavilySearchUrl, requestBody, JsonOptions, ct).ConfigureAwait(false);
+                var requestBody = new TavilySearchRequest
+                {
+                    Query = query,
+                    MaxResults = resultsLimit,
+                    ApiKey = _settings.TavilyApiKey
+                };
+
+                using var response = await _httpClient.PostAsJsonAsync(
+                    _settings.TavilySearchUrl,
+                    requestBody,
+                    JsonOptions,
+                    ct).ConfigureAwait(false);
 
             response.EnsureSuccessStatusCode();
 
@@ -64,7 +76,10 @@ public class TavilySearchService : IWebSearchService
 
             if (tavilyResponse?.Results is null)
             {
-                _logger.LogWarning("Tavily API returned null results for query: {Query}", query);
+                _logger.LogWarning(
+                    "Tavily API returned null results for query: {Query}",
+                    query);
+
                 return [];
             }
 
@@ -77,7 +92,11 @@ public class TavilySearchService : IWebSearchService
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "Tavily search failed for query: {Query}", query);
+            _logger.LogWarning(
+                ex,
+                "Tavily search failed for query: {Query}",
+                query);
+
             return [];
         }
     }

@@ -1,4 +1,6 @@
 using LetopiaPlatform.Agent.Configuration;
+using LetopiaPlatform.Agent.Services;
+using LetopiaPlatform.Core.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,6 +25,9 @@ public static class DependencyInjection
 
         services.Configure<WebSearchSettings>(
             configuration.GetSection(WebSearchSettings.SectionName));
+
+        // Register Tavily web search service with typed HttpClient
+        services.AddHttpClient<IWebSearchService, TavilySearchService>();
 
         return services;
     }

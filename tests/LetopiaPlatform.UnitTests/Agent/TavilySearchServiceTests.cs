@@ -87,10 +87,13 @@ public class TavilySearchServiceTests
     {
         // Arrange
         var handler = new MockHttpMessageHandler((_, _) =>
-            Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
             {
                 Content = new StringContent("Internal Server Error")
-            }));
+            };
+            return Task.FromResult(response);
+        });
 
         var service = CreateService(handler);
 
