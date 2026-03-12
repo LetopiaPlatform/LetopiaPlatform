@@ -22,7 +22,18 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Channel> Channels => Set<Channel>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Project> Projects => Set<Project>();
+
+    public DbSet<CommunityResource> CommunityResources => Set<CommunityResource>();
+
+    public DbSet<ResourceLike> ResourceLikes=> Set<ResourceLike>();
+
+    public DbSet<ResourceTag> ResourceTags => Set<ResourceTag>();
+
     public DbSet<ProjectCategory> ProjectCategorys => Set<ProjectCategory>();
+    public DbSet<Roadmap> Roadmaps => Set<Roadmap>();
+    public DbSet<RoadmapPhase> RoadmapPhases => Set<RoadmapPhase>();
+    public DbSet<AgentConversation> AgentConversations => Set<AgentConversation>();
+    public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
