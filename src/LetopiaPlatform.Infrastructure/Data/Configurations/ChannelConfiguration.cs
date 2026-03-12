@@ -96,5 +96,12 @@ public class ChannelConfiguration : IEntityTypeConfiguration<Channel>
         builder.HasMany(ch => ch.Posts)
             .WithOne(p => p.Channel)
             .HasForeignKey(p => p.ChannelId);
+
+
+
     }
+
+
+
 }
+

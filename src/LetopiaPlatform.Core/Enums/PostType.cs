@@ -5,5 +5,6 @@ public enum PostType
 {
     Discussion,
     Question,
-    Resource
+    Resource,
+    Announcement
 }

@@ -22,6 +22,9 @@ public class R2FileStorageService : IFileStorageService
 
     private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
 
+    private static string SanitizeForLog(string value) =>
+        value.Replace("\r", string.Empty).Replace("\n", string.Empty);
+
     public R2FileStorageService(
         IAmazonS3 s3Client,
         IOptions<FileStorageSettings> settings,
@@ -104,13 +107,13 @@ public class R2FileStorageService : IFileStorageService
 
             await _s3Client.DeleteObjectAsync(deleteRequest);
 
-            _logger.LogInformation("File deleted from R2: {Key}", key);
+            _logger.LogInformation("File deleted from R2: {Key}", SanitizeForLog(key));
 
             return Result.Success();
         }
         catch (AmazonS3Exception ex)
         {
-            _logger.LogError(ex, "R2 delete failed for path {FilePath}", filePath);
+            _logger.LogError(ex, "R2 delete failed for path {FilePath}", SanitizeForLog(filePath));
             return Result.Failure("File deletion failed. Please try again.");
         }
     }

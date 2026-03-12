@@ -1,7 +1,9 @@
 using Amazon.S3;
+using System.Text;
 using LetopiaPlatform.Core.AppSettings;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Interfaces;
+using LetopiaPlatform.Core.Interfaces.Repositories;
 using LetopiaPlatform.Core.Services.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Identity;
@@ -14,7 +16,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace LetopiaPlatform.Infrastructure;
 
@@ -30,7 +31,9 @@ public static class DependencyInjection
         services.AddJwtAuthentication(configuration, environment);
         services.AddAppServices(configuration);
         services.AddHealthCheckServices(configuration);
-
+        services.AddScoped<Core.Interfaces.Repositories.IProjectCategoryRepository, ProjectCategoryRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
         return services;
     }
 
@@ -134,7 +137,21 @@ public static class DependencyInjection
         services.AddScoped<ICommunityRepository, CommunityRepository>();
         services.AddScoped<ICommunityService, CommunityService>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+
+        services.AddScoped<IPostRepository, PostRepository>();
+        services.AddScoped<ICommentRepository, CommentRepository>();
+        services.AddScoped<IReactionRepository, ReactionRepository>();
+
+        services.AddScoped<IPostAuthorizationService, PostAuthorizationService>();
+        services.AddScoped<IPostService, PostService>();
+        services.AddScoped<ICommentService, CommentService>();
+        services.AddScoped<IReactionService, ReactionService>();
+
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
+        services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
+        services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IProjectMemberService, ProjectMemberService>();
         return services;
     }
 
@@ -144,13 +161,13 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection string missing.");
-        
+
         services.AddHealthChecks()
             .AddNpgSql(
                 connectionString,
                 name: "postgresql",
                 tags: ["db", "ready"]);
-        
+
         return services;
     }
 
