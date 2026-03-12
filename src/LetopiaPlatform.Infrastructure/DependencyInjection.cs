@@ -148,7 +148,6 @@ public static class DependencyInjection
 
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
-        services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
 
@@ -156,7 +155,7 @@ public static class DependencyInjection
 
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
-        
+
         return services;
     }
 
