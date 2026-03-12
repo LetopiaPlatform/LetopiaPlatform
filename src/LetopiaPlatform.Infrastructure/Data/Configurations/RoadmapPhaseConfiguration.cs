@@ -53,7 +53,7 @@ public class RoadmapPhaseConfiguration : IEntityTypeConfiguration<RoadmapPhase>
         builder.Property(p => p.DurationEstimateWeeks)
             .HasColumnName("duration_estimate_weeks");
 
-        // JSONB columns with System.Text.Json conversion
+        // JSONB columns
         builder.Property(p => p.Resources)
             .HasColumnName("resources")
             .HasColumnType("jsonb")

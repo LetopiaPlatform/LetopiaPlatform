@@ -155,7 +155,7 @@ public static class DependencyInjection
 
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
-
+        
         return services;
     }
 

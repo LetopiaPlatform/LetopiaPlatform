@@ -38,4 +38,3 @@ public interface IAgentService
         Guid userId,
         CancellationToken ct);
 }
-
