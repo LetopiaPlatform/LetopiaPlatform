@@ -1763,7 +1763,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("OwnedProjects");
 
                     b.Navigation("ProjectMemberships");
-<<<<<<< Updated upstream
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.User", b =>
@@ -1771,8 +1770,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("OwnedProjects");
 
                     b.Navigation("ProjectMemberships");
-=======
->>>>>>> Stashed changes
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
