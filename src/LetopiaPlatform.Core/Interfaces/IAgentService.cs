@@ -1,5 +1,6 @@
 using LetopiaPlatform.Core.DTOs.Agent;
 using LetopiaPlatform.Core.Entities;
+using LetopiaPlatform.Core.Enums;
 
 namespace LetopiaPlatform.Core.Interfaces;
 
