@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LetopiaPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260312112211_AddAgentRoadmapEntities")]
-    partial class AddAgentRoadmapEntities
+    [Migration("20260312114848_AddAgentAndRoadmapEntities")]
+    partial class AddAgentAndRoadmapEntities
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
