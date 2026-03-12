@@ -1,0 +1,19 @@
+{
+    "dotnet.defaultSolution": "LetopiaPlatform.sln",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "files.exclude": {
+        "**/bin": true,
+        "**/obj": true
+    },
+    "search.exclude": {
+        "**/bin": true,
+        "**/obj": true
+    },
+    "omnisharp.enableRoslynAnalyzers": true,
+    "csharp.debug.logging.moduleLoad": false,
+    "csharp.debug.logging.exceptions": true
+}

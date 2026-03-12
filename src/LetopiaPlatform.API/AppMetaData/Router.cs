@@ -19,9 +19,8 @@ public static class Router
         public const string Me = $"{Prefix}/me";
         public const string Update = $"{Prefix}/me";
 
-        // File operations scoped to the current user
-        public const string UploadFile = $"{Prefix}/me/files";
-        public const string DeleteFile = $"{Prefix}/me/files";
+        // Avatar
+        public const string Avatar = $"{Prefix}/me/avatar";
     }
 
 

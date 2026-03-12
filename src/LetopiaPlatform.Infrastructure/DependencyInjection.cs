@@ -1,4 +1,5 @@
 using System.Text;
+using Amazon.S3;
 using LetopiaPlatform.Core.AppSettings;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Interfaces;
@@ -28,9 +29,9 @@ public static class DependencyInjection
         services.AddDatabase(configuration);
         services.AddIdentitySystem();
         services.AddJwtAuthentication(configuration, environment);
-        services.AddAppServices();
+        services.AddAppServices(configuration);
         services.AddHealthCheckServices(configuration);
-        services.AddScoped<Core.Interfaces.Repositories.IProjectCategoryRepository, ProjectCategoryRepository>();
+        services.AddScoped<IProjectCategoryRepository, ProjectCategoryRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
         services.AddScoped<ICommunityTaskCategoryRepository, CommunityTaskCategoryRepository>();
@@ -125,14 +126,15 @@ public static class DependencyInjection
     // App Services
     // -----------------------------------------------------------
     private static IServiceCollection AddAppServices(
-        this IServiceCollection services)
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
-        services.AddScoped<IFileStorageService, FileStorageService>();
+        services.AddFileStorage(configuration);
         services.AddScoped<ICommunityRepository, CommunityRepository>();
         services.AddScoped<ICommunityService, CommunityService>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -145,14 +147,14 @@ public static class DependencyInjection
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<IReactionService, ReactionService>();
-
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
-
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
-
+        services.AddScoped<IRoadmapRepository, RoadmapRepository>();
+        services.AddScoped<IConversationRepository, ConversationRepository>(); 
+        services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
         
@@ -171,6 +173,40 @@ public static class DependencyInjection
                 connectionString,
                 name: "postgresql",
                 tags: ["db", "ready"]);
+
+        return services;
+    }
+
+    private static IServiceCollection AddFileStorage(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var settings = configuration.GetSection(FileStorageSettings.SectionName)
+        .Get<FileStorageSettings>() ?? new FileStorageSettings();
+
+        services.Configure<FileStorageSettings>(configuration.GetSection(FileStorageSettings.SectionName));
+
+        if (settings.Provider.Equals("R2", StringComparison.OrdinalIgnoreCase))
+        {
+            var r2 = settings.R2;
+
+            services.AddSingleton<IAmazonS3>(_ =>
+            {
+                var config = new AmazonS3Config
+                {
+                    ServiceURL = $"https://{r2.AccountId}.r2.cloudflarestorage.com",
+                    ForcePathStyle = true
+                };
+
+                return new AmazonS3Client(r2.AccessKeyId, r2.SecretAccessKey, config);
+            });
+
+            services.AddScoped<IFileStorageService, R2FileStorageService>();
+        }
+        else
+        {
+            services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        }
 
         return services;
     }

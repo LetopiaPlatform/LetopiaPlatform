@@ -1,6 +1,7 @@
 using LetopiaPlatform.API.AppMetaData;
 using LetopiaPlatform.API.DTOs.User;
 using LetopiaPlatform.API.Extensions;
+using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.User;
 using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -13,12 +14,10 @@ namespace LetopiaPlatform.API.Controllers;
 public class UsersController : BaseController
 {
     private readonly IUserService _userService;
-    private readonly IFileStorageService _fileService;
 
-    public UsersController(IUserService userService, IFileStorageService fileService)
+    public UsersController(IUserService userService)
     {
         _userService = userService;
-        _fileService = fileService;
     }
 
     // ── Profile ───────────────────────────────────────────────────────────
@@ -54,34 +53,36 @@ public class UsersController : BaseController
         return HandleResult(result);
     }
 
-    // ── Files ─────────────────────────────────────────────────────────────
+    // ── Avatar ────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Upload a single file
+    /// Upload or replace user avatar
     /// </summary>
-    [HttpPost(Router.Users.UploadFile)]
+    [HttpPut(Router.Users.Avatar)]
     [EnableRateLimiting(RateLimitingExtensions.FileUploadPolicy)]
-    public async Task<IActionResult> UploadFile(IFormFile file, [FromQuery] string directory = "uploads")
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<IActionResult> UpdateAvatar(IFormFile file, CancellationToken cancellationToken)
     {
-        HttpContext.AddBusinessContext("action", "upload_file");
-        HttpContext.AddBusinessContext("directory", directory);
-        HttpContext.AddBusinessContext("file_name", file.FileName);
+        if (file is null || file.Length == 0)
+            return HandleResult(Result<string>.Failure("No file provided"));
+
+        HttpContext.AddBusinessContext("action", "update_avatar");
         HttpContext.AddBusinessContext("file_size_bytes", file.Length);
 
-        var result = await _fileService.UploadAsync(file, directory);
+        var result = await _userService.UpdateAvatarAsync(GetUserId(), file, cancellationToken);
         return HandleResult(result);
     }
 
     /// <summary>
-    /// Delete a file by URL
+    /// Remove user avatar
     /// </summary>
-    [HttpDelete(Router.Users.DeleteFile)]
-    public async Task<IActionResult> DeleteFile([FromQuery] string fileUrl)
+    [HttpDelete(Router.Users.Avatar)]
+    public async Task<IActionResult> DeleteAvatar(CancellationToken cancellationToken)
     {
-        HttpContext.AddBusinessContext("action", "delete_file");
-        HttpContext.AddBusinessContext("file_url", fileUrl);
+        HttpContext.AddBusinessContext("action", "delete_avatar");
 
-        var result = await _fileService.DeleteAsync(fileUrl);
+        var result = await _userService.DeleteAvatarAsync(GetUserId(), cancellationToken);
         return HandleResult(result);
     }
 }

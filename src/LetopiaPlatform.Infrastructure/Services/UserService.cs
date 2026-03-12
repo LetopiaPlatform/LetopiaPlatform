@@ -63,7 +63,7 @@ public class UserService : IUserService
 
         if (avatar is not null)
         {
-            var uploadResult = await _fileService.ReplaceAsync(avatar, "avatars", user.AvatarUrl);
+            var uploadResult = await _fileService.ReplaceAsync(avatar, "avatars", user.AvatarUrl, ct);
             if (!uploadResult.IsSuccess)
             {
                 _logger.LogError("Avatar upload failed for user {UserId}: {Errors}",
@@ -78,6 +78,45 @@ public class UserService : IUserService
         await _userRepository.UpdateAsync(user);
 
         _logger.LogInformation("Profile updated for user {UserId}", userId);
+        return Result<UserProfileResponse>.Success(MapToResponse(user));
+    }
+
+    public async Task<Result<UserProfileResponse>> UpdateAvatarAsync(Guid userId, IFormFile avatar, CancellationToken ct = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user is null)
+            return Result<UserProfileResponse>.Failure("User not found", 404);
+
+        var uploadResult = await _fileService.ReplaceAsync(avatar, StorageDirectories.Avatars, user.AvatarUrl, ct);
+        if (!uploadResult.IsSuccess)
+        {
+            _logger.LogError("Avatar upload failed for user {UserId}: {Errors}",
+                userId, string.Join(", ", uploadResult.Errors));
+            return Result<UserProfileResponse>.Failure(uploadResult.Errors);
+        }
+
+        user.AvatarUrl = uploadResult.Value!;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(user);
+
+        _logger.LogInformation("Avatar updated for user {UserId}", userId);
+        return Result<UserProfileResponse>.Success(MapToResponse(user));
+    }
+
+    public async Task<Result<UserProfileResponse>> DeleteAvatarAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user is null)
+            return Result<UserProfileResponse>.Failure("User not found", 404);
+
+        if (!string.IsNullOrEmpty(user.AvatarUrl))
+            await _fileService.DeleteAsync(user.AvatarUrl, ct);
+
+        user.AvatarUrl = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(user);
+
+        _logger.LogInformation("Avatar deleted for user {UserId}", userId);
         return Result<UserProfileResponse>.Success(MapToResponse(user));
     }
 

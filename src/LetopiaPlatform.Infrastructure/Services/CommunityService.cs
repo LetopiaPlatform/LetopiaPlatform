@@ -47,7 +47,7 @@ public class CommunityService : ICommunityService
         string? coverImageUrl = null;
         if (request.CoverImage is not null)
         {
-            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers");
+            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers", ct);
             coverImageUrl = uploadResult.Value;
         }
 
@@ -169,10 +169,10 @@ public class CommunityService : ICommunityService
             // Delete old cover if exists
             if (!string.IsNullOrEmpty(community.CoverImageUrl))
             {
-                await _fileStorageService.DeleteAsync(community.CoverImageUrl);
+                await _fileStorageService.DeleteAsync(community.CoverImageUrl, ct);
             }
 
-            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers");
+            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers", ct);
             community.CoverImageUrl = uploadResult.Value;
         }
 
@@ -181,10 +181,10 @@ public class CommunityService : ICommunityService
             // Delete old cover if exists
             if (!string.IsNullOrEmpty(community.CoverImageUrl))
             {
-                await _fileStorageService.DeleteAsync(community.CoverImageUrl);
+                await _fileStorageService.DeleteAsync(community.CoverImageUrl, ct);
             }
 
-            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers");
+            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers", ct);
             community.CoverImageUrl = uploadResult.Value;
         }
 

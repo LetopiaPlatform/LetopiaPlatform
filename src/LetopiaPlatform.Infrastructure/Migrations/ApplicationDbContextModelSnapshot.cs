@@ -1765,6 +1765,13 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("ProjectMemberships");
                 });
 
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.User", b =>
+                {
+                    b.Navigation("OwnedProjects");
+
+                    b.Navigation("ProjectMemberships");
+                });
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
                 {
                     b.Navigation("Comments");
