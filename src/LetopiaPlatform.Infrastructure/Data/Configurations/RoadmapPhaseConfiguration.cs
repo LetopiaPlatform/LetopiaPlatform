@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using LetopiaPlatform.Core.DTOs.Agent;
 using LetopiaPlatform.Core.Entities;
 using Microsoft.EntityFrameworkCore;
