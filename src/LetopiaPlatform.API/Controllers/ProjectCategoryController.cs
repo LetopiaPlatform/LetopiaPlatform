@@ -20,7 +20,7 @@ public class ProjectCategoryController : BaseController
 
     // ── Create ──────────────────────────────────────────────────────────────
     [HttpPost(Router.ProjectCategories.Create)]
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromForm] CreateCategoryRequest request)
     {
         HttpContext.AddBusinessContext("action", "create_category");
@@ -31,7 +31,7 @@ public class ProjectCategoryController : BaseController
 
     // ── Update ──────────────────────────────────────────────────────────────
     [HttpPut(Router.ProjectCategories.Update)]
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromForm] UpdateCategoryRequest request)
     {
         HttpContext.AddBusinessContext("action", "update_category");
@@ -88,7 +88,7 @@ public class ProjectCategoryController : BaseController
     /// Determine if a category exists by slug and return its details along with non-full projects in that category
     /// </summary>
     [HttpDelete(Router.ProjectCategories.DeleteCategory)]
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteCategory([FromRoute] Guid id)
     {
         HttpContext.AddBusinessContext("action", "delete_category");
