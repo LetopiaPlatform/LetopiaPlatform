@@ -12,7 +12,7 @@ public interface IAgentService
     /// <summary>
     /// Gets the agent type identifier handled by this service (e.g., "RoadmapGenerator").
     /// </summary>
-    string AgentType { get; }
+    AgentType AgentType { get; }
 
     /// <summary>
     /// Starts a new conversation session for the specified user.
