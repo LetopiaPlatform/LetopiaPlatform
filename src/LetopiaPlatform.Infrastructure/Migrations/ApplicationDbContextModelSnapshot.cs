@@ -357,8 +357,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("communities", (string)null);
                 });
 
-<<<<<<< HEAD
-=======
+
 
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
@@ -527,7 +526,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 });
 
 
->>>>>>> main
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -997,8 +996,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("reactions", (string)null);
                 });
 
-<<<<<<< HEAD
-=======
+
 
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
@@ -1051,7 +1049,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 });
 
 
->>>>>>> main
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1427,8 +1425,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
-<<<<<<< HEAD
-=======
+
 
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
@@ -1480,7 +1477,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 });
 
 
->>>>>>> main
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.AgentConversation", "Conversation")
@@ -1568,8 +1565,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-<<<<<<< HEAD
-=======
+
 
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
@@ -1603,7 +1599,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 });
 
 
->>>>>>> main
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.AgentConversation", "Conversation")

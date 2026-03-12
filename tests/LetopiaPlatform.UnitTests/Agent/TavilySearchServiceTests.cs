@@ -21,7 +21,7 @@ public class TavilySearchServiceTests
     private static TavilySearchService CreateService(HttpMessageHandler handler)
     {
         var httpClient = new HttpClient(handler);
-        var settings = Options.Create(new AgentSettings { TavilyApiKey = FakeApiKey });
+        var settings = Options.Create(new WebSearchSettings { TavilyApiKey = FakeApiKey });
         var logger = Mock.Of<ILogger<TavilySearchService>>();
         return new TavilySearchService(httpClient, settings, logger);
     }

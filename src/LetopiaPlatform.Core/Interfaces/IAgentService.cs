@@ -1,9 +1,7 @@
 using LetopiaPlatform.Core.DTOs.Agent;
 using LetopiaPlatform.Core.Entities;
-<<<<<<< HEAD
-=======
 using LetopiaPlatform.Core.Enums;
->>>>>>> main
+
 
 namespace LetopiaPlatform.Core.Interfaces;
 
