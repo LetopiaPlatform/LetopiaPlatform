@@ -87,7 +87,7 @@ public class ProjectCategoryService : IProjectCategoryService
         string? iconUrl = null;
         if (request.IconUrl is not null)
         {
-            var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories");
+            var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories", ct);
 
             if (!uploadResult.IsSuccess)
             {
@@ -127,7 +127,7 @@ public class ProjectCategoryService : IProjectCategoryService
 
         if (request.IconUrl is not null)
         {
-            var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories");
+            var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories", ct);
 
             if (!uploadResult.IsSuccess)
             {
@@ -136,7 +136,7 @@ public class ProjectCategoryService : IProjectCategoryService
 
             if (!string.IsNullOrEmpty(category.IconUrl))
             {
-                await _fileService.DeleteAsync(category.IconUrl);
+                await _fileService.DeleteAsync(category.IconUrl, ct);
             }
 
             category.IconUrl = uploadResult.Value;

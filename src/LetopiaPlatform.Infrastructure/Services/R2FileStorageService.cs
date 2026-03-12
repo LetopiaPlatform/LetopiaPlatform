@@ -35,15 +35,15 @@ public class R2FileStorageService : IFileStorageService
         _logger = logger;
     }
 
-    public async Task<Result<string>> ReplaceAsync(IFormFile newFile, string directory, string? oldFilePath)
+    public async Task<Result<string>> ReplaceAsync(IFormFile newFile, string directory, string? oldFilePath, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrEmpty(oldFilePath))
-            await DeleteAsync(oldFilePath);
+            await DeleteAsync(oldFilePath, cancellationToken);
         
-        return await UploadAsync(newFile, directory);
+        return await UploadAsync(newFile, directory, cancellationToken);
     }
 
-    public async Task<Result<string>> UploadAsync(IFormFile file, string directory)
+    public async Task<Result<string>> UploadAsync(IFormFile file, string directory, CancellationToken cancellationToken = default)
     {
         if (file is null || file.Length == 0)
             return Result<string>.Failure("No file provided");
@@ -72,7 +72,7 @@ public class R2FileStorageService : IFileStorageService
                 DisablePayloadSigning = true // Required for R2
             };
 
-            await _s3Client.PutObjectAsync(putRequest);
+            await _s3Client.PutObjectAsync(putRequest, cancellationToken);
 
             var publicUrl = $"{_settings.PublicUrl.TrimEnd('/')}/{key}";
 
@@ -88,7 +88,7 @@ public class R2FileStorageService : IFileStorageService
         }
     }
 
-    public async Task<Result> DeleteAsync(string filePath)
+    public async Task<Result> DeleteAsync(string filePath, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(filePath))
             return Result.Failure("File path is empty");
@@ -105,7 +105,7 @@ public class R2FileStorageService : IFileStorageService
                 Key = key
             };
 
-            await _s3Client.DeleteObjectAsync(deleteRequest);
+            await _s3Client.DeleteObjectAsync(deleteRequest, cancellationToken);
 
             _logger.LogInformation("File deleted from R2: {Key}", SanitizeForLog(key));
 
