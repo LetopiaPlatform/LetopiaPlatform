@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<Core.Interfaces.Repositories.IProjectCategoryRepository, ProjectCategoryRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
+        services.AddScoped<ICommunityTaskCategoryRepository, CommunityTaskCategoryRepository>();
         return services;
     }
 
@@ -152,6 +153,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         return services;
     }
 
