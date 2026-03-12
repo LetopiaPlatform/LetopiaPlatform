@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Post;
+using LetopiaPlatform.Core.Exceptions;
 
 namespace LetopiaPlatform.Core.Interfaces;
 
@@ -24,8 +25,8 @@ public interface IPostService
     /// <param name="userId">The ID of the user creating the post.</param>
     /// <param name="ct">Optional cancellation token.</param>
     /// <returns>The created post details.</returns>
-    /// <exception cref="KeyNotFoundException">Thrown if the community does not exist.</exception>
-    /// <exception cref="UnauthorizedAccessException">Thrown if the user is not allowed to create posts.</exception>
+    /// <exception cref="NotFoundException">Thrown if the community does not exist.</exception>
+    /// <exception cref="ForbiddenException">Thrown if the user is not allowed to create posts.</exception>
     Task<PostDetailDto> CreateAsync(Guid communityId, Guid channelId, CreatePostRequest request, Guid userId, CancellationToken ct = default);
 
     #endregion
@@ -52,7 +53,7 @@ public interface IPostService
     /// <param name="currentUserId">Optional user ID to fetch user's reaction.</param>
     /// <param name="ct">Optional cancellation token.</param>
     /// <returns>The detailed post data.</returns>
-    /// <exception cref="KeyNotFoundException">Thrown if the post does not exist or is deleted.</exception>
+    /// <exception cref="NotFoundException">Thrown if the post does not exist or is deleted.</exception>
     Task<PostDetailDto> GetByIdAsync(Guid postId, Guid? currentUserId = null, CancellationToken ct = default);
 
     #endregion
@@ -67,8 +68,8 @@ public interface IPostService
     /// <param name="userId">The ID of the user performing the update.</param>
     /// <param name="ct">Optional cancellation token.</param>
     /// <returns>The updated post details.</returns>
-    /// <exception cref="KeyNotFoundException">Thrown if the post does not exist.</exception>
-    /// <exception cref="UnauthorizedAccessException">Thrown if the user is not authorized to update the post.</exception>
+    /// <exception cref="NotFoundException">Thrown if the post does not exist.</exception>
+    /// <exception cref="ForbiddenException">Thrown if the user is not authorized to update the post.</exception>
     Task<PostDetailDto> UpdateAsync(Guid postId, UpdatePostRequest request, Guid userId, CancellationToken ct = default);
 
     #endregion
@@ -81,8 +82,8 @@ public interface IPostService
     /// <param name="postId">The ID of the post to delete.</param>
     /// <param name="userId">The ID of the user performing the deletion.</param>
     /// <param name="ct">Optional cancellation token.</param>
-    /// <exception cref="KeyNotFoundException">Thrown if the post does not exist.</exception>
-    /// <exception cref="UnauthorizedAccessException">Thrown if the user is not authorized to delete the post.</exception>
+    /// <exception cref="NotFoundException">Thrown if the post does not exist.</exception>
+    /// <exception cref="ForbiddenException">Thrown if the user is not authorized to delete the post.</exception>
     Task DeleteAsync(Guid postId, Guid userId, CancellationToken ct = default);
 
     #endregion

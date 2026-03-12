@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using LetopiaPlatform.Core.DTOs.Agent;
 using LetopiaPlatform.Core.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,8 @@ public class RoadmapPhaseConfiguration : IEntityTypeConfiguration<RoadmapPhase>
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     public void Configure(EntityTypeBuilder<RoadmapPhase> builder)
@@ -51,7 +53,7 @@ public class RoadmapPhaseConfiguration : IEntityTypeConfiguration<RoadmapPhase>
         builder.Property(p => p.DurationEstimateWeeks)
             .HasColumnName("duration_estimate_weeks");
 
-        // JSONB columns with System.Text.Json conversion
+        // JSONB columns
         builder.Property(p => p.Resources)
             .HasColumnName("resources")
             .HasColumnType("jsonb")

@@ -5,7 +5,7 @@ public record CreateProjectRequestDto(
    string Title,
     string Description,
     Guid CategoryId,
-    Guid OwnerId,
+    //Guid OwnerId,
     string? DifficultyLevel,
     DateTime StartDate,
     DateTime EndDate,

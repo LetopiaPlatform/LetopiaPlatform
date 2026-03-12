@@ -12,7 +12,7 @@ public interface IProjectService
     /// 
     /// </summary>
 
-    Task<Result<Guid>> CreateAsync(CreateProjectRequestDto request, CancellationToken ct = default);
+    Task<Result<Guid>> CreateAsync(Guid ownerId, CreateProjectRequestDto request, CancellationToken ct = default);
     /// <summary>
     /// 
     /// </summary>
@@ -26,11 +26,11 @@ public interface IProjectService
     /// 
     /// </summary>
 
-    Task<Result<string>> UpdateAsync(Guid id, UpdateProjectRequestDto request, CancellationToken ct = default);
+    Task<Result<string>> UpdateAsync(Guid id, Guid userId, UpdateProjectRequestDto request, CancellationToken ct = default);
 
     /// <summary>
     /// 
     /// </summary>
 
-    Task<Result<string>> DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<Result<string>> DeleteAsync(Guid id, Guid userId, CancellationToken ct = default);
 }
