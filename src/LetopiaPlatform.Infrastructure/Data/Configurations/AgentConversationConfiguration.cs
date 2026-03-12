@@ -57,9 +57,5 @@ public class AgentConversationConfiguration : IEntityTypeConfiguration<AgentConv
             .WithMany()
             .HasForeignKey(c => c.RoadmapId)
             .OnDelete(DeleteBehavior.SetNull);
-
-        builder.HasMany(c => c.Messages)
-            .WithOne(m => m.Conversation)
-            .HasForeignKey(m => m.ConversationId);
     }
 }

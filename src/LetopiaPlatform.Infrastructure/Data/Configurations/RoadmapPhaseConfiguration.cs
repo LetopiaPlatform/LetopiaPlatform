@@ -10,7 +10,8 @@ public class RoadmapPhaseConfiguration : IEntityTypeConfiguration<RoadmapPhase>
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     public void Configure(EntityTypeBuilder<RoadmapPhase> builder)
