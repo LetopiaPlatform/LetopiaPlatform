@@ -61,4 +61,20 @@ public class AuthController : BaseController
         
         return HandleResult(result);
     }
+
+    [HttpPost(Router.Authentication.GoogleLogin)]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        HttpContext.AddBusinessContext("action", "google_login");
+        
+        var result = await _authService.GoogleLoginAsync(request);
+
+        if (result.IsSuccess)
+        {
+            HttpContext.AddBusinessContext("google_login_user_id", result.Value!.User.Id);
+        }
+        
+        return HandleResult(result);
+
+    }
 }
