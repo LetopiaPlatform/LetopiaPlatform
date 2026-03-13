@@ -14,5 +14,6 @@ public record UserDto(
     string Id,
     string Email,
     string FullName,
-    string Role
+    string Role,
+    string? AvatarUrl
 );
