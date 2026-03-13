@@ -113,7 +113,10 @@ public class CommunityConfiguration : IEntityTypeConfiguration<Community>
             .HasForeignKey(tc => tc.CommunityId)
             .OnDelete(DeleteBehavior.Cascade);
 
-
-
+        // Task Categories Relationship
+        builder.HasMany(c => c.TaskCategories)
+            .WithOne(tc => tc.Community)
+            .HasForeignKey(tc => tc.CommunityId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

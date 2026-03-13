@@ -26,4 +26,14 @@ public interface IUserService
     /// <param name="ct">Cancellation token for the operation.</param>
     /// <returns>A result containing the updated user profile on success.</returns>
     Task<Result<UserProfileResponse>> UpdateProfileAsync(Guid userId, UpdateProfileRequest request, IFormFile? avatar, CancellationToken ct = default);
+
+    /// <summary>
+    /// Replaces the user's avatar with the provided file.
+    /// </summary>
+    Task<Result<UserProfileResponse>> UpdateAvatarAsync(Guid userId, IFormFile avatar, CancellationToken ct = default);
+
+    /// <summary>
+    /// Removes the user's avatar.
+    /// </summary>
+    Task<Result<UserProfileResponse>> DeleteAvatarAsync(Guid userId, CancellationToken ct = default);
 }

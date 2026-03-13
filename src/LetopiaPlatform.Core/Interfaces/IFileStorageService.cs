@@ -13,8 +13,9 @@ public interface IFileStorageService
     /// </summary>
     /// <param name="file">The file to upload.</param>
     /// <param name="directory">The target directory relative to the storage root.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A result containing the relative file path on success.</returns>
-    Task<Result<string>> UploadAsync(IFormFile file, string directory);
+    Task<Result<string>> UploadAsync(IFormFile file, string directory, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Replaces an existing file with a new one, deleting the old file if it exists.
@@ -22,13 +23,15 @@ public interface IFileStorageService
     /// <param name="newFile">The replacement file to upload.</param>
     /// <param name="directory">The target directory relative to the storage root.</param>
     /// <param name="oldFilePath">The relative path of the file to replace, or <c>null</c> if no previous file exists.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A result containing the new relative file path on success.</returns>
-    Task<Result<string>> ReplaceAsync(IFormFile newFile, string directory, string? oldFilePath);
+    Task<Result<string>> ReplaceAsync(IFormFile newFile, string directory, string? oldFilePath, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a file from storage.
     /// </summary>
     /// <param name="filePath">The relative path of the file to delete.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A result indicating success or failure.</returns>
-    Task<Result> DeleteAsync(string filePath);
+    Task<Result> DeleteAsync(string filePath, CancellationToken cancellationToken = default);
 }
