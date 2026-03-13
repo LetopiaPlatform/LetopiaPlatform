@@ -54,6 +54,10 @@ public class LinkPreviewService : ILinkPreviewService
         if (safeUrl.Length > 200)
             safeUrl = safeUrl[..200];
 
+        // optional: limit length
+        if (safeUrlForLog.Length > 200)
+            safeUrlForLog = safeUrlForLog.Substring(0, 200);
+
         try
         {
             var html = await _httpClient.GetStringAsync(url);
@@ -142,3 +146,5 @@ public static class LinkPreviewHttpClient
 {
     public const string Name = "link-preview";
 }
+
+

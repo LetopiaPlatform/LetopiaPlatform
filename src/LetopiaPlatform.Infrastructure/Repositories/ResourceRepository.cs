@@ -27,6 +27,7 @@ public class ResourceRepository : GenericRepository<CommunityResource>, IResourc
         var pageSize = query?.PageSize ?? 10;
 
         var q = _context.CommunityResources
+            .Include(r => r.Tags)
             .Where(r => r.CommunityId == communityId); // IsDeleted handled by global query filter
 
         // Only apply filters when query is provided
@@ -55,6 +56,7 @@ public class ResourceRepository : GenericRepository<CommunityResource>, IResourc
     public async Task<CommunityResource?> GetByIdWithDetailsAsync(
         Guid resourceId, CancellationToken ct = default)
         => await _context.CommunityResources
+            .Include(r => r.Tags)
             .Include(r => r.Likes)
             .FirstOrDefaultAsync(r => r.Id == resourceId, ct);
 
@@ -64,6 +66,7 @@ public class ResourceRepository : GenericRepository<CommunityResource>, IResourc
         Guid communityId, ResourceType type, int page, int pageSize, CancellationToken ct = default)
     {
         var q = _context.CommunityResources
+            .Include(r => r.Tags)
             .Where(r => r.CommunityId == communityId && r.Type == type)
             .OrderByDescending(r => r.LikesCount * 2 + r.ViewsCount);
 

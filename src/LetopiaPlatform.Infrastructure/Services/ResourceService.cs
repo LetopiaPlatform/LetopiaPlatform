@@ -72,6 +72,10 @@ public class ResourceService : IResourceService
             CreatedAt = DateTime.UtcNow,
             ViewsCount = 0,
             LikesCount = 0,
+            Tags = request.Tags
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => new ResourceTag { Id = Guid.NewGuid(), TagName = t.Trim().ToLowerInvariant() })
+                .ToList(),
         };
 
         await _unitOfWork.BeginTransactionAsync();
@@ -135,6 +139,9 @@ public class ResourceService : IResourceService
             var preview = await _preview.GetPreviewAsync(request.Url);
 
             resource.Url = request.Url;
+
+            // Re-apply preview fields only when the user hasn't explicitly overridden them
+            // in this same request — their explicit values take priority
             resource.ThumbnailUrl = preview.Image;
 
             // Scraped values are only used when the user didn't explicitly supply them
@@ -154,6 +161,21 @@ public class ResourceService : IResourceService
 
         if (request.Type.HasValue)
             resource.Type = request.Type.Value;
+
+        // Replace tags when a new list is provided
+        if (request.Tags is not null)
+        {
+            resource.Tags.Clear();
+            foreach (var tag in request.Tags.Where(t => !string.IsNullOrWhiteSpace(t)))
+            {
+                resource.Tags.Add(new ResourceTag
+                {
+                    Id = Guid.NewGuid(),
+                    ResourceId = resource.Id,
+                    TagName = tag.Trim().ToLowerInvariant(),
+                });
+            }
+        }
 
         resource.UpdatedAt = DateTime.UtcNow;
 
@@ -217,7 +239,7 @@ public class ResourceService : IResourceService
 
     public async Task<Result<PaginatedResult<ResourceDto>>> GetRecommendedAsync(
         Guid communityId,
- 
+       
         ResourceQueryParams query,
         Guid currentUserId,
         CancellationToken ct = default)
@@ -351,21 +373,21 @@ public class ResourceService : IResourceService
         bool isLiked,
         User? uploader,
         IEnumerable<Tag> tags) => new()
-        {
-            Id = r.Id,
-            Title = r.Title,
-            Url = r.Url,
-            ThumbnailUrl = r.ThumbnailUrl,
-            Description = r.Description,
-            Type = r.Type,
-            ViewsCount = r.ViewsCount,
-            LikesCount = r.LikesCount,
-            IsLikedByCurrentUser = isLiked,
+    {
+        Id = r.Id,
+        Title = r.Title,
+        Url = r.Url,
+        ThumbnailUrl = r.ThumbnailUrl,
+        Description = r.Description,
+        Type = r.Type,
+        ViewsCount = r.ViewsCount,
+        LikesCount = r.LikesCount,
+        IsLikedByCurrentUser = isLiked,
             Tags = tags.Select(t => t.TagName).ToList(),
-            UploadedBy = new UploadedByDto(
+        UploadedBy = new UploadedByDto(
             r.CreatedBy,
             uploader?.UserName ?? "Unknown",
             uploader?.AvatarUrl),
-            CreatedAt = r.CreatedAt,
-        };
+        CreatedAt = r.CreatedAt,
+    };
 }

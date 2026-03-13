@@ -86,10 +86,10 @@ public interface IResourceService
 
     /// <summary>
     /// Retrieves recommended resources within a community filtered by resource type.
-    /// Ranked by weighted engagement score: (LikesCount × 2) + ViewsCount.
+    /// Ranked by weighted engagement score: (LikesCount � 2) + ViewsCount.
     /// </summary>
     /// <param name="communityId">The identifier of the community.</param>
-    
+  
     /// <param name="query">Pagination parameters for the recommendation list.</param>
     /// <param name="currentUserId">
     /// The identifier of the current user used for personalization such as like status.
@@ -100,14 +100,14 @@ public interface IResourceService
     /// </returns>
     Task<Result<PaginatedResult<ResourceDto>>> GetRecommendedAsync(
         Guid communityId,
-      
+        
         ResourceQueryParams query,
         Guid currentUserId,
         CancellationToken ct = default);
 
     /// <summary>
     /// Increments the view count for a specific resource.
-    /// Uses ExecuteUpdateAsync internally — no SaveChanges required by the caller.
+    /// Uses ExecuteUpdateAsync internally � no SaveChanges required by the caller.
     /// </summary>
     /// <param name="resourceId">The identifier of the resource being viewed.</param>
     /// <param name="ct">Cancellation token for the operation.</param>
