@@ -103,6 +103,7 @@ public static class Router
         public const string Base = $"{Rule}/communities/{{communityId:guid}}";
         public const string Create = $"{Base}/channels/{{channelId:guid}}/posts";
         public const string List = $"{Base}/channels/{{channelId:guid}}/posts";
+        public const string Pinned = $"{Base}/channels/{{channelId:guid}}/posts/pinned";
 
         // Resource Specific
         public const string GetById = $"{Prefix}/{{postId:guid}}";

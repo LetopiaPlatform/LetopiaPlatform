@@ -22,6 +22,10 @@ public interface IPostAuthorizationService
     /// The type of the post to be created
     /// (e.g., Discussion, Announcement).
     /// </param>
+    ///   /// <param name="channelType">
+    /// The type of the channel 
+    /// (e.g., Discussion, Announcement).
+    /// </param>
     /// <param name="user">
     /// The current user context containing identity and role information.
     /// </param>
@@ -29,16 +33,16 @@ public interface IPostAuthorizationService
     /// <c>true</c> if the user is authorized to create the post;
     /// otherwise, <c>false</c>.
     /// </returns>
-    bool CanCreate(PostType postType, UserCommunity user);
+    bool CanCreate(PostType postType,ChannelType channelType, UserCommunity user);
 
 
     /// <summary>
     /// Determines whether the current user is allowed to update a post.
     /// </summary>
-    bool CanUpdate(PostType postType, UserCommunity user);
+    bool CanUpdate(PostType postType, ChannelType channelType, UserCommunity user);
 
     /// <summary>
     /// Determines whether the current user is allowed to delete a post.
     /// </summary>
-    bool CanDelete(PostType postType, UserCommunity user);
+    bool CanDelete(PostType postType, ChannelType channelType, UserCommunity user);
 }

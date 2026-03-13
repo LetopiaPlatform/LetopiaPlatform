@@ -52,5 +52,5 @@ public class CommunityResource:ISoftDeletable
 
     public ICollection<ResourceLike> Likes { get; set; } = new List<ResourceLike>();
 
-    public ICollection<ResourceTag> Tags { get; set; } = new List<ResourceTag>();
+
 }

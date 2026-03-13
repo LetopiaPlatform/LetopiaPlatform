@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Xml.XPath;
 using HtmlAgilityPack;
 using LetopiaPlatform.Core.DTOs.CommunityResourse;
 using LetopiaPlatform.Core.Interfaces;
@@ -15,7 +16,7 @@ public class LinkPreviewService : ILinkPreviewService
     private readonly HttpClient _httpClient;
     private readonly ILogger<LinkPreviewService> _logger;
 
-    // Matches all YouTube URL variants and captures the 11-char video ID
+    // Matches all YouTube URL variants and captures the 11-char video ID.
     // Supports: youtube.com/watch?v=, /embed/, /shorts/, and youtu.be/
     private static readonly Regex YoutubeRegex = new(
         @"(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_\-]{11})",
@@ -47,10 +48,11 @@ public class LinkPreviewService : ILinkPreviewService
 
     private async Task<LinkPreviewDto> ScrapeMetaAsync(string url)
     {
-        // sanitize for logging only
-        var safeUrlForLog = url
-            .Replace("\r", "")
-            .Replace("\n", "");
+        // Sanitize URL for logging — strip newlines to prevent log injection,
+        // and cap length so log lines stay readable.
+        var safeUrl = url.Replace("\r", "").Replace("\n", "");
+        if (safeUrl.Length > 200)
+            safeUrl = safeUrl[..200];
 
         // optional: limit length
         if (safeUrlForLog.Length > 200)
@@ -78,19 +80,27 @@ public class LinkPreviewService : ILinkPreviewService
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning(ex, "HTTP error scraping preview for {Url}", safeUrlForLog);
+            _logger.LogWarning(ex, "HTTP error scraping preview for {Url}", safeUrl);
             return new LinkPreviewDto { Url = url };
         }
         catch (TaskCanceledException ex)
         {
-            _logger.LogWarning(ex, "Timeout scraping preview for {Url}", safeUrlForLog);
+            _logger.LogWarning(ex, "Timeout scraping preview for {Url}", safeUrl);
             return new LinkPreviewDto { Url = url };
         }
-        catch (Exception ex)
+        catch (HtmlWebException ex)
         {
-            _logger.LogWarning(ex, "Unexpected error scraping preview for {Url}", safeUrlForLog);
+            _logger.LogWarning(ex, "HTML error scraping preview for {Url}", safeUrl);
             return new LinkPreviewDto { Url = url };
         }
+        catch (XPathException ex)
+        {
+            _logger.LogWarning(ex, "DOM parsing error scraping preview for {Url}", safeUrl);
+            return new LinkPreviewDto { Url = url };
+        }
+        // NullReferenceException, InvalidOperationException, and other
+        // programming errors are intentionally NOT caught here so they
+        // surface as bugs rather than being silently swallowed.
     }
 
     /// <summary>
