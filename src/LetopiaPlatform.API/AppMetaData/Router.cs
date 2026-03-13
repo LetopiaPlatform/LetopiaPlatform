@@ -12,6 +12,11 @@ public static class Router
         public const string SignUp = $"{Prefix}/signup";
         public const string Login = $"{Prefix}/login";
         public const string GoogleLogin = $"{Prefix}/google";
+        public const string SendCode = $"{Prefix}/send-code";
+        public const string VerifyEmail = $"{Prefix}/verify-email";
+        public const string ResetPassword = $"{Prefix}/reset-password";
+        public const string ForgotPassword = $"{Prefix}/forgot-password";
+
     }
 
     public static class Users
@@ -19,8 +24,6 @@ public static class Router
         public const string Prefix = $"{Rule}/users";
         public const string Me = $"{Prefix}/me";
         public const string Update = $"{Prefix}/me";
-
-        // Avatar
         public const string Avatar = $"{Prefix}/me/avatar";
     }
 
