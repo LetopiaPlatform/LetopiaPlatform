@@ -14,6 +14,7 @@
 
 	  <!-- EF Core Design -->
 	  <PackageReference Include="AWSSDK.S3" Version="4.0.18.6" />
+	  <PackageReference Include="MailKit" Version="4.15.1" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.22">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -34,5 +35,9 @@
 
 	  <!-- Health Checks -->
 	  <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<EmbeddedResource Include="Templates\email-template.html" />
   </ItemGroup>
 </Project>

@@ -278,6 +278,10 @@ dotnet_diagnostic.IDE0072.severity = suggestion
 #  Interface Documentation Enforcement
 #  Interfaces define contracts — they MUST have XML doc comments.
 # ══════════════════════════════════════════════════════════════════════════
+
+# CA1711: Identifiers should not have incorrect suffix
+dotnet_diagnostic.CA1711.severity = none
+
 [**/Interfaces/*.cs]
 dotnet_diagnostic.CS1591.severity = warning
 
