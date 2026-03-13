@@ -7,12 +7,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LetopiaPlatform.Core\LetopiaPlatform.Core.csproj" />
-
+    <ProjectReference Include="..\LetopiaPlatform.Agent\LetopiaPlatform.Agent.csproj" />
   </ItemGroup>
 
   <ItemGroup>
 
 	  <!-- EF Core Design -->
+	  <PackageReference Include="AWSSDK.S3" Version="4.0.18.6" />
 	  <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.22">
 		  <PrivateAssets>all</PrivateAssets>

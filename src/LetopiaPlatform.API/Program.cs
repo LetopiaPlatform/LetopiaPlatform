@@ -7,6 +7,7 @@ using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Seeder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using LetopiaPlatform.Agent;
 using Serilog;
 
 namespace LetopiaPlatform.API;
@@ -38,6 +39,7 @@ public class Program
                 .AddInfrastructure(builder.Configuration, builder.Environment);
             // __add http client ---------------------------------------------------
             builder.Services.AddHttpClient();
+
 
 
             // --- add convert enum to string -----------------

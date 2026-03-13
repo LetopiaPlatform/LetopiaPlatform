@@ -77,10 +77,6 @@ public class CommunityResourceConfiguration : IEntityTypeConfiguration<Community
                .HasForeignKey(l => l.ResourceId)
                .OnDelete(DeleteBehavior.Cascade);
 
-        // Resource → ResourceTag (one-to-many)
-        builder.HasMany(r => r.Tags)
-               .WithOne(t => t.Resource)
-               .HasForeignKey(t => t.ResourceId)
-               .OnDelete(DeleteBehavior.Cascade);
+       
     }
 }

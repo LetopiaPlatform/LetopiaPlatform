@@ -20,27 +20,35 @@ public class ResourceRepository : GenericRepository<CommunityResource>, IResourc
     // ── Community feed ────────────────────────────────────────────────────────
 
     public async Task<PaginatedResult<CommunityResource>> GetResourcesByCommunityAsync(
-        Guid communityId, ResourceQueryParams query, CancellationToken ct = default)
+        Guid communityId, ResourceQueryParams? query, CancellationToken ct = default)
     {
+        // Derive safe pagination values — fall back to defaults when query is null
+        var page = query?.Page ?? 1;
+        var pageSize = query?.PageSize ?? 10;
+
         var q = _context.CommunityResources
             .Include(r => r.Tags)
             .Where(r => r.CommunityId == communityId); // IsDeleted handled by global query filter
 
-        if (query.Type.HasValue)
+        // Only apply filters when query is provided
+        if (query?.Type is not null)
             q = q.Where(r => r.Type == query.Type.Value);
 
-        if (!string.IsNullOrWhiteSpace(query.Tag))
-            q = q.Where(r => r.Tags.Any(t => t.TagName == query.Tag));
+        if (!string.IsNullOrWhiteSpace(query?.Tag))
+            q = q.Where(r => _context.Tags
+                .Any(t => t.TargetType == TagTarget.Resource
+                       && t.TargetId == r.Id
+                       && t.TagName == query.Tag));
 
         var totalItems = await q.CountAsync(ct);
 
         var items = await q
             .OrderByDescending(r => r.CreatedAt)
-            .Skip((query.Page - 1) * query.PageSize)
-            .Take(query.PageSize)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(ct);
 
-        return PaginatedResult<CommunityResource>.Create(items, totalItems, query.Page, query.PageSize);
+        return PaginatedResult<CommunityResource>.Create(items, totalItems, page, pageSize);
     }
 
     // ── Single resource with full navigation ──────────────────────────────────
@@ -55,7 +63,7 @@ public class ResourceRepository : GenericRepository<CommunityResource>, IResourc
     // ── Recommended ───────────────────────────────────────────────────────────
 
     public async Task<PaginatedResult<CommunityResource>> GetRecommendedAsync(
-        Guid communityId, ResourceType type, int page, int pageSize =10, CancellationToken ct = default)
+        Guid communityId, ResourceType type, int page, int pageSize, CancellationToken ct = default)
     {
         var q = _context.CommunityResources
             .Include(r => r.Tags)

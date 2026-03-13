@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace LetopiaPlatform.Infrastructure.Services;
 
-public class FileStorageService : IFileStorageService
+public class LocalFileStorageService : IFileStorageService
 {
     private readonly IWebHostEnvironment _env;
     private readonly IHttpContextAccessor _accessor;
@@ -18,13 +18,13 @@ public class FileStorageService : IFileStorageService
 
     private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
 
-    public FileStorageService(IWebHostEnvironment env, IHttpContextAccessor accessor)
+    public LocalFileStorageService(IWebHostEnvironment env, IHttpContextAccessor accessor)
     {
         _env = env;
         _accessor = accessor;
     }
 
-    public async Task<Result<string>> UploadAsync(IFormFile file, string directory)
+    public async Task<Result<string>> UploadAsync(IFormFile file, string directory, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -49,7 +49,7 @@ public class FileStorageService : IFileStorageService
             var fullPath = Path.Combine(folderPath, fileName);
 
             using var stream = new FileStream(fullPath, FileMode.Create);
-            await file.CopyToAsync(stream);
+            await file.CopyToAsync(stream, cancellationToken);
 
             var request = _accessor.HttpContext?.Request;
             var url = $"{request?.Scheme}://{request?.Host}/{directory}/{fileName}";
@@ -62,14 +62,14 @@ public class FileStorageService : IFileStorageService
         }
     }
     
-    public async Task<Result<string>> ReplaceAsync(IFormFile newFile, string directory, string? oldFilePath)
+    public async Task<Result<string>> ReplaceAsync(IFormFile newFile, string directory, string? oldFilePath, CancellationToken cancellationToken = default)
     {
         try
         {
             if (!string.IsNullOrEmpty(oldFilePath))
-                await DeleteAsync(oldFilePath);
+                await DeleteAsync(oldFilePath, cancellationToken);
 
-            return await UploadAsync(newFile, directory);
+            return await UploadAsync(newFile, directory, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -77,7 +77,7 @@ public class FileStorageService : IFileStorageService
         }
     }
 
-    public Task<Result> DeleteAsync(string filePath)
+    public Task<Result> DeleteAsync(string filePath, CancellationToken cancellationToken = default)
     {
         try
         {
