@@ -92,6 +92,11 @@ public sealed class EmailBackgroundQueue : BackgroundService, IEmailService
                 await _smtpService.SendAsync(message, cancellationToken);
                 return true;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Respect cancellation and propagate it to the caller.
+                throw;
+            }
             catch (Exception ex)
             {
                 attempt++;
