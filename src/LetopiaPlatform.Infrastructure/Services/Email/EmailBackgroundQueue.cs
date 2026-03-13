@@ -68,7 +68,7 @@ public sealed class EmailBackgroundQueue : BackgroundService, IEmailService
                     _logger.LogInformation("Dead-letter email sent successfully to {To} — Subject: {Subject}",
                         deadMessage.To, deadMessage.Subject);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException && ex is not TaskCanceledException)
                 {
                     _logger.LogError(ex, "Dead-letter email permanently failed to {To} — Subject: {Subject}. Giving up.",
                         deadMessage.To, deadMessage.Subject);
