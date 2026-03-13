@@ -11,6 +11,7 @@ public static class Router
         public const string Prefix = $"{Rule}/auth";
         public const string SignUp = $"{Prefix}/signup";
         public const string Login = $"{Prefix}/login";
+        public const string GoogleLogin = $"{Prefix}/google";
     }
 
     public static class Users
