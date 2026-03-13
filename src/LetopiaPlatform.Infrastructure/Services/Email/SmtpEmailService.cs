@@ -32,7 +32,7 @@ public sealed class SmtpEmailService
     public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
         var html = BuildHtml(message);
-        var mime = new MimeMessage();
+        using var mime = new MimeMessage();
         mime.From.Add(new MailboxAddress(_settings.SenderName, _settings.SenderEmail));
         mime.To.Add(MailboxAddress.Parse(message.To));
         mime.Subject = message.Subject;
