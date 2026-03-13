@@ -17,7 +17,7 @@ public interface IResourceService
     /// The resource creation request containing the URL, type, optional metadata,
     /// and tags associated with the resource.
     /// </param>
-    /// <param name="communityId">The identifier of the community .</param>
+    /// <param name="communityId">The identifier of the community to add the resource to.</param>
     /// <param name="userId">The identifier of the user creating the resource.</param>
     /// <param name="ct">Cancellation token for the operation.</param>
     /// <returns>
@@ -86,9 +86,10 @@ public interface IResourceService
 
     /// <summary>
     /// Retrieves recommended resources within a community filtered by resource type.
+    /// Ranked by weighted engagement score: (LikesCount × 2) + ViewsCount.
     /// </summary>
     /// <param name="communityId">The identifier of the community.</param>
-  
+    
     /// <param name="query">Pagination parameters for the recommendation list.</param>
     /// <param name="currentUserId">
     /// The identifier of the current user used for personalization such as like status.
@@ -99,13 +100,14 @@ public interface IResourceService
     /// </returns>
     Task<Result<PaginatedResult<ResourceDto>>> GetRecommendedAsync(
         Guid communityId,
-        
+      
         ResourceQueryParams query,
         Guid currentUserId,
         CancellationToken ct = default);
 
     /// <summary>
     /// Increments the view count for a specific resource.
+    /// Uses ExecuteUpdateAsync internally — no SaveChanges required by the caller.
     /// </summary>
     /// <param name="resourceId">The identifier of the resource being viewed.</param>
     /// <param name="ct">Cancellation token for the operation.</param>
@@ -117,7 +119,7 @@ public interface IResourceService
     /// <summary>
     /// Toggles the like status for a resource by the specified user.
     /// If the user has already liked the resource, the like will be removed.
-    /// Otherwise, a new like will be added.
+    /// Otherwise, a new like will be added. Membership is required.
     /// </summary>
     /// <param name="resourceId">The identifier of the resource.</param>
     /// <param name="userId">The identifier of the user performing the action.</param>
@@ -129,8 +131,8 @@ public interface IResourceService
         CancellationToken ct = default);
 
     /// <summary>
-    /// Soft-deletes a resource. Allowed for the original uploader or
-    /// a community Admin/Moderator.
+    /// Soft-deletes a resource by setting IsDeleted to true.
+    /// Allowed for the original uploader, a community Owner, or a Moderator.
     /// </summary>
     /// <param name="resourceId">The identifier of the resource to delete.</param>
     /// <param name="userId">

@@ -39,8 +39,7 @@ public class Program
                 .AddInfrastructure(builder.Configuration, builder.Environment);
             // __add http client ---------------------------------------------------
             builder.Services.AddHttpClient();
-                .AddInfrastructure(builder.Configuration, builder.Environment)
-                .AddAgentServices(builder.Configuration);
+
 
 
             // --- add convert enum to string -----------------

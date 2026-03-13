@@ -13,6 +13,7 @@ namespace LetopiaPlatform.Infrastructure.Services;
 public class ResourceService : IResourceService
 {
     private readonly IResourceRepository _resourceRepo;
+    private readonly ITagRepository _tagRepo;
     private readonly ICommunityRepository _communityRepo;
     private readonly IGenericRepository<User> _userRepo;
     private readonly IUnitOfWork<ApplicationDbContext> _unitOfWork;
@@ -21,6 +22,7 @@ public class ResourceService : IResourceService
 
     public ResourceService(
         IResourceRepository resourceRepo,
+        ITagRepository tagRepo,
         ICommunityRepository communityRepo,
         IGenericRepository<User> userRepo,
         IUnitOfWork<ApplicationDbContext> unitOfWork,
@@ -28,6 +30,7 @@ public class ResourceService : IResourceService
         ILogger<ResourceService> logger)
     {
         _resourceRepo = resourceRepo;
+        _tagRepo = tagRepo;
         _communityRepo = communityRepo;
         _userRepo = userRepo;
         _unitOfWork = unitOfWork;
@@ -69,16 +72,17 @@ public class ResourceService : IResourceService
             CreatedAt = DateTime.UtcNow,
             ViewsCount = 0,
             LikesCount = 0,
-            Tags = request.Tags
-                .Where(t => !string.IsNullOrWhiteSpace(t))
-                .Select(t => new ResourceTag { Id = Guid.NewGuid(), TagName = t.Trim().ToLowerInvariant() })
-                .ToList(),
         };
 
         await _unitOfWork.BeginTransactionAsync();
         try
         {
             await _resourceRepo.AddAsync(resource);
+            await _unitOfWork.SaveChangesAsync(ct);     // persist resource first to get its Id
+
+            if (request.Tags.Count > 0)
+                await _tagRepo.ReplaceTagsAsync(TagTarget.Resource, resource.Id, request.Tags, ct);
+
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync();
         }
@@ -93,8 +97,9 @@ public class ResourceService : IResourceService
             "Resource {Id} ({Type}) added to community {CommunityId} by user {UserId} (role: {Role})",
             resource.Id, resource.Type, communityId, userId, membership.Role);
 
+        var tags = await _tagRepo.GetByTargetAsync(TagTarget.Resource, resource.Id, ct);
         var uploader = await _userRepo.GetByIdAsync(userId);
-        return Result<ResourceDto>.Success(ToDto(resource, false, uploader));
+        return Result<ResourceDto>.Success(ToDto(resource, false, uploader, tags));
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
@@ -117,9 +122,7 @@ public class ResourceService : IResourceService
         if (!isUploader && !isPrivileged)
             return Result<ResourceDto>.Failure("You are not allowed to update this resource.");
 
-        // Apply changes — only update fields that were explicitly provided
-
-        // URL change: re-run duplicate check + re-scrape preview for the new URL
+        // URL change: re-validate, re-check duplicates, re-scrape preview
         if (!string.IsNullOrWhiteSpace(request.Url) && request.Url != resource.Url)
         {
             if (!Uri.TryCreate(request.Url, UriKind.Absolute, out _))
@@ -132,11 +135,9 @@ public class ResourceService : IResourceService
             var preview = await _preview.GetPreviewAsync(request.Url);
 
             resource.Url = request.Url;
-
-            // Re-apply preview fields only when the user hasn't explicitly overridden them
-            // in this same request — their explicit values take priority
             resource.ThumbnailUrl = preview.Image;
 
+            // Scraped values are only used when the user didn't explicitly supply them
             if (string.IsNullOrWhiteSpace(request.Title))
                 resource.Title = preview.Title ?? request.Url;
 
@@ -154,26 +155,15 @@ public class ResourceService : IResourceService
         if (request.Type.HasValue)
             resource.Type = request.Type.Value;
 
-        // Replace tags when a new list is provided
-        if (request.Tags is not null)
-        {
-            resource.Tags.Clear();
-            foreach (var tag in request.Tags.Where(t => !string.IsNullOrWhiteSpace(t)))
-            {
-                resource.Tags.Add(new ResourceTag
-                {
-                    Id = Guid.NewGuid(),
-                    ResourceId = resource.Id,
-                    TagName = tag.Trim().ToLowerInvariant(),
-                });
-            }
-        }
-
         resource.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.BeginTransactionAsync();
         try
         {
+            // null = keep existing tags; empty list = clear all tags
+            if (request.Tags is not null)
+                await _tagRepo.ReplaceTagsAsync(TagTarget.Resource, resourceId, request.Tags, ct);
+
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync();
         }
@@ -188,9 +178,10 @@ public class ResourceService : IResourceService
             "Resource {Id} updated by user {UserId} (role: {Role})",
             resourceId, userId, membership?.Role.ToString() ?? "uploader");
 
-        var uploader = await _userRepo.GetByIdAsync(resource.CreatedBy);
+        var tags = await _tagRepo.GetByTargetAsync(TagTarget.Resource, resourceId, ct);
         var isLiked = await _resourceRepo.IsLikedByUserAsync(resourceId, userId, ct);
-        return Result<ResourceDto>.Success(ToDto(resource, isLiked, uploader));
+        var uploader = await _userRepo.GetByIdAsync(resource.CreatedBy);
+        return Result<ResourceDto>.Success(ToDto(resource, isLiked, uploader, tags));
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
@@ -217,20 +208,21 @@ public class ResourceService : IResourceService
         if (resource is null)
             return Result<ResourceDto>.Failure("Resource not found.");
 
+        var tags = await _tagRepo.GetByTargetAsync(TagTarget.Resource, resourceId, ct);
         var isLiked = await _resourceRepo.IsLikedByUserAsync(resourceId, currentUserId, ct);
         var uploader = await _userRepo.GetByIdAsync(resource.CreatedBy);
 
-        return Result<ResourceDto>.Success(ToDto(resource, isLiked, uploader));
+        return Result<ResourceDto>.Success(ToDto(resource, isLiked, uploader, tags));
     }
 
     public async Task<Result<PaginatedResult<ResourceDto>>> GetRecommendedAsync(
         Guid communityId,
-       
+ 
         ResourceQueryParams query,
         Guid currentUserId,
         CancellationToken ct = default)
     {
-        var page = await _resourceRepo.GetRecommendedAsync(communityId, query.Type ?? ResourceType.Article, query.Page, query.PageSize, ct);
+        var page = await _resourceRepo.GetRecommendedAsync(communityId, query.Type??ResourceType.Video, query.Page, query.PageSize, ct);
         var dtos = await MapToDtosAsync(page.Items, currentUserId, ct);
 
         return Result<PaginatedResult<ResourceDto>>.Success(
@@ -239,9 +231,11 @@ public class ResourceService : IResourceService
 
     // ── Engagement ────────────────────────────────────────────────────────────
 
-    public async Task<Result> AddViewAsync(Guid resourceId, CancellationToken ct = default)
+    public async Task<Result> AddViewAsync(
+        Guid resourceId,
+        CancellationToken ct = default)
     {
-        if (await _resourceRepo.GetByIdWithDetailsAsync(resourceId, ct) is null)
+        if (await _resourceRepo.GetByIdAsync(resourceId) is null)
             return Result.Failure("Resource not found.");
 
         // ExecuteUpdateAsync is self-saving — no SaveChanges needed
@@ -249,7 +243,10 @@ public class ResourceService : IResourceService
         return Result.Success();
     }
 
-    public async Task<Result> ToggleLikeAsync(Guid resourceId, Guid userId, CancellationToken ct = default)
+    public async Task<Result> ToggleLikeAsync(
+        Guid resourceId,
+        Guid userId,
+        CancellationToken ct = default)
     {
         var resource = await _resourceRepo.GetByIdAsync(resourceId);
         if (resource is null)
@@ -282,7 +279,10 @@ public class ResourceService : IResourceService
         return Result.Success();
     }
 
-    public async Task<Result> DeleteResourceAsync(Guid resourceId, Guid userId, CancellationToken ct = default)
+    public async Task<Result> DeleteResourceAsync(
+        Guid resourceId,
+        Guid userId,
+        CancellationToken ct = default)
     {
         var resource = await _resourceRepo.GetByIdAsync(resourceId);
         if (resource is null)
@@ -309,15 +309,28 @@ public class ResourceService : IResourceService
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Maps a page of resources to DTOs.
+    /// Tags are batch-loaded in one query via <see cref="ITagRepository.GetByTargetsAsync"/>.
+    /// Uploaders are cached per page to avoid repeated DB hits for the same user.
+    /// </summary>
     private async Task<List<ResourceDto>> MapToDtosAsync(
         IEnumerable<CommunityResource> resources,
         Guid currentUserId,
         CancellationToken ct)
     {
-        var dtos = new List<ResourceDto>();
+        var list = resources.ToList();
+        if (list.Count == 0) return [];
+
+        // Single query for all tags on this page — ILookup<Guid, Tag> for O(1) per-resource access
+        var resourceIds = list.Select(r => r.Id).ToList();
+        var tagLookup = await _tagRepo.GetByTargetsAsync(TagTarget.Resource, resourceIds, ct);
+
+        // Cache uploaders within this page to avoid duplicate DB hits
         var uploaderCache = new Dictionary<Guid, User?>();
 
-        foreach (var r in resources)
+        var dtos = new List<ResourceDto>(list.Count);
+        foreach (var r in list)
         {
             if (!uploaderCache.TryGetValue(r.CreatedBy, out var uploader))
             {
@@ -325,29 +338,34 @@ public class ResourceService : IResourceService
                 uploaderCache[r.CreatedBy] = uploader;
             }
 
-            var liked = await _resourceRepo.IsLikedByUserAsync(r.Id, currentUserId, ct);
-            dtos.Add(ToDto(r, liked, uploader));
+            var tags = tagLookup[r.Id].ToList();
+            var isLiked = await _resourceRepo.IsLikedByUserAsync(r.Id, currentUserId, ct);
+            dtos.Add(ToDto(r, isLiked, uploader, tags));
         }
 
         return dtos;
     }
 
-    private static ResourceDto ToDto(CommunityResource r, bool isLiked, User? uploader) => new()
-    {
-        Id = r.Id,
-        Title = r.Title,
-        Url = r.Url,
-        ThumbnailUrl = r.ThumbnailUrl,
-        Description = r.Description,
-        Type = r.Type,
-        ViewsCount = r.ViewsCount,
-        LikesCount = r.LikesCount,
-        IsLikedByCurrentUser = isLiked,
-        Tags = r.Tags.Select(t => t.TagName).ToList(),
-        UploadedBy = new UploadedByDto(
+    private static ResourceDto ToDto(
+        CommunityResource r,
+        bool isLiked,
+        User? uploader,
+        IEnumerable<Tag> tags) => new()
+        {
+            Id = r.Id,
+            Title = r.Title,
+            Url = r.Url,
+            ThumbnailUrl = r.ThumbnailUrl,
+            Description = r.Description,
+            Type = r.Type,
+            ViewsCount = r.ViewsCount,
+            LikesCount = r.LikesCount,
+            IsLikedByCurrentUser = isLiked,
+            Tags = tags.Select(t => t.TagName).ToList(),
+            UploadedBy = new UploadedByDto(
             r.CreatedBy,
             uploader?.UserName ?? "Unknown",
             uploader?.AvatarUrl),
-        CreatedAt = r.CreatedAt,
-    };
+            CreatedAt = r.CreatedAt,
+        };
 }

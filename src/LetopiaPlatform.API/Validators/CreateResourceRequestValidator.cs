@@ -50,8 +50,6 @@ public class CreateResourceRequestValidator : AbstractValidator<CreateResourceRe
             .When(x => x.Tags is not null);
 
         RuleForEach(x => x.Tags)
-            .NotEmpty()
-            .WithMessage("Tag must not be empty.")
             .MaximumLength(100)
             .WithMessage("Each tag must not exceed 100 characters.")
             .Matches(@"^[a-zA-Z0-9\-]+$")
