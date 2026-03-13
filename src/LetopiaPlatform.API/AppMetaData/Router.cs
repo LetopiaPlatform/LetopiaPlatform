@@ -19,9 +19,8 @@ public static class Router
         public const string Me = $"{Prefix}/me";
         public const string Update = $"{Prefix}/me";
 
-        // File operations scoped to the current user
-        public const string UploadFile = $"{Prefix}/me/files";
-        public const string DeleteFile = $"{Prefix}/me/files";
+        // Avatar
+        public const string Avatar = $"{Prefix}/me/avatar";
     }
 
 
@@ -127,6 +126,19 @@ public static class Router
 
         public const string Update = $"{Prefix}/Update/{{id:guid}}";
         public const string Delete = $"{Prefix}/Delete/{{id:guid}}";
+    }
+
+    public static class CommunityTask
+    {
+        public const string Prefix = $"{Rule}/CommunityTask";
+
+        public const string GetAll = $"{Prefix}/{{communityId:guid}}/GetAll";
+        public const string Create = $"{Prefix}/{{communityId:guid}}/Create";
+        public const string GetTodayProgress = $"{Prefix}/{{communityId:guid}}/GetTodayProgress";
+
+        public const string Update = $"{Prefix}/Update/{{communityTaskid:guid}}";
+        public const string Delete = $"{Prefix}/Delete/{{communityTaskid:guid}}";
+        public const string Toggle = $"{Prefix}/Toggle/{{taskid:guid}}";
     }
 }
 

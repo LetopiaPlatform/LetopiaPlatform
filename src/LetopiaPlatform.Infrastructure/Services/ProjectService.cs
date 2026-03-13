@@ -51,7 +51,7 @@ public class ProjectService : IProjectService
         string? coverUrl = null;
         if (request.CoverImage != null)
         {
-            var upload = await _fileService.UploadAsync(request.CoverImage, "projects");
+            var upload = await _fileService.UploadAsync(request.CoverImage, "projects", ct);
             if (!upload.IsSuccess) return Result<Guid>.Failure("Image upload failed", 400);
             coverUrl = upload.Value;
         }
@@ -89,7 +89,7 @@ public class ProjectService : IProjectService
 
         if (request.CoverImage != null)
         {
-            var upload = await _fileService.UploadAsync(request.CoverImage, "projects");
+            var upload = await _fileService.UploadAsync(request.CoverImage, "projects", ct);
             if (upload.IsSuccess) project.CoverImageUrl = upload.Value;
         }
 

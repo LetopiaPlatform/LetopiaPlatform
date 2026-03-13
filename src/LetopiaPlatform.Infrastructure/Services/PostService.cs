@@ -76,7 +76,7 @@ public class PostService : IPostService
         string? postImageUrl = null;
         if (request.PostImage is not null)
         {
-            var uploadResult = await _fileStorageService.UploadAsync(request.PostImage, "posts");
+            var uploadResult = await _fileStorageService.UploadAsync(request.PostImage, "posts", ct);
             postImageUrl = uploadResult.Value;
         }
       
@@ -235,7 +235,7 @@ public class PostService : IPostService
  
         if (request.PostImage is not null)
         {
-            var replaceResult = await _fileStorageService.ReplaceAsync(request.PostImage, "posts", post.PostImageUrl);
+            var replaceResult = await _fileStorageService.ReplaceAsync(request.PostImage, "posts", post.PostImageUrl, ct);
             post.PostImageUrl = replaceResult.Value;
         }
 
