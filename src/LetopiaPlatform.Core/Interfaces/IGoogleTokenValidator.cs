@@ -8,9 +8,9 @@ public interface IGoogleTokenValidator
     /// <summary>
     /// Validates the provided Google ID token and extracts user information.
     /// </summary>
-    /// <param name="idToken">The ID token received from the client after Google authentication.</param>
+    /// <param name="accessToken">The access token received from the client after Google OAuth authentication.</param>
     /// <returns>A result containing the extracted user information if the token is valid.</returns>
-    Task<GoogleUserInfo?> ValidateAsync(string idToken);
+    Task<GoogleUserInfo?> ValidateAsync(string accessToken);
 }
 
 /// <summary>
