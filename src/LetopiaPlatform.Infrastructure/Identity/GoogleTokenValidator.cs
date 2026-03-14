@@ -53,7 +53,7 @@ public class GoogleTokenValidator : IGoogleTokenValidator
             }
 
             // Get user info
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v3/userinfo");
+            using var request = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v3/userinfo");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             var response = await client.SendAsync(request);
