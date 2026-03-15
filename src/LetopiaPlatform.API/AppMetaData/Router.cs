@@ -12,6 +12,7 @@ public static class Router
         public const string SignUp = $"{Prefix}/signup";
         public const string Login = $"{Prefix}/login";
         public const string GoogleLogin = $"{Prefix}/google";
+        public const string GenerateAccessTokenFromRefreshToken = $"{Prefix}/GenerateAccessTokenFromRefreshToken";
     }
 
     public static class Users

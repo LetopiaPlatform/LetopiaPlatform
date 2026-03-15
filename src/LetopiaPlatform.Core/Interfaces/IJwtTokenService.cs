@@ -1,17 +1,28 @@
+using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Auth.Response;
 using LetopiaPlatform.Core.Entities.Identity;
 
 namespace LetopiaPlatform.Core.Interfaces;
 
 /// <summary>
-/// Generates JSON Web Tokens for authenticated users.
+/// Service for managing JSON Web Tokens, including generation, validation, and refresh logic.
 /// </summary>
 public interface IJwtTokenService
 {
     /// <summary>
-    /// Generates a JWT token for the given user.
+    /// Generates a complete authentication response (Access Token + Refresh Token) for a user.
+    /// Typically used during initial Login or Registration.
     /// </summary>
-    /// <param name="user">The user to generate a token for.</param>
-    /// <returns>A token result containing the access token and expiration.</returns>
-    Task<TokenResult> GenerateTokenAsync(User user);
+    Task<AuthResponse> GetJWTTokenAsync(User user, CancellationToken ct = default);
+
+    /// <summary>
+    /// Rotates the current tokens by validating the expired access token and the provided refresh token.
+    /// Implements security checks like Reuse Detection and Expiry validation.
+    /// </summary>
+    Task<Result<AuthResponse>> RefreshTokenAsync(string accessToken, string refreshToken, CancellationToken ct = default);
+
+    /// <summary>
+    /// Extracts the ClaimsPrincipal from an expired JWT token for validation purposes.
+    /// </summary>
+    System.Security.Claims.ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
 }

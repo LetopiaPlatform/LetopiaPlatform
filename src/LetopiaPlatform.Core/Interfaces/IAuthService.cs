@@ -2,6 +2,7 @@
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Auth.Request;
 using LetopiaPlatform.Core.DTOs.Auth.Response;
+using LetopiaPlatform.Core.DTOs.UserRefershToken.Request;
 
 namespace LetopiaPlatform.Core.Services.Interfaces;
 
@@ -33,4 +34,12 @@ public interface IAuthService
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A result containing the authentication response with JWT token on success.</returns>
     Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates an expired JWT and a refresh token to issue a new pair of tokens.
+    /// </summary>
+    /// <param name="request">The refresh token request containing the expired access token and the valid refresh token.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A result containing a new authentication response with a fresh JWT and refresh token.</returns>
+    Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default);
 }

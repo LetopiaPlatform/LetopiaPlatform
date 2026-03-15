@@ -2,6 +2,7 @@ using LetopiaPlatform.API.AppMetaData;
 using LetopiaPlatform.API.DTOs.Auth.Request;
 using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.Core.DTOs.Auth.Request;
+using LetopiaPlatform.Core.DTOs.UserRefershToken.Request;
 using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -48,7 +49,7 @@ public class AuthController : BaseController
         // Enrich the wide event business context
         HttpContext.AddBusinessContext("action", "login");
         HttpContext.AddBusinessContext("email", request.Email);
-        
+
         var result = await _authService.LoginAsync(new LoginRequest(
             Email: request.Email,
             Password: request.Password
@@ -58,7 +59,7 @@ public class AuthController : BaseController
         {
             HttpContext.AddBusinessContext("login_user_id", result.Value!.User.Id);
         }
-        
+
         return HandleResult(result);
     }
 
@@ -66,15 +67,34 @@ public class AuthController : BaseController
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
         HttpContext.AddBusinessContext("action", "google_login");
-        
+
         var result = await _authService.GoogleLoginAsync(request);
 
         if (result.IsSuccess)
         {
             HttpContext.AddBusinessContext("google_login_user_id", result.Value!.User.Id);
         }
-        
+
         return HandleResult(result);
 
+    }
+
+    [HttpPost(Router.Authentication.GenerateAccessTokenFromRefreshToken)]
+    public async Task<IActionResult> GenerateAccessTokenFromRefreshToken([FromBody] RefreshTokenRequestDto request)
+    {
+        // 1. Enrich the wide event business context for logging/telemetry
+        HttpContext.AddBusinessContext("action", "refresh_token");
+
+        // 2. Call the service to rotate the tokens
+        var result = await _authService.RefreshTokenAsync(request);
+
+        // 3. If rotation succeeded, capture the user context
+        if (result.IsSuccess)
+        {
+            HttpContext.AddBusinessContext("user_id", result.Value!.User.Id);
+        }
+
+        // 4. Standardized response handling via BaseController
+        return HandleResult(result);
     }
 }
