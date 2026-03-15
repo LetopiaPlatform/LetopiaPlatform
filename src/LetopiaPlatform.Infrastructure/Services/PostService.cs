@@ -335,10 +335,19 @@ public class PostService : IPostService
         foreach (var url in urls)
         {
             try { await _fileStorage.DeleteAsync(url, ct); }
-            catch (Exception ex) { _logger.LogWarning(ex, "Failed to delete orphaned file {Url}", url); }
+            catch (Exception ex) when (ex is not OperationCanceledException && ex is not TaskCanceledException)
+            {
+                var safeUrl = url
+                    .Replace("\r", "", StringComparison.Ordinal)
+                    .Replace("\n", "", StringComparison.Ordinal);
+
+                if (safeUrl.Length > 200)
+                    safeUrl = safeUrl[..200];
+
+                _logger.LogWarning(ex, "Failed to delete orphaned file {Url}", safeUrl);
+            }
         }
     }
-
     // ─────────────────────────────
     // MAPPING
     // ─────────────────────────────
