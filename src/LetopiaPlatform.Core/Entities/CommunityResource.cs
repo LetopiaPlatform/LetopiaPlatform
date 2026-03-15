@@ -8,7 +8,7 @@ using LetopiaPlatform.Core.Enums;
 using LetopiaPlatform.Core.Interfaces;
 
 namespace LetopiaPlatform.Core.Entities;
-public class CommunityResource:ISoftDeletable
+public class CommunityResource : ISoftDeletable
 {
     public Guid Id { get; set; }
 
@@ -52,5 +52,5 @@ public class CommunityResource:ISoftDeletable
 
     public ICollection<ResourceLike> Likes { get; set; } = new List<ResourceLike>();
 
-    public ICollection<ResourceTag> Tags { get; set; } = new List<ResourceTag>();
+
 }
