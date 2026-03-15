@@ -149,6 +149,7 @@ public static class DependencyInjection
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IReactionRepository, ReactionRepository>();
+        services.AddScoped<ITagRepository, TagRepository>();
 
         services.AddScoped<IPostAuthorizationService, PostAuthorizationService>();
         services.AddScoped<IPostService, PostService>();
