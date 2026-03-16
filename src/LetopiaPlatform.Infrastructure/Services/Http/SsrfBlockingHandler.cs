@@ -7,85 +7,76 @@ namespace LetopiaPlatform.Infrastructure.Services.Http;
 /// <summary>
 /// A <see cref="DelegatingHandler"/> that blocks connections to private,
 /// loopback, and link-local IP ranges to prevent SSRF attacks.
+/// Blocking is enforced at the TCP connect step via <see cref="SocketsHttpHandler.ConnectCallback"/>
+/// so it fires after DNS resolution — catching cases that DNS-level checks miss.
 /// </summary>
 public sealed class SsrfBlockingHandler : DelegatingHandler
 {
-    private static readonly IReadOnlyList<(IPAddress Network, int PrefixLength)> BlockedRanges =
-    [
-        (IPAddress.Parse("10.0.0.0"),      8),   // RFC-1918 private
-        (IPAddress.Parse("172.16.0.0"),   12),   // RFC-1918 private
-        (IPAddress.Parse("192.168.0.0"),  16),   // RFC-1918 private
-        (IPAddress.Parse("127.0.0.0"),     8),   // loopback
-        (IPAddress.Parse("169.254.0.0"),  16),   // link-local (AWS metadata etc.)
-        (IPAddress.Parse("::1"),         128),   // IPv6 loopback
-        (IPAddress.Parse("fc00::"),        7),   // IPv6 ULA
-        (IPAddress.Parse("fe80::"),       10),   // IPv6 link-local
-    ];
-
     public SsrfBlockingHandler() : base(new SocketsHttpHandler
     {
         AllowAutoRedirect = false,
         ConnectTimeout = TimeSpan.FromSeconds(3),
+        ConnectCallback = async (context, ct) =>
+        {
+            var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, ct);
+
+            if (addresses.Length == 0)
+                throw new SocketException((int)SocketError.HostNotFound);
+
+            // Unwrap IPv4-mapped IPv6 (::ffff:x.x.x.x) then filter blocked ranges
+            var safeAddresses = addresses
+                .Select(ip => ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip)
+                .Where(ip => !IsPrivateOrReservedIp(ip))
+                .ToArray();
+
+            if (safeAddresses.Length == 0)
+                throw new SsrfBlockedException("All resolved IP addresses are blocked.");
+
+            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            try
+            {
+                await socket.ConnectAsync(safeAddresses, context.DnsEndPoint.Port, ct);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+        }
     })
     { }
 
-    protected override async Task<HttpResponseMessage> SendAsync(
+    protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
+        => base.SendAsync(request, cancellationToken);
+
+    private static bool IsPrivateOrReservedIp(IPAddress ip)
     {
-        var uri = request.RequestUri
-            ?? throw new ValidationException("Request URI is null.");
-
-        await BlockIfInternalAsync(uri.Host, cancellationToken);
-
-        return await base.SendAsync(request, cancellationToken);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-    }
-
-    private static async Task BlockIfInternalAsync(string host, CancellationToken cancellationToken)
-    {
-        var addresses = IPAddress.TryParse(host, out var parsed)
-            ? [parsed]
-            : await Dns.GetHostAddressesAsync(host, cancellationToken);
-
-        if (addresses.Length == 0)
-            throw new NotFoundException($"Could not resolve host: {host}");
-
-        var blocked = addresses
-             .Select(ip => ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip)
-             .FirstOrDefault(IsBlocked);
-        if (blocked is not null)
-            throw new SsrfBlockedException(blocked.ToString());
-    }
-
-    private static bool IsBlocked(IPAddress ip)
-    {
-        foreach ((IPAddress network, int prefix) in BlockedRanges)
+        if (ip.AddressFamily == AddressFamily.InterNetwork)
         {
-            if (network.AddressFamily != ip.AddressFamily) continue;
-            if (IsInRange(ip, network, prefix)) return true;
+            var b = ip.GetAddressBytes();
+            return b[0] == 10                                            // 10.0.0.0/8
+                || b[0] == 127                                           // 127.0.0.0/8  loopback
+                || b[0] == 0                                             // 0.0.0.0/8    reserved
+                || (b[0] == 100 && b[1] >= 64 && b[1] <= 127)          // 100.64.0.0/10 CGNAT
+                || (b[0] == 169 && b[1] == 254)                         // 169.254.0.0/16 link-local
+                || (b[0] == 172 && b[1] >= 16 && b[1] <= 31)           // 172.16.0.0/12
+                || (b[0] == 192 && b[1] == 168);                        // 192.168.0.0/16
         }
+
+        if (ip.AddressFamily == AddressFamily.InterNetworkV6)
+        {
+            if (IPAddress.IsLoopback(ip) || ip.Equals(IPAddress.IPv6Any)) return true;
+
+            var b = ip.GetAddressBytes();
+            return (b[0] & 0xFE) == 0xFC                                // fc00::/7  ULA
+                || (b[0] == 0xFE && (b[1] & 0xC0) == 0x80)             // fe80::/10 link-local
+                || (b[0] == 0x20 && b[1] == 0x01
+                    && b[2] == 0x00 && b[3] == 0x00);                   // 2001:db8::/32 documentation
+        }
+
         return false;
-    }
-
-    private static bool IsInRange(IPAddress ip, IPAddress network, int prefixLength)
-    {
-        var ipBytes = ip.GetAddressBytes();
-        var networkBytes = network.GetAddressBytes();
-
-        var fullBytes = prefixLength / 8;
-        var remainder = prefixLength % 8;
-
-        for (var i = 0; i < fullBytes; i++)
-            if (ipBytes[i] != networkBytes[i]) return false;
-
-        if (remainder == 0) return true;
-
-        var mask = (byte)(0xFF << (8 - remainder));
-        return (ipBytes[fullBytes] & mask) == (networkBytes[fullBytes] & mask);
     }
 }
