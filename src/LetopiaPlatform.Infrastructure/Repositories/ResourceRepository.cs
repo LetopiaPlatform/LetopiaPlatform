@@ -136,4 +136,11 @@ public class ResourceRepository : GenericRepository<CommunityResource>, IResourc
                 .SetProperty(r => r.LikesCount, r => r.LikesCount - 1),
                 ct);
     }
+    public async Task<HashSet<Guid>> GetLikedResourceIdsAsync(
+    Guid userId, IEnumerable<Guid> resourceIds, CancellationToken ct = default)
+    => (await _context.ResourceLikes
+        .Where(l => l.UserId == userId && resourceIds.Contains(l.ResourceId))
+        .Select(l => l.ResourceId)
+        .ToListAsync(ct))
+        .ToHashSet();
 }

@@ -313,8 +313,13 @@ public class ResourceService : IResourceService
         var list = resources.ToList();
         if (list.Count == 0) return [];
 
-        var tagLookup = await _tagRepo.GetByTargetsAsync(
-            TagTarget.Resource, list.Select(r => r.Id).ToList(), ct);
+        var resourceIds = list.Select(r => r.Id).ToList();
+
+        // Single query for all tags on this page
+        var tagLookup = await _tagRepo.GetByTargetsAsync(TagTarget.Resource, resourceIds, ct);
+
+        // Single query for all liked resource IDs — O(1) lookup per resource
+        var likedIds = await _resourceRepo.GetLikedResourceIdsAsync(currentUserId, resourceIds, ct);
 
         // Cache uploaders within this page to avoid duplicate DB hits
         var uploaderCache = new Dictionary<Guid, User?>();
@@ -328,8 +333,7 @@ public class ResourceService : IResourceService
                 uploaderCache[r.CreatedBy] = uploader;
             }
 
-            var isLiked = await _resourceRepo.IsLikedByUserAsync(r.Id, currentUserId, ct);
-            dtos.Add(ToDto(r, isLiked, uploader, tagLookup[r.Id]));
+            dtos.Add(ToDto(r, likedIds.Contains(r.Id), uploader, tagLookup[r.Id]));
         }
 
         return dtos;

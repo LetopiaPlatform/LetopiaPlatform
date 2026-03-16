@@ -64,6 +64,8 @@ public interface IResourceRepository : IGenericRepository<CommunityResource>
 
     /// <summary>
     /// Checks whether a resource has been liked by a specific user.
+    /// Prefer <see cref="GetLikedResourceIdsAsync"/> when checking multiple
+    /// resources at once to avoid N+1 queries.
     /// </summary>
     /// <param name="resourceId">The identifier of the resource.</param>
     /// <param name="userId">The identifier of the user.</param>
@@ -72,6 +74,24 @@ public interface IResourceRepository : IGenericRepository<CommunityResource>
     Task<bool> IsLikedByUserAsync(
         Guid resourceId,
         Guid userId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the set of resource IDs (from the provided list) that the user has liked.
+    /// Executes a single query instead of one per resource, eliminating N+1 queries
+    /// when mapping a page of resources.
+    /// Use this in list/page contexts; use <see cref="IsLikedByUserAsync"/> for single-resource checks.
+    /// </summary>
+    /// <param name="userId">The identifier of the user.</param>
+    /// <param name="resourceIds">The resource IDs to check against.</param>
+    /// <param name="ct">Cancellation token for the operation.</param>
+    /// <returns>
+    /// A <see cref="HashSet{Guid}"/> of resource IDs the user has liked,
+    /// limited to those present in <paramref name="resourceIds"/>.
+    /// </returns>
+    Task<HashSet<Guid>> GetLikedResourceIdsAsync(
+        Guid userId,
+        IEnumerable<Guid> resourceIds,
         CancellationToken ct = default);
 
     /// <summary>
