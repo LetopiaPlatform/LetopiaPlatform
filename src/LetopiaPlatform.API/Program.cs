@@ -38,8 +38,7 @@ public class Program
                 .AddApiServices(builder.Configuration)
                 .AddInfrastructure(builder.Configuration, builder.Environment)
                 .AddAgentServices(builder.Configuration);
-            // __add http client ---------------------------------------------------
-            builder.Services.AddHttpClient();
+     
 
             // --- add convert enum to string -----------------
             builder.Services.AddControllers()

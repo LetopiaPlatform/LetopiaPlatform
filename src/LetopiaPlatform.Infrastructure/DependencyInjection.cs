@@ -145,7 +145,8 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
 
         services.AddEmailService(configuration);
-
+        // __add http client ---------------------------------------------------
+        services.AddHttpClient();
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IReactionRepository, ReactionRepository>();
