@@ -24,7 +24,7 @@ public sealed class SsrfBlockingHandler : DelegatingHandler
 
     public SsrfBlockingHandler() : base(new SocketsHttpHandler
     {
-        AllowAutoRedirect = false,   // prevent redirect to internal URLs
+        AllowAutoRedirect = false,
         ConnectTimeout = TimeSpan.FromSeconds(3),
     })
     { }
@@ -34,11 +34,16 @@ public sealed class SsrfBlockingHandler : DelegatingHandler
         CancellationToken cancellationToken)
     {
         var uri = request.RequestUri
-            ?? throw new InvalidOperationException("Request URI is null.");
+            ?? throw new ValidationException("Request URI is null.");
 
         await BlockIfInternalAsync(uri.Host, cancellationToken);
 
         return await base.SendAsync(request, cancellationToken);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
     }
 
     private static async Task BlockIfInternalAsync(string host, CancellationToken cancellationToken)
@@ -48,7 +53,7 @@ public sealed class SsrfBlockingHandler : DelegatingHandler
             : await Dns.GetHostAddressesAsync(host, cancellationToken);
 
         if (addresses.Length == 0)
-            throw new InvalidOperationException($"Could not resolve host: {host}");
+            throw new NotFoundException($"Could not resolve host: {host}");
 
         foreach (var ip in addresses)
         {
