@@ -10,6 +10,7 @@ using LetopiaPlatform.Infrastructure.Identity;
 using LetopiaPlatform.Infrastructure.Repositories;
 using LetopiaPlatform.Infrastructure.Services;
 using LetopiaPlatform.Infrastructure.Services.Email;
+using LetopiaPlatform.Infrastructure.Services.Http;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -32,11 +33,6 @@ public static class DependencyInjection
         services.AddJwtAuthentication(configuration, environment);
         services.AddAppServices(configuration);
         services.AddHealthCheckServices(configuration);
-        services.AddScoped<IProjectCategoryRepository, ProjectCategoryRepository>();
-        services.AddScoped<IProjectRepository, ProjectRepository>();
-        services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
-        services.AddScoped<ICommunityTaskCategoryRepository, CommunityTaskCategoryRepository>();
-        services.AddScoped<ICommunityTaskRepository, CommunityTaskRepository>();
         return services;
     }
 
@@ -61,19 +57,16 @@ public static class DependencyInjection
     {
         services.AddIdentity<User, Role>(options =>
         {
-            // Password policy
             options.Password.RequireDigit = true;
             options.Password.RequireUppercase = true;
             options.Password.RequireNonAlphanumeric = false;
             options.Password.RequiredLength = 8;
             options.Password.RequiredUniqueChars = 4;
 
-            // Lockout policy
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             options.Lockout.MaxFailedAccessAttempts = 5;
             options.Lockout.AllowedForNewUsers = true;
 
-            // User settings
             options.User.RequireUniqueEmail = true;
         })
         .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -107,7 +100,7 @@ public static class DependencyInjection
             .AddJwtBearer(options =>
             {
                 options.SaveToken = true;
-                options.RequireHttpsMetadata = !environment.IsDevelopment(); // true in production
+                options.RequireHttpsMetadata = !environment.IsDevelopment();
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -131,47 +124,69 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // ── Generic infrastructure ────────────────────────────
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
-        services.AddHttpClient();
+
+        // ── Auth & identity ───────────────────────────────────
         services.Configure<GoogleAuthSettings>(configuration.GetSection(GoogleAuthSettings.SectionName));
         services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
-        services.AddFileStorage(configuration);
-        services.AddScoped<ICommunityRepository, CommunityRepository>();
-        services.AddScoped<ICommunityService, CommunityService>();
-        services.AddScoped<ICategoryRepository, CategoryRepository>();
 
+        // ── File storage ──────────────────────────────────────
+        services.AddFileStorage(configuration);
+
+        // ── Email ─────────────────────────────────────────────
         services.AddEmailService(configuration);
-        // __add http client ---------------------------------------------------
-        services.AddHttpClient();
+
+        // ── Link preview (named HttpClient + SSRF protection) ─
+        services.AddTransient<SsrfBlockingHandler>();
+        services.AddHttpClient(LinkPreviewHttpClient.Name, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(5);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("LetopiaPlatform-LinkPreview/1.0");
+        })
+        .AddHttpMessageHandler<SsrfBlockingHandler>();
+        services.AddScoped<ILinkPreviewService, LinkPreviewService>();
+
+        // ── Repositories ──────────────────────────────────────
+        services.AddScoped<ICommunityRepository, CommunityRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IReactionRepository, ReactionRepository>();
         services.AddScoped<ITagRepository, TagRepository>();
         services.AddScoped<IResourceRepository, ResourceRepository>();
-        services.AddScoped<IResourceService, ResourceService>();
-        services.AddScoped<ILinkPreviewService, LinkPreviewService>();
+        services.AddScoped<IProjectCategoryRepository, ProjectCategoryRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
+        services.AddScoped<ICommunityTaskCategoryRepository, CommunityTaskCategoryRepository>();
+        services.AddScoped<ICommunityTaskRepository, CommunityTaskRepository>();
+        services.AddScoped<IRoadmapRepository, RoadmapRepository>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+
+        // ── Services ──────────────────────────────────────────
+        services.AddScoped<ICommunityService, CommunityService>();
         services.AddScoped<IPostAuthorizationService, PostAuthorizationService>();
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<IReactionService, ReactionService>();
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IProjectCategoryService, ProjectCategoryService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
-        services.AddScoped<IRoadmapRepository, RoadmapRepository>();
-        services.AddScoped<IConversationRepository, ConversationRepository>(); 
-        services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
-        services.AddScoped<IRoadmapRepository, RoadmapRepository>();
-        services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<ICommunityTaskService, CommunityTaskService>();
+
         return services;
     }
 
+    // -----------------------------------------------------------
+    // Health checks
+    // -----------------------------------------------------------
     private static IServiceCollection AddHealthCheckServices(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -180,37 +195,35 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("DefaultConnection string missing.");
 
         services.AddHealthChecks()
-            .AddNpgSql(
-                connectionString,
-                name: "postgresql",
-                tags: ["db", "ready"]);
+            .AddNpgSql(connectionString, name: "postgresql", tags: ["db", "ready"]);
 
         return services;
     }
 
+    // -----------------------------------------------------------
+    // File storage
+    // -----------------------------------------------------------
     private static IServiceCollection AddFileStorage(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var settings = configuration.GetSection(FileStorageSettings.SectionName)
-        .Get<FileStorageSettings>() ?? new FileStorageSettings();
+        var settings = configuration
+            .GetSection(FileStorageSettings.SectionName)
+            .Get<FileStorageSettings>() ?? new FileStorageSettings();
 
-        services.Configure<FileStorageSettings>(configuration.GetSection(FileStorageSettings.SectionName));
+        services.Configure<FileStorageSettings>(
+            configuration.GetSection(FileStorageSettings.SectionName));
 
         if (settings.Provider.Equals("R2", StringComparison.OrdinalIgnoreCase))
         {
-            var r2 = settings.R2;
-
-            services.AddSingleton<IAmazonS3>(_ =>
-            {
-                var config = new AmazonS3Config
+            services.AddSingleton<IAmazonS3>(_ => new AmazonS3Client(
+                settings.R2.AccessKeyId,
+                settings.R2.SecretAccessKey,
+                new AmazonS3Config
                 {
-                    ServiceURL = $"https://{r2.AccountId}.r2.cloudflarestorage.com",
+                    ServiceURL = $"https://{settings.R2.AccountId}.r2.cloudflarestorage.com",
                     ForcePathStyle = true
-                };
-
-                return new AmazonS3Client(r2.AccessKeyId, r2.SecretAccessKey, config);
-            });
+                }));
 
             services.AddScoped<IFileStorageService, R2FileStorageService>();
         }
@@ -222,6 +235,9 @@ public static class DependencyInjection
         return services;
     }
 
+    // -----------------------------------------------------------
+    // Email
+    // -----------------------------------------------------------
     private static IServiceCollection AddEmailService(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -231,7 +247,6 @@ public static class DependencyInjection
         services.AddSingleton<EmailBackgroundQueue>();
         services.AddSingleton<IEmailService>(sp => sp.GetRequiredService<EmailBackgroundQueue>());
         services.AddHostedService(sp => sp.GetRequiredService<EmailBackgroundQueue>());
-
         return services;
     }
 }

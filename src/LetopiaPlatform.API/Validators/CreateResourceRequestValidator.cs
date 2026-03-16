@@ -45,7 +45,7 @@ public class CreateResourceRequestValidator : AbstractValidator<CreateResourceRe
         // ── Tags (optional) ───────────────────────────────────────────────────
 
         RuleFor(x => x.Tags)
-            .Must(tags => tags.Count <= 10)
+            .Must(tags => tags?.Count <= 10)
             .WithMessage("A resource cannot have more than 10 tags.")
             .When(x => x.Tags is not null);
 

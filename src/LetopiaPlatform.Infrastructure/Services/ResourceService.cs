@@ -81,7 +81,7 @@ public class ResourceService : IResourceService
             await _resourceRepo.AddAsync(resource);
             await _unitOfWork.SaveChangesAsync(ct);
 
-            if (request.Tags.Count > 0)
+            if (request?.Tags?.Count > 0)
                 await _tagRepo.ReplaceTagsAsync(TagTarget.Resource, resource.Id, request.Tags, ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
@@ -343,22 +343,17 @@ public class ResourceService : IResourceService
         CommunityResource r,
         bool isLiked,
         User? uploader,
-        IEnumerable<Tag> tags) => new()
-        {
-            Id = r.Id,
-            Title = r.Title,
-            Url = r.Url,
-            ThumbnailUrl = r.ThumbnailUrl,
-            Description = r.Description,
-            Type = r.Type,
-            ViewsCount = r.ViewsCount,
-            LikesCount = r.LikesCount,
-            IsLikedByCurrentUser = isLiked,
-            Tags = tags.Select(t => t.TagName).ToList(),
-            UploadedBy = new UploadedByDto(
-                r.CreatedBy,
-                uploader?.UserName ?? "Unknown",
-                uploader?.AvatarUrl),
-            CreatedAt = r.CreatedAt,
-        };
+        IEnumerable<Tag> tags) => new(
+            Id: r.Id,
+            Title: r.Title,
+            Url: r.Url,
+            Type: r.Type,
+            UploadedBy: new UploadedByDto(r.CreatedBy, uploader?.UserName ?? "Unknown", uploader?.AvatarUrl),
+            CreatedAt: r.CreatedAt,
+            ThumbnailUrl: r.ThumbnailUrl,
+            Description: r.Description,
+            ViewsCount: r.ViewsCount,
+            LikesCount: r.LikesCount,
+            IsLikedByCurrentUser: isLiked,
+            Tags: tags.Select(t => t.TagName).ToList());
 }
