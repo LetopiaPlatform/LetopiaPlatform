@@ -9,8 +9,8 @@ public record AuthResponse(
 
 public record TokenResult(
     string Token,
-    DateTime ExpiresAt,
-    string Jti
+    DateTime ExpiresAt
+
 );
 
 
