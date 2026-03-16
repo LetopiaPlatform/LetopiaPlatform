@@ -33,10 +33,5 @@ public class UserRefreshTokenRepository : GenericRepository<UserRefreshToken>, I
         }
     }
 
-    public async Task<UserRefreshToken?> GetByHashAsync(string hash, Guid userId, CancellationToken ct = default)
-    {
-        return await _refreshTokens
-            .AsTracking() // مهم عشان الـ Rotation
-            .FirstOrDefaultAsync(t => t.RefreshTokenHash == hash && t.UserId == userId, ct);
-    }
+
 }

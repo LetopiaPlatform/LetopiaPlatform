@@ -22,13 +22,15 @@ public class UserRefreshTokenConfiguration : IEntityTypeConfiguration<UserRefres
 
         builder.Property(rt => rt.RefreshTokenHash)
             .HasColumnName("refresh_token_hash")
+            .HasMaxLength(500)
             .IsRequired();
 
         builder.Property(rt => rt.JwtId)
             .HasColumnName("jwt_id")
             .IsRequired();
 
-        // Concurrency Token: يمنع تحديث نفس التوكن مرتين في نفس اللحظة (Race Condition Protection)
+        // Concurrency Token: (Race Condition Protection)
+
         builder.Property(rt => rt.IsUsed)
             .HasColumnName("is_used")
             .HasDefaultValue(false)
@@ -46,9 +48,7 @@ public class UserRefreshTokenConfiguration : IEntityTypeConfiguration<UserRefres
             .HasColumnName("expiry_date")
             .IsRequired();
 
-        builder.Property(rt => rt.Token)
-            .HasColumnName("token");
-
+        // 3. Relationships
 
         builder.HasOne(rt => rt.User)
             .WithMany(u => u.RefreshTokens)
@@ -57,7 +57,9 @@ public class UserRefreshTokenConfiguration : IEntityTypeConfiguration<UserRefres
             .OnDelete(DeleteBehavior.Cascade);
 
         // 4. Indexes for high-performance lookups
+
         builder.HasIndex(rt => rt.RefreshTokenHash)
+            .IsUnique()
             .HasDatabaseName("ix_user_refresh_tokens_hash");
 
         builder.HasIndex(rt => rt.UserId)
@@ -66,7 +68,7 @@ public class UserRefreshTokenConfiguration : IEntityTypeConfiguration<UserRefres
         builder.HasIndex(rt => rt.JwtId)
             .HasDatabaseName("ix_user_refresh_tokens_jwt_id");
 
-        // Composite Index: البحث المركب اللي بنستخدمه في ميثود الـ Refresh
+        // Composite Index: 
         builder.HasIndex(rt => new { rt.RefreshTokenHash, rt.UserId })
             .HasDatabaseName("ix_user_refresh_tokens_hash_user");
     }

@@ -79,7 +79,7 @@ public class AuthController : BaseController
 
     }
 
-    [HttpPost(Router.Authentication.GenerateAccessTokenFromRefreshToken)]
+    [HttpPost(Router.Authentication.RefreshToken)]
     public async Task<IActionResult> GenerateAccessTokenFromRefreshToken([FromBody] RefreshTokenRequestDto request)
     {
         // 1. Enrich the wide event business context for logging/telemetry

@@ -6,14 +6,14 @@ public record AuthResponse(
     UserDto User
 );
 
-// نتيجة توليد الـ JWT Access Token
+
 public record TokenResult(
     string Token,
     DateTime ExpiresAt,
     string Jti
 );
 
-// بيانات اليوزر الأساسية
+
 public record UserDto(
     string Id,
     string Email,

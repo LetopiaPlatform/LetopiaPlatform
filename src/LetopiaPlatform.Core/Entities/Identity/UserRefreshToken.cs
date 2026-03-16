@@ -5,7 +5,6 @@ namespace LetopiaPlatform.Core.Entities.Identity;
 public class UserRefreshToken : BaseEntity
 {
     public Guid UserId { get; set; }
-    public string? Token { get; set; }
     public string? RefreshTokenHash { get; set; }
     public string? JwtId { get; set; }
 
@@ -15,5 +14,5 @@ public class UserRefreshToken : BaseEntity
     public DateTime AddedTime { get; set; }
     public DateTime ExpiryDate { get; set; }
 
-    public virtual User? User { get; set; }
+    public virtual User User { get; set; } = default!;
 }
