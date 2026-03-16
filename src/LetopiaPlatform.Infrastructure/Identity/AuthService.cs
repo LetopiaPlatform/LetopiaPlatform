@@ -93,6 +93,7 @@ public class AuthService : IAuthService
             return Result<AuthResponse>.Failure("Invalid Google token.", 401);
         }
 
+        // 1. Check if user already has this Google login linked
         var user = await _userManager.FindByLoginAsync(GoogleProvider, googleUserInfo.GoogleId);
         if (user != null)
         {
@@ -100,23 +101,33 @@ public class AuthService : IAuthService
             return Result<AuthResponse>.Success(authResponse);
         }
 
+        // 2. Check if email exists but not linked to Google
         user = await _userManager.FindByEmailAsync(googleUserInfo.Email);
         if (user != null)
         {
             var loginResult = await _userManager.AddLoginAsync(user, new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
-            if (!loginResult.Succeeded) return Result<AuthResponse>.Failure("Failed to link Google account.", 500);
+            if (!loginResult.Succeeded)
+                return Result<AuthResponse>.Failure("Failed to link Google account.", 500);
 
             user.EmailConfirmed = true;
             user.EmailVerified = true;
-            if (string.IsNullOrEmpty(user.AvatarUrl)) user.AvatarUrl = googleUserInfo.PictureUrl;
+
+            // Check condition: Only update avatar if currently empty
+            if (string.IsNullOrEmpty(user.AvatarUrl))
+            {
+                user.AvatarUrl = googleUserInfo.PictureUrl;
+            }
 
             user.UpdatedAt = DateTime.UtcNow;
-            await _userManager.UpdateAsync(user);
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+                return Result<AuthResponse>.Failure("Failed to update user info.", 500);
 
             var authResponse = await _jwtTokenService.GetJWTTokenAsync(user, cancellationToken);
             return Result<AuthResponse>.Success(authResponse);
         }
 
+        // 3. New User Flow
         user = new User
         {
             UserName = googleUserInfo.Email,
@@ -129,11 +140,20 @@ public class AuthService : IAuthService
             UpdatedAt = DateTime.UtcNow
         };
 
-        var identityResult = await _userManager.CreateAsync(user);
-        if (!identityResult.Succeeded) return Result<AuthResponse>.Failure("Failed to create user.", 400);
+        var createResult = await _userManager.CreateAsync(user);
+        if (!createResult.Succeeded)
+        {
+            var errors = createResult.Errors.Select(e => e.Description).ToList();
+            return Result<AuthResponse>.Failure(errors, 400);
+        }
 
-        await _userManager.AddLoginAsync(user, new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
-        await _userManager.AddToRoleAsync(user, "Learner");
+        var addLoginRes = await _userManager.AddLoginAsync(user, new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
+        if (!addLoginRes.Succeeded)
+            return Result<AuthResponse>.Failure("Failed to add Google login info.", 500);
+
+        var roleRes = await _userManager.AddToRoleAsync(user, "Learner");
+        if (!roleRes.Succeeded)
+            return Result<AuthResponse>.Failure("Failed to assign default role.", 500);
 
         var finalAuthResponse = await _jwtTokenService.GetJWTTokenAsync(user, cancellationToken);
         return Result<AuthResponse>.Success(finalAuthResponse, 201);
