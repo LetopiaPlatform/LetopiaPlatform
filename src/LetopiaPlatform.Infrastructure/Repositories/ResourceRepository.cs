@@ -31,7 +31,10 @@ public class ResourceRepository : GenericRepository<CommunityResource>, IResourc
 
         // Only apply filters when query is provided
         if (query?.Type is not null)
-            q = q.Where(r => r.Type == query.Type.Value);
+        {
+            var resourceType = query.Type;
+            q = q.Where(r => r.Type == resourceType);
+        }
 
         if (!string.IsNullOrWhiteSpace(query?.Tag))
             q = q.Where(r => _context.Tags

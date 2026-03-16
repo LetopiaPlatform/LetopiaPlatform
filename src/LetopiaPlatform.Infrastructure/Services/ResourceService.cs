@@ -246,8 +246,8 @@ public class ResourceService : IResourceService
         var resource = await _resourceRepo.GetByIdAsync(resourceId)
             ?? throw new NotFoundException("Resource not found.");
 
-        var membership = await _communityRepo.GetMembershipAsync(resource.CommunityId, userId, ct)
-            ?? throw new UnauthorizedException("You must be a member to like resources.");
+        if (await _communityRepo.GetMembershipAsync(resource.CommunityId, userId, ct) is null)
+            throw new UnauthorizedException("You must be a member to like resources.");
 
         var liked = await _resourceRepo.IsLikedByUserAsync(resourceId, userId, ct);
 
