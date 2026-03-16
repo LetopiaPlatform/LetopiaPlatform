@@ -139,6 +139,26 @@ public static class Router
         public const string Delete = $"{Prefix}/Delete/{{communityTaskid:guid}}";
         public const string Toggle = $"{Prefix}/Toggle/{{taskid:guid}}";
     }
+    public static class Resources
+    {
+        public const string Prefix = $"{Rule}/resources";
+
+        // Creation & Listing (Scoped to Community)
+        public const string Base = $"{Rule}/communities/{{communityId:guid}}";
+
+        public const string Create = $"{Base}/resources";
+        public const string List = $"{Base}/resources";
+        public const string Recommended = $"{Base}/resources/recommended";
+
+        // Resource Specific
+        public const string GetById = $"{Prefix}/{{resourceId:guid}}";
+        public const string Update = $"{Prefix}/{{resourceId:guid}}";
+        public const string Delete = $"{Prefix}/{{resourceId:guid}}";
+
+        // Engagement
+        public const string AddView = $"{Prefix}/{{resourceId:guid}}/view";
+        public const string ToggleLike = $"{Prefix}/{{resourceId:guid}}/like";
+    }
 }
 
 
