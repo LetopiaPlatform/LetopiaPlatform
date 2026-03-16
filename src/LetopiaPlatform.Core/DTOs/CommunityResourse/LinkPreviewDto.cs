@@ -1,17 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace LetopiaPlatform.Core.DTOs.CommunityResourse;
-public record LinkPreviewDto
-{
-    public string? Title { get; init; }
 
-    public string? Description { get; init; }
-
-    public string? Image { get; init; }
-
-    public string Url { get; init; } = default!;
-}
+/// <param name="Url">The canonical URL of the previewed page.</param>
+/// <param name="Title">og:title scraped from the page, if present.</param>
+/// <param name="Description">og:description scraped from the page, if present.</param>
+/// <param name="Image">og:image scraped from the page, if present.</param>
+public record LinkPreviewDto(
+    string Url,
+    string? Title = null,
+    string? Description = null,
+    string? Image = null);
