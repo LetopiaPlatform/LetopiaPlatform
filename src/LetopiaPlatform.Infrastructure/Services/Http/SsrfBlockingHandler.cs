@@ -55,12 +55,11 @@ public sealed class SsrfBlockingHandler : DelegatingHandler
         if (addresses.Length == 0)
             throw new NotFoundException($"Could not resolve host: {host}");
 
-        foreach (var ip in addresses)
-        {
-            var resolved = ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip;
-            if (IsBlocked(resolved))
-                throw new SsrfBlockedException(resolved.ToString());
-        }
+        var blocked = addresses
+             .Select(ip => ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip)
+             .FirstOrDefault(IsBlocked);
+        if (blocked is not null)
+            throw new SsrfBlockedException(blocked.ToString());
     }
 
     private static bool IsBlocked(IPAddress ip)
