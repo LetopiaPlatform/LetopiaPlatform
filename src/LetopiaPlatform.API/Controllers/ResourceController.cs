@@ -77,7 +77,7 @@ public class ResourceController : BaseController
     [HttpGet(Router.Resources.GetById)]
  
     public async Task<IActionResult> GetResource(
-        [FromRoute] Guid communityId,
+     
         [FromRoute] Guid resourceId)
     {
         var userId = GetUserId();
