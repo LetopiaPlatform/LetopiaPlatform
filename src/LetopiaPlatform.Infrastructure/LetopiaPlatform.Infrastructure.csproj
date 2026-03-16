@@ -15,6 +15,7 @@
 	  <!-- EF Core Design -->
 	  <PackageReference Include="AWSSDK.S3" Version="4.0.18.6" />
 	  <PackageReference Include="Google.Apis.Auth" Version="1.73.0" />
+	  <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
 	  <PackageReference Include="MailKit" Version="4.15.1" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.22">
 		  <PrivateAssets>all</PrivateAssets>

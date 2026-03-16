@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using LetopiaPlatform.Agent;
 using Serilog;
+using System.Text.Json.Serialization;
 
 namespace LetopiaPlatform.API;
 
@@ -37,6 +38,14 @@ public class Program
                 .AddApiServices(builder.Configuration)
                 .AddInfrastructure(builder.Configuration, builder.Environment)
                 .AddAgentServices(builder.Configuration);
+     
+
+            // --- add convert enum to string -----------------
+            builder.Services.AddControllers()
+               .AddJsonOptions(options =>
+               {
+                   options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+               });
 
             var app = builder.Build();
 
