@@ -2,6 +2,7 @@ using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.CommunityResourse;
 using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Enums;
+using LetopiaPlatform.Core.Exceptions;
 using LetopiaPlatform.Core.Interfaces.Repositories;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -106,8 +107,11 @@ public class ResourceRepository : GenericRepository<CommunityResource>, IResourc
                 ct);
 
     public async Task AddLikeAsync(
-        Guid resourceId, Guid userId, CancellationToken ct = default)
+      Guid resourceId, Guid userId, CancellationToken ct = default)
     {
+        var resource = await _context.CommunityResources.FindAsync([resourceId], ct)
+            ?? throw new NotFoundException($"Resource {resourceId} not found.");
+
         _context.ResourceLikes.Add(new ResourceLike
         {
             Id = Guid.NewGuid(),
@@ -116,25 +120,22 @@ public class ResourceRepository : GenericRepository<CommunityResource>, IResourc
             CreatedAt = DateTime.UtcNow,
         });
 
-        await _context.CommunityResources
-            .Where(r => r.Id == resourceId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(r => r.LikesCount, r => r.LikesCount + 1),
-                ct);
+        resource.LikesCount++;
     }
 
     public async Task RemoveLikeAsync(
         Guid resourceId, Guid userId, CancellationToken ct = default)
     {
-        await _context.ResourceLikes
-            .Where(l => l.ResourceId == resourceId && l.UserId == userId)
-            .ExecuteDeleteAsync(ct);
+        var resource = await _context.CommunityResources.FindAsync([resourceId], ct)
+            ?? throw new NotFoundException($"Resource {resourceId} not found.");
 
-        await _context.CommunityResources
-            .Where(r => r.Id == resourceId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(r => r.LikesCount, r => r.LikesCount - 1),
-                ct);
+        var like = await _context.ResourceLikes
+            .FirstOrDefaultAsync(l => l.ResourceId == resourceId && l.UserId == userId, ct);
+
+        if (like is not null)
+            _context.ResourceLikes.Remove(like);
+
+        resource.LikesCount--;
     }
     public async Task<HashSet<Guid>> GetLikedResourceIdsAsync(
     Guid userId, IEnumerable<Guid> resourceIds, CancellationToken ct = default)
