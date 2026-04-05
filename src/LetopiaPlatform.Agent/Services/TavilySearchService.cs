@@ -43,32 +43,40 @@ public class TavilySearchService : IWebSearchService
     /// Executes a search query against the Tavily API and returns structured results.
     /// </summary>
     /// <param name="query">Search query.</param>
-    /// <param name="maxResults">Maximum number of results requested.</param>
+    /// <param name="maxResults">Maximum number of results to return. Use 0 or less to use the limit from WebSearchSettings.MaxResults.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>List of mapped <see cref="SearchResult"/> objects.</returns>
         public async Task<List<SearchResult>> SearchAsync(
             string query,
-            int maxResults = 0,
+            int maxResults = 5,
             CancellationToken ct = default)
         {
             try
             {
-                var resultsLimit = maxResults > 0 ? maxResults : _settings.MaxResults;
+            var resultsLimit = maxResults <= 0 ? _settings.MaxResults : maxResults;
 
-                var requestBody = new TavilySearchRequest
+            var requestBody = new TavilySearchRequest
+            {
+                Query = query,
+                MaxResults = resultsLimit,
+                ApiKey = _settings.TavilyApiKey
+            };
+
+            using var response = await _httpClient.PostAsJsonAsync(
+                _settings.TavilySearchUrl,
+                requestBody,
+                JsonOptions,
+                ct).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
                 {
-                    Query = query,
-                    MaxResults = resultsLimit,
-                    ApiKey = _settings.TavilyApiKey
-                };
+                    _logger.LogWarning(
+                        "Tavily API returned non-success status {StatusCode} for query: {Query}",
+                        response.StatusCode,
+                        query);
 
-                using var response = await _httpClient.PostAsJsonAsync(
-                    _settings.TavilySearchUrl,
-                    requestBody,
-                    JsonOptions,
-                    ct).ConfigureAwait(false);
-
-            response.EnsureSuccessStatusCode();
+                    return [];
+                }
 
             var tavilyResponse = await response.Content
                 .ReadFromJsonAsync<TavilySearchResponse>(JsonOptions, ct)

@@ -9,6 +9,7 @@ using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Identity;
 using LetopiaPlatform.Infrastructure.Repositories;
 using LetopiaPlatform.Infrastructure.Services;
+using LetopiaPlatform.Infrastructure.Services.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -132,6 +133,9 @@ public static class DependencyInjection
     {
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
+        services.AddHttpClient();
+        services.Configure<GoogleAuthSettings>(configuration.GetSection(GoogleAuthSettings.SectionName));
+        services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
@@ -140,9 +144,12 @@ public static class DependencyInjection
         services.AddScoped<ICommunityService, CommunityService>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
 
+        services.AddEmailService(configuration);
+
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IReactionRepository, ReactionRepository>();
+        services.AddScoped<ITagRepository, TagRepository>();
 
         services.AddScoped<IPostAuthorizationService, PostAuthorizationService>();
         services.AddScoped<IPostService, PostService>();
@@ -210,6 +217,19 @@ public static class DependencyInjection
         {
             services.AddScoped<IFileStorageService, LocalFileStorageService>();
         }
+
+        return services;
+    }
+
+    private static IServiceCollection AddEmailService(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<SmtpSettings>(configuration.GetSection(SmtpSettings.SectionName));
+        services.AddSingleton<SmtpEmailService>();
+        services.AddSingleton<EmailBackgroundQueue>();
+        services.AddSingleton<IEmailService>(sp => sp.GetRequiredService<EmailBackgroundQueue>());
+        services.AddHostedService(sp => sp.GetRequiredService<EmailBackgroundQueue>());
 
         return services;
     }

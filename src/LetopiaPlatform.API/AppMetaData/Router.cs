@@ -11,6 +11,7 @@ public static class Router
         public const string Prefix = $"{Rule}/auth";
         public const string SignUp = $"{Prefix}/signup";
         public const string Login = $"{Prefix}/login";
+        public const string GoogleLogin = $"{Prefix}/google";
     }
 
     public static class Users
@@ -97,18 +98,16 @@ public static class Router
     public static class Posts
     {
         public const string Prefix = $"{Rule}/posts";
-
-        // Creation & Listing (Scoped to Community/Channel)
-        // Note: Using a different prefix for creation/listing to accommodate parent IDs
+        // Scoped to Community/Channel
         public const string Base = $"{Rule}/communities/{{communityId:guid}}";
         public const string Create = $"{Base}/channels/{{channelId:guid}}/posts";
         public const string List = $"{Base}/channels/{{channelId:guid}}/posts";
-
+        public const string Pinned = $"{Base}/channels/{{channelId:guid}}/posts/pinned";
         // Resource Specific
         public const string GetById = $"{Prefix}/{{postId:guid}}";
         public const string Update = $"{Prefix}/{{postId:guid}}";
         public const string Delete = $"{Prefix}/{{postId:guid}}";
-
+        public const string TogglePin = $"{Prefix}/{{postId:guid}}/pin";
         // Nested Resources
         public const string Comments = $"{Prefix}/{{postId:guid}}/comments";
         public const string React = $"{Prefix}/{{postId:guid}}/react";

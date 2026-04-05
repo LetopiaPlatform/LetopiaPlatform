@@ -27,7 +27,8 @@ public static class DependencyInjection
             configuration.GetSection(WebSearchSettings.SectionName));
 
         // Register Tavily web search service with typed HttpClient
-        services.AddHttpClient<IWebSearchService, TavilySearchService>();
+        services.AddHttpClient<TavilySearchService>();
+        services.AddScoped<IWebSearchService, TavilySearchService>();
 
         return services;
     }

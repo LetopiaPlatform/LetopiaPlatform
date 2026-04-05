@@ -60,7 +60,7 @@ public class CommunityResourceConfiguration : IEntityTypeConfiguration<Community
         // Resource → Community (many-to-one)
         // Deleting a community cascades and removes all its resources.
         builder.HasOne(r => r.Community)
-               .WithMany()        
+               .WithMany()
                .HasForeignKey(r => r.CommunityId)
                .OnDelete(DeleteBehavior.Cascade);
 
@@ -77,10 +77,6 @@ public class CommunityResourceConfiguration : IEntityTypeConfiguration<Community
                .HasForeignKey(l => l.ResourceId)
                .OnDelete(DeleteBehavior.Cascade);
 
-        // Resource → ResourceTag (one-to-many)
-        builder.HasMany(r => r.Tags)
-               .WithOne(t => t.Resource)
-               .HasForeignKey(t => t.ResourceId)
-               .OnDelete(DeleteBehavior.Cascade);
+
     }
 }
