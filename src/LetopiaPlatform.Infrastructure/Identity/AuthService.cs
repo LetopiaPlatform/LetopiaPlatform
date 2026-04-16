@@ -2,17 +2,21 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using LetopiaPlatform.Core.AppSettings;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Auth.Request;
 using LetopiaPlatform.Core.DTOs.Auth.Response;
+using LetopiaPlatform.Core.DTOs.Email;
 using LetopiaPlatform.Core.DTOs.UserRefershToken.Request;
 using LetopiaPlatform.Core.Entities.Identity;
+using LetopiaPlatform.Core.Enums;
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Core.Interfaces.Repositories;
 using LetopiaPlatform.Core.Services.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace LetopiaPlatform.Infrastructure.Identity;
 
@@ -24,8 +28,13 @@ public class AuthService : IAuthService
     private readonly SignInManager<User> _signInManager;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IGoogleTokenValidator _googleTokenValidator;
+
+    // merged
     private readonly IUnitOfWork<ApplicationDbContext> _unitOfWork;
     private readonly IUserRefreshTokenRepository _userRefreshTokenRepository;
+    private readonly IEmailService _emailService;
+    private readonly string _assetsBaseUrl;
+    private readonly string _frontendBaseUrl;
 
     public AuthService(
         UserManager<User> userManager,
@@ -33,21 +42,28 @@ public class AuthService : IAuthService
         IJwtTokenService jwtTokenService,
         IGoogleTokenValidator googleTokenValidator,
         IUnitOfWork<ApplicationDbContext> unitOfWork,
-        IUserRefreshTokenRepository userRefreshTokenRepository)
+        IUserRefreshTokenRepository userRefreshTokenRepository,
+        IEmailService emailService,
+        IOptions<SmtpSettings> smtpSettings)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _jwtTokenService = jwtTokenService;
         _googleTokenValidator = googleTokenValidator;
+
         _unitOfWork = unitOfWork;
         _userRefreshTokenRepository = userRefreshTokenRepository;
+
+        _emailService = emailService;
+        _assetsBaseUrl = smtpSettings.Value.EmailAssetsBaseUrl.TrimEnd('/');
+        _frontendBaseUrl = smtpSettings.Value.FrontendBaseUrl.TrimEnd('/');
     }
 
-    public async Task<Result<AuthResponse>> SignUpAsync(SignUpRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result> SignUpAsync(SignUpRequest request)
     {
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser != null)
-            return Result<AuthResponse>.Failure("User with this email already exists.", 409);
+            return Result.Failure("User with this email already exists.", 409);
 
         var user = new User
         {
@@ -61,12 +77,14 @@ public class AuthService : IAuthService
 
         var identityResult = await _userManager.CreateAsync(user, request.Password);
         if (!identityResult.Succeeded)
-            return Result<AuthResponse>.Failure(identityResult.Errors.Select(e => e.Description).ToList(), 400);
+            return Result.Failure(identityResult.Errors.Select(e => e.Description).ToList(), 400);
 
         await _userManager.AddToRoleAsync(user, "Learner");
 
-        var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-        return Result<AuthResponse>.Success(authResponse, 201);
+        await SendCodeToUserAsync(user, OtpPurpose.EmailVerification);
+        SendWelcomeEmail(user);
+
+        return Result.Success(201);
     }
 
     public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -76,6 +94,9 @@ public class AuthService : IAuthService
 
         var signInResult = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
         if (!signInResult.Succeeded) return Result<AuthResponse>.Failure("Invalid email or password.", 401);
+
+        if (!user.EmailVerified)
+            return Result<AuthResponse>.Failure("Email not verified. Please verify your email before logging in.", 403);
 
         var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
         return Result<AuthResponse>.Success(authResponse);
@@ -119,13 +140,12 @@ public class AuthService : IAuthService
             await _unitOfWork.RollbackAsync();
             return Result<AuthResponse>.Failure("Security Alert: Token is being used simultaneously.", 409);
         }
-        catch (Exception)
+        catch
         {
             await _unitOfWork.RollbackAsync();
             throw;
         }
     }
-
     public async Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken = default)
     {
         var googleUserInfo = await _googleTokenValidator.ValidateAsync(request.AccessToken);
@@ -146,8 +166,8 @@ public class AuthService : IAuthService
         user = await _userManager.FindByEmailAsync(googleUserInfo.Email);
         if (user != null)
         {
-            var loginResult = await _userManager.AddLoginAsync(user, new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
-
+            var loginResult = await _userManager.AddLoginAsync(user,
+                new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
 
             if (!loginResult.Succeeded)
                 return Result<AuthResponse>.Failure("Failed to link Google account.", 500);
@@ -155,22 +175,17 @@ public class AuthService : IAuthService
             user.EmailConfirmed = true;
             user.EmailVerified = true;
 
-
             if (string.IsNullOrEmpty(user.AvatarUrl))
-            {
                 user.AvatarUrl = googleUserInfo.PictureUrl;
-            }
 
             user.UpdatedAt = DateTime.UtcNow;
-            var updateResult = await _userManager.UpdateAsync(user);
-            if (!updateResult.Succeeded)
-                return Result<AuthResponse>.Failure("Failed to update user info.", 500);
+            await _userManager.UpdateAsync(user);
 
             var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
             return Result<AuthResponse>.Success(authResponse);
         }
 
-        // 3. New User Flow
+        // 3. New User
         user = new User
         {
             UserName = googleUserInfo.Email,
@@ -190,19 +205,77 @@ public class AuthService : IAuthService
             return Result<AuthResponse>.Failure(errors, 400);
         }
 
+        await _userManager.AddLoginAsync(user,
+            new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
 
-        var addLoginRes = await _userManager.AddLoginAsync(user, new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
-        if (!addLoginRes.Succeeded)
-            return Result<AuthResponse>.Failure("Failed to add Google login info.", 500);
-
-        var addRoleRes = await _userManager.AddToRoleAsync(user, "Learner");
-        if (!addRoleRes.Succeeded)
-            return Result<AuthResponse>.Failure("Failed to assign default role.", 500);
+        await _userManager.AddToRoleAsync(user, "Learner");
 
         var finalAuthResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
         return Result<AuthResponse>.Success(finalAuthResponse, 201);
     }
-    // --- Private Helpers ---
+
+    public async Task<Result> SendVerificationCodeAsync(SendCodeRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null)
+            return Result.Success();
+
+        await SendCodeToUserAsync(user, request.Purpose);
+        return Result.Success();
+    }
+
+    public async Task<Result<AuthResponse>> VerifyEmailAsync(VerifyEmailRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null)
+            return Result<AuthResponse>.Failure("Invalid email or verification code.", 400);
+
+        var isValid = await _userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider, request.Code);
+        if (!isValid)
+            return Result<AuthResponse>.Failure("Invalid or expired code.", 400);
+
+        user.EmailVerified = true;
+        user.EmailConfirmed = true;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+
+        SendOnboardingEmail(user);
+
+        var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
+        return Result<AuthResponse>.Success(authResponse);
+    }
+
+    public async Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null)
+            return Result.Success();
+
+        await SendCodeToUserAsync(user, OtpPurpose.PasswordReset);
+        return Result.Success();
+    }
+
+    public async Task<Result> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null)
+            return Result.Failure("Invalid email or verification code.", 400);
+
+        var isValid = await _userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider, request.Code);
+        if (!isValid)
+            return Result.Failure("Invalid or expired code.", 400);
+
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var resetResult = await _userManager.ResetPasswordAsync(user, resetToken, request.NewPassword);
+
+        if (!resetResult.Succeeded)
+        {
+            var errors = resetResult.Errors.Select(e => e.Description).ToList();
+            return Result.Failure(errors, 400);
+        }
+
+        return Result.Success();
+    }
 
     private async Task<AuthResponse> CreateFullAuthResponseAsync(User user, CancellationToken ct)
     {
@@ -211,28 +284,61 @@ public class AuthService : IAuthService
 
         var handler = new JwtSecurityTokenHandler();
         var jwtToken = handler.ReadJwtToken(accessToken);
-        var jti = jwtToken.Id;
-        var expiresAt = jwtToken.ValidTo;
 
         await _userRefreshTokenRepository.DeleteExpiredTokensAsync(user.Id, ct);
 
-        var userRefreshToken = new UserRefreshToken
+        await _userRefreshTokenRepository.AddAsync(new UserRefreshToken
         {
             UserId = user.Id,
-            JwtId = jti,
+            JwtId = jwtToken.Id,
             RefreshTokenHash = ComputeSha256Hash(refreshPlain),
             ExpiryDate = DateTime.UtcNow.AddDays(7),
             AddedTime = DateTime.UtcNow
-        };
+        });
 
-        await _userRefreshTokenRepository.AddAsync(userRefreshToken);
         await _unitOfWork.SaveChangesAsync(ct);
 
         return new AuthResponse(
-            JwtToken: new TokenResult(accessToken, expiresAt),
-            RefreshToken: refreshPlain,
-            User: new UserDto(user.Id.ToString(), user.Email!, user.FullName!, user.Role ?? "Learner", user.AvatarUrl)
+            new TokenResult(accessToken, jwtToken.ValidTo),
+            refreshPlain,
+            new UserDto(user.Id.ToString(), user.Email!, user.FullName!, user.Role ?? "Learner", user.AvatarUrl)
         );
+    }
+
+    private async Task SendCodeToUserAsync(User user, OtpPurpose purpose)
+    {
+        var code = await _userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider);
+
+        _emailService.Enqueue(new EmailMessage(
+            To: user.Email!,
+            Subject: "Verification Code",
+            Title: "Your Code",
+            Body: "Use this code to continue",
+            UserName: user.FullName,
+            Code: code
+        ));
+    }
+
+    private void SendWelcomeEmail(User user)
+    {
+        _emailService.Enqueue(new EmailMessage(
+            To: user.Email!,
+            Subject: "Welcome",
+            Title: "Welcome!",
+            Body: "Glad to have you",
+            UserName: user.FullName
+        ));
+    }
+
+    private void SendOnboardingEmail(User user)
+    {
+        _emailService.Enqueue(new EmailMessage(
+            To: user.Email!,
+            Subject: "Getting Started",
+            Title: "Welcome aboard",
+            Body: "Start exploring now",
+            UserName: user.FullName
+        ));
     }
 
     private static string ComputeSha256Hash(string rawData)
