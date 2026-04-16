@@ -18,6 +18,7 @@ public sealed class SmtpEmailService
     private readonly SmtpSettings _settings;
     private readonly ILogger<SmtpEmailService> _logger;
     private readonly string _templateHtml;
+    private readonly string _iconUrl;
 
     public SmtpEmailService (
         IOptions<SmtpSettings> settings,
@@ -27,6 +28,7 @@ public sealed class SmtpEmailService
         _settings = settings.Value;
         _logger = logger;
         _templateHtml = LoadEmbeddedTemplate();
+        _iconUrl = $"{_settings.EmailAssetsBaseUrl.TrimEnd('/')}/icon.svg";
     }
 
     public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
@@ -61,14 +63,33 @@ public sealed class SmtpEmailService
     private string BuildHtml(EmailMessage message)
     {
         var buttonBlock = !string.IsNullOrEmpty(message.ButtonText) && !string.IsNullOrEmpty(message.ButtonUrl)
-            ? $"""<p style="text-align:center"><a class="btn" href="{HttpUtility.HtmlAttributeEncode(message.ButtonUrl)}">{HttpUtility.HtmlEncode(message.ButtonText)}</a></p>"""
+            ? $"""<div class="btn-wrapper"><a class="btn" href="{HttpUtility.HtmlAttributeEncode(message.ButtonUrl)}">{HttpUtility.HtmlEncode(message.ButtonText)}</a></div>"""
             : string.Empty;
+
+        var greetingBlock = !string.IsNullOrEmpty(message.UserName)
+            ? $"""<p class="greeting">Hi {HttpUtility.HtmlEncode(message.UserName)},</p>"""
+            : string.Empty;
+
+        var codeBlock = !string.IsNullOrEmpty(message.Code)
+            ? $"""<div class="code-box"><span class="code-value">{HttpUtility.HtmlEncode(message.Code)}</span></div>"""
+            : string.Empty;
+
+        var illustrationBlock = !string.IsNullOrEmpty(message.IllustrationUrl)
+            ? $"""<div class="illustration"><img src="{HttpUtility.HtmlAttributeEncode(message.IllustrationUrl)}" alt="" /></div>"""
+            : string.Empty;
+
+        var afterCodeBody = message.AfterCodeBody ?? string.Empty;
 
         return _templateHtml
             .Replace("{{Subject}}", HttpUtility.HtmlEncode(message.Subject))
             .Replace("{{Title}}", HttpUtility.HtmlEncode(message.Title))
+            .Replace("{{IconUrl}}", HttpUtility.HtmlAttributeEncode(_iconUrl))
+            .Replace("{{GreetingBlock}}", greetingBlock)
             .Replace("{{Body}}", message.Body)
+            .Replace("{{CodeBlock}}", codeBlock)
+            .Replace("{{AfterCodeBody}}", afterCodeBody)
             .Replace("{{ButtonBlock}}", buttonBlock)
+            .Replace("{{IllustrationBlock}}", illustrationBlock)
             .Replace("{{Year}}", DateTime.UtcNow.Year.ToString());
     }
 
