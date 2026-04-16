@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LetopiaPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260318023546_AddCategoryNameUniqueIndex")]
+    partial class AddCategoryNameUniqueIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -370,7 +373,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("communities", (string)null);
                 });
 
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
                 {
                     b.Property<Guid>("Id")
@@ -535,7 +537,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.ToTable("community_task_categories", (string)null);
                 });
-
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
@@ -714,67 +715,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
-                });
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.UserRefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("AddedTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("added_time");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expiry_date");
-
-                    b.Property<bool>("IsRevoked")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_revoked");
-
-                    b.Property<bool>("IsUsed")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_used");
-
-                    b.Property<string>("JwtId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("jwt_id");
-
-                    b.Property<string>("RefreshTokenHash")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("refresh_token_hash");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("JwtId")
-                        .HasDatabaseName("ix_user_refresh_tokens_jwt_id");
-
-                    b.HasIndex("RefreshTokenHash")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_refresh_tokens_hash");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_user_refresh_tokens_user_id");
-
-                    b.HasIndex("RefreshTokenHash", "UserId")
-                        .HasDatabaseName("ix_user_refresh_tokens_hash_user");
-
-                    b.ToTable("user_refresh_tokens", (string)null);
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
@@ -1070,7 +1010,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("reactions", (string)null);
                 });
 
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1096,33 +1035,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.ToTable("ResourceLikes", (string)null);
                 });
-
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceTag", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ResourceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("TagName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResourceId", "TagName")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ResourceTags_ResourceId_TagName");
-
-                    b.ToTable("ResourceTags", (string)null);
-                });
-
-
-
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
@@ -1541,7 +1453,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
@@ -1590,7 +1501,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Community");
                 });
 
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.AgentConversation", "Conversation")
@@ -1600,17 +1510,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Conversation");
-                });
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.UserRefreshToken", b =>
-                {
-                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
-                        .WithMany("RefreshTokens")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
@@ -1689,7 +1588,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.CommunityResource", "Resource")
@@ -1708,20 +1606,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.Navigation("User");
                 });
-
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceTag", b =>
-                {
-                    b.HasOne("LetopiaPlatform.Core.Entities.CommunityResource", "Resource")
-                        .WithMany("Tags")
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Resource");
-                });
-
-
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
@@ -1894,8 +1778,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("OwnedProjects");
 
                     b.Navigation("ProjectMemberships");
-
-                    b.Navigation("RefreshTokens");
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>

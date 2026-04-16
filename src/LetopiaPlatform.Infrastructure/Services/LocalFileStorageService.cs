@@ -1,5 +1,6 @@
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Services.Interfaces;
+using LetopiaPlatform.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
@@ -110,6 +111,52 @@ public class LocalFileStorageService : IFileStorageService
         catch (Exception ex)
         {
             return Task.FromResult(Result.Failure($"Delete failed: {ex.Message}"));
+        }
+    }
+
+    public async Task<Result<string>> UploadSvgAsync(IFormFile file, string directory, long maxSizeBytes = 262144, CancellationToken ct = default)
+    {
+        try
+        {
+            if (file is null || file.Length == 0)
+                return Result<string>.Failure("No file provided");
+
+            if (file.Length > maxSizeBytes)
+                return Result<string>.Failure($"File exceeds maximum size of {maxSizeBytes / 1024} KB");
+
+            var extension = Path.GetExtension(file.FileName);
+            if (!string.Equals(extension, ".svg", StringComparison.OrdinalIgnoreCase))
+                return Result<string>.Failure("Only SVG files are allowed");
+
+            if (!string.Equals(file.ContentType, "image/svg+xml", StringComparison.OrdinalIgnoreCase))
+                return Result<string>.Failure("File must have content type 'image/svg+xml'");
+
+            var validationError = SvgSanitizer.Validate(file);
+            if (validationError is not null)
+                return Result<string>.Failure(validationError);
+
+            var folderPath = GetSafeFolderPath(directory);
+            if (folderPath == null)
+                return Result<string>.Failure("Invalid directory");
+
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            var fileName = $"{Guid.NewGuid()}.svg";
+            var safeFileName = Path.GetFileName(fileName);
+            var fullPath = Path.Combine(folderPath, safeFileName);
+
+            using var stream = new FileStream(fullPath, FileMode.Create);
+            await file.CopyToAsync(stream, ct);
+
+            var request = _accessor.HttpContext?.Request;
+            var url = $"{request?.Scheme}://{request?.Host}/{directory}/{fileName}";
+
+            return Result<string>.Success(url);
+        }
+        catch (Exception ex)
+        {
+            return Result<string>.Failure($"SVG upload failed: {ex.Message}");
         }
     }
 

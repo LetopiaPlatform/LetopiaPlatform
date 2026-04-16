@@ -21,4 +21,7 @@ public sealed record CommunityDetailDto(
     bool IsMember,
     string? UserRole,
     List<string> Rules,
-    List<ChannelSummaryDto> Channels);
+    List<ChannelSummaryDto> Channels,
+    string SubCategoryName,
+    string SubCategorySlug,
+    Guid MainCategoryId);

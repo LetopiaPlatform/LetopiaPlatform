@@ -18,6 +18,7 @@ internal sealed class CategoryRepository : ICategoryRepository
     public async Task<Category?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _dbContext.Categories
+            .Include(c => c.ChildCategories.OrderBy(ch => ch.Name))
             .FirstOrDefaultAsync(c => c.Id == id, ct);
     }
 
@@ -25,6 +26,7 @@ internal sealed class CategoryRepository : ICategoryRepository
     {
         return await _dbContext.Categories
             .AsNoTracking()
+            .Include(c => c.ChildCategories.OrderBy(ch => ch.Name))
             .FirstOrDefaultAsync(c => c.Slug == slug && c.Type == type, ct);
     }
 
@@ -43,9 +45,10 @@ internal sealed class CategoryRepository : ICategoryRepository
         CategoryType type, CancellationToken ct = default)
     {
         return await _dbContext.Categories
-            .Where(c => c.Type == type)
-            .OrderBy(c => c.Name)
             .AsNoTracking()
+            .Where(c => c.Type == type && c.ParentCategoryId == null)
+            .Include(c => c.ChildCategories.OrderBy(ch => ch.Name))
+            .OrderBy(c => c.Name)
             .ToListAsync(ct);
     }
 
@@ -55,6 +58,8 @@ internal sealed class CategoryRepository : ICategoryRepository
     public async Task<bool> HasDependentsAsync(Guid categoryId, CancellationToken ct = default)
     {
         return await _dbContext.Communities
-            .AnyAsync(c => c.CategoryId == categoryId && c.IsActive, ct);
+            .AnyAsync(c => c.CategoryId == categoryId && c.IsActive, ct)
+            || await _dbContext.Categories
+                .AnyAsync(c => c.ParentCategoryId == categoryId, ct);
     }
 }

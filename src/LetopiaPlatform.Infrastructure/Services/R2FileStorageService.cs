@@ -3,6 +3,7 @@ using Amazon.S3.Model;
 using LetopiaPlatform.Core.AppSettings;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Services.Interfaces;
+using LetopiaPlatform.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -115,6 +116,56 @@ public class R2FileStorageService : IFileStorageService
         {
             _logger.LogError(ex, "R2 delete failed for path {FilePath}", SanitizeForLog(filePath));
             return Result.Failure("File deletion failed. Please try again.");
+        }
+    }
+
+    public async Task<Result<string>> UploadSvgAsync(IFormFile file, string directory, long maxSizeBytes = 262144, CancellationToken ct = default)
+    {
+        if (file is null || file.Length == 0)
+            return Result<string>.Failure("No file provided");
+
+        if (file.Length > maxSizeBytes)
+            return Result<string>.Failure($"File exceeds maximum size of {maxSizeBytes / 1024} KB");
+
+        var extension = Path.GetExtension(file.FileName);
+        if (!string.Equals(extension, ".svg", StringComparison.OrdinalIgnoreCase))
+            return Result<string>.Failure("Only SVG files are allowed");
+
+        if (!string.Equals(file.ContentType, "image/svg+xml", StringComparison.OrdinalIgnoreCase))
+            return Result<string>.Failure("File must have content type 'image/svg+xml'");
+
+        var validationError = SvgSanitizer.Validate(file);
+        if (validationError is not null)
+            return Result<string>.Failure(validationError);
+
+        var safeDirectory = directory.Replace("..", "").Trim('/');
+        var key = $"{safeDirectory}/{Guid.NewGuid()}.svg";
+
+        try
+        {
+            using var stream = file.OpenReadStream();
+
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = _settings.BucketName,
+                Key = key,
+                InputStream = stream,
+                ContentType = "image/svg+xml",
+                DisablePayloadSigning = true
+            };
+
+            await _s3Client.PutObjectAsync(putRequest, ct);
+
+            var publicUrl = $"{_settings.PublicUrl.TrimEnd('/')}/{key}";
+
+            _logger.LogInformation("SVG uploaded to R2: {Key} ({Size} bytes)", key, file.Length);
+
+            return Result<string>.Success(publicUrl);
+        }
+        catch (AmazonS3Exception ex)
+        {
+            _logger.LogError(ex, "R2 SVG upload failed for key {Key}", key);
+            return Result<string>.Failure("File upload failed. Please try again.");
         }
     }
 

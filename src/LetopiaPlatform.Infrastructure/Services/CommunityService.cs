@@ -37,8 +37,12 @@ public class CommunityService : ICommunityService
         Guid userId,
         CancellationToken ct = default)
     {
-        // Validate category exists (delegates to CategoryService)
-        await _categoryService.GetByIdAsync(request.CategoryId, ct);
+        // Validate category exists and is a sub-category
+        var category = await _categoryService.GetByIdAsync(request.CategoryId, ct);
+        if (category.ParentCategoryId is null)
+        {
+            throw new AppException("Communities must belong to a sub-category, not a main category.", 400);
+        }
 
         var slug = await SlugGenerator.GenerateUniqueAsync(
             request.Name,
@@ -109,13 +113,14 @@ public class CommunityService : ICommunityService
 
     public async Task<PaginatedResult<CommunitySummaryDto>> ListAsync(
         PaginatedQuery query,
-        string? category = null,
+        string? mainCategory = null,
+        List<string>? subCategorySlugs = null,
         string? search = null,
         string? sortBy = null,
         Guid? currentUserId = null,
         CancellationToken ct = default)
     {
-        return await _communityRepository.ListAsync(query, category, search, sortBy, currentUserId, ct);
+        return await _communityRepository.ListAsync(query, mainCategory, subCategorySlugs, search, sortBy, currentUserId, ct);
     }
     public async Task<CommunityDetailDto> GetBySlugAsync(
         string slug,
@@ -163,18 +168,6 @@ public class CommunityService : ICommunityService
         if (request.Description is not null) community.Description = request.Description;
         if (request.IsPrivate.HasValue) community.IsPrivate = request.IsPrivate.Value;
         if (request.Rules is not null) community.Rules = request.Rules;
-
-        if (request.CoverImage is not null)
-        {
-            // Delete old cover if exists
-            if (!string.IsNullOrEmpty(community.CoverImageUrl))
-            {
-                await _fileStorageService.DeleteAsync(community.CoverImageUrl, ct);
-            }
-
-            var uploadResult = await _fileStorageService.UploadAsync(request.CoverImage, "communities/covers", ct);
-            community.CoverImageUrl = uploadResult.Value;
-        }
 
         if (request.CoverImage is not null)
         {
@@ -371,11 +364,19 @@ public class CommunityService : ICommunityService
     private static CommunityDetailDto MapToDetail(
         Community c, bool isMember, string? userRole, List<ChannelSummaryDto> channels)
     {
+        var iconUrl = c.Category?.ParentCategory?.IconUrl ?? c.Category?.IconUrl;
+
         return new CommunityDetailDto(
             c.Id, c.Name, c.Slug, c.Description,
-            c.CategoryId, c.Category?.Name ?? string.Empty, c.Category?.IconUrl, c.CoverImageUrl,
+            c.CategoryId,
+            c.Category?.ParentCategory?.Name ?? c.Category?.Name ?? string.Empty,
+            iconUrl,
+            c.CoverImageUrl,
             c.MemberCount, c.PostCount, c.IsPrivate,
             c.CreatedAt, c.LastPostAt,
-            isMember, userRole, c.Rules, channels);
+            isMember, userRole, c.Rules, channels,
+            c.Category?.Name ?? string.Empty,
+            c.Category?.Slug ?? string.Empty,
+            c.Category?.ParentCategoryId ?? c.CategoryId);
     }
 }

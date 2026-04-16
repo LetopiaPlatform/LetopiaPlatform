@@ -13,7 +13,10 @@ public class Category : BaseEntity
     public required string Slug { get; set; }
     public string? IconUrl { get; set; }
     public CategoryType Type { get; set; }
+    public Guid? ParentCategoryId { get; set; }
 
     // Navigation properties
+    public virtual Category? ParentCategory { get; set; }
+    public virtual ICollection<Category> ChildCategories { get; set; } = [];
     public virtual ICollection<Community> Communities { get; set; } = [];
 }
