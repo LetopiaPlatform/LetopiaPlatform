@@ -98,5 +98,7 @@ public class Program
         await UserSeeder.SeedAsync(
             services.GetRequiredService<UserManager<User>>(),
             services.GetRequiredService<IConfiguration>());
+        await CategorySeeder.SeedAsync(
+            services.GetRequiredService<ApplicationDbContext>());
     }
 }
