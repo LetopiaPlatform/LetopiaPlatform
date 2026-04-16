@@ -201,7 +201,12 @@ EDIT → JSON only (single phase)
           "title": "string",
           "description": "string",
           "difficulty": "Beginner|Intermediate|Advanced",
-          "milestones": ["...", "..."]
+          "milestones": [
+            {
+              "title": "string",
+              "tasks": ["string", "string"]
+            }
+          ]
         }
       ],
       "insights": ["...", "..."]
@@ -214,7 +219,7 @@ Schema constraints:
 
 * `order` starts at 1, sequential, no gaps
 * `estimatedDurationWeeks` = sum of all phases
-* `milestones` ≥ 2 per project
+* `milestones` ≥ 2 per project, each with a `title` and at least 1 `task`
 * `type` must be one of allowed values
 * `difficulty` must be one of allowed values
 * ALL URLs must come from `search_web`
