@@ -143,7 +143,8 @@ public class LocalFileStorageService : IFileStorageService
                 Directory.CreateDirectory(folderPath);
 
             var fileName = $"{Guid.NewGuid()}.svg";
-            var fullPath = Path.Combine(folderPath, fileName);
+            var safeFileName = Path.GetFileName(fileName);
+            var fullPath = Path.Combine(folderPath, safeFileName);
 
             using var stream = new FileStream(fullPath, FileMode.Create);
             await file.CopyToAsync(stream, ct);
