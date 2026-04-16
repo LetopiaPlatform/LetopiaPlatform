@@ -147,4 +147,10 @@ public static class Router
         public const string Delete = $"{Prefix}/Delete/{{communityTaskid:guid}}";
         public const string Toggle = $"{Prefix}/Toggle/{{taskid:guid}}";
     }
+
+    public static class Search
+    {
+        public const string Prefix = $"{Rule}/search";
+        public const string Query = Prefix;
+    }
 }
