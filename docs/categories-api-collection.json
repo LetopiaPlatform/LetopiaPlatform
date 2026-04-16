@@ -433,18 +433,18 @@
     },
     {
       "name": "List Communities (with category filters)",
-      "description": "List communities with optional category filtering.\n\n**Filter modes:**\n- No filter: paginated discovery of all communities\n- `mainCategory` only: all communities under that main category\n- `subCategorySlugs`: filter by specific sub-categories (can select multiple)\n- `subCategorySlugs` takes priority over `mainCategory` when both provided\n\nPublic endpoint. Authenticated users see communities they haven't joined.",
+      "description": "List communities with optional category filtering.\n\n**Filter modes:**\n- No filter: paginated discovery of all communities\n- `category`: filter by main category slug\n- `subCategorySlugs`: filter by specific sub-categories (can select multiple)\n- `subCategorySlugs` takes priority over `category` when both provided\n\nPublic endpoint. Authenticated users see communities they haven't joined.",
       "request": {
         "auth": { "type": "noauth" },
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/api/v1/communities?mainCategory=technology&subCategorySlugs=devops&subCategorySlugs=ai-machine-learning&search=&sortBy=newest&page=1&pageSize=20",
+          "raw": "{{baseUrl}}/api/v1/communities?category=technology&subCategorySlugs=devops&subCategorySlugs=ai-machine-learning&search=&sortBy=newest&page=1&pageSize=20",
           "host": ["{{baseUrl}}"],
           "path": ["api", "v1", "communities"],
           "query": [
             {
-              "key": "mainCategory",
+              "key": "category",
               "value": "technology",
               "description": "Optional. Main category slug. Returns all communities under this main category."
             },
@@ -484,11 +484,11 @@
       },
       "response": [
         {
-          "name": "200 — With mainCategory filter",
+          "name": "200 — With category filter",
           "status": "OK",
           "code": 200,
           "header": [{ "key": "Content-Type", "value": "application/json" }],
-          "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b1b2c3d4-0000-0000-0000-000000000001\",\n        \"name\": \"React Devs\",\n        \"slug\": \"react-devs\",\n        \"description\": \"A community for React developers\",\n        \"categoryId\": \"a1b2c3d4-0000-0000-0000-000000000010\",\n        \"categoryName\": \"Web Development\",\n        \"categorySlug\": \"web-development\",\n        \"mainCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n        \"mainCategoryName\": \"Technology\",\n        \"iconUrl\": \"https://cdn.letopia.com/categories/icons/tech.svg\",\n        \"coverImageUrl\": \"https://cdn.letopia.com/communities/covers/react.jpg\",\n        \"memberCount\": 1250,\n        \"postCount\": 340,\n        \"isPrivate\": false,\n        \"createdAt\": \"2026-01-15T10:00:00Z\"\n      },\n      {\n        \"id\": \"b1b2c3d4-0000-0000-0000-000000000002\",\n        \"name\": \"DevOps Engineers\",\n        \"slug\": \"devops-engineers\",\n        \"description\": \"CI/CD, Docker, Kubernetes and more\",\n        \"categoryId\": \"a1b2c3d4-0000-0000-0000-000000000012\",\n        \"categoryName\": \"DevOps\",\n        \"categorySlug\": \"devops\",\n        \"mainCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n        \"mainCategoryName\": \"Technology\",\n        \"iconUrl\": \"https://cdn.letopia.com/categories/icons/tech.svg\",\n        \"coverImageUrl\": null,\n        \"memberCount\": 890,\n        \"postCount\": 156,\n        \"isPrivate\": false,\n        \"createdAt\": \"2026-02-01T14:00:00Z\"\n      }\n    ],\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"totalItems\": 2,\n    \"totalPages\": 1,\n    \"hasNextPage\": false,\n    \"hasPreviousPage\": false\n  },\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+          "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b1b2c3d4-0000-0000-0000-000000000001\",\n        \"name\": \"React Devs\",\n        \"slug\": \"react-devs\",\n        \"description\": \"A community for React developers\",\n        \"categoryId\": \"a1b2c3d4-0000-0000-0000-000000000010\",\n        \"categoryName\": \"Technology\",\n        \"iconUrl\": \"https://cdn.letopia.com/categories/icons/tech.svg\",\n        \"coverImageUrl\": \"https://cdn.letopia.com/communities/covers/react.jpg\",\n        \"memberCount\": 1250,\n        \"postCount\": 340,\n        \"isPrivate\": false,\n        \"createdAt\": \"2026-01-15T10:00:00Z\",\n        \"subCategoryName\": \"Web Development\",\n        \"subCategorySlug\": \"web-development\",\n        \"mainCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\"\n      },\n      {\n        \"id\": \"b1b2c3d4-0000-0000-0000-000000000002\",\n        \"name\": \"DevOps Engineers\",\n        \"slug\": \"devops-engineers\",\n        \"description\": \"CI/CD, Docker, Kubernetes and more\",\n        \"categoryId\": \"a1b2c3d4-0000-0000-0000-000000000012\",\n        \"categoryName\": \"Technology\",\n        \"iconUrl\": \"https://cdn.letopia.com/categories/icons/tech.svg\",\n        \"coverImageUrl\": null,\n        \"memberCount\": 890,\n        \"postCount\": 156,\n        \"isPrivate\": false,\n        \"createdAt\": \"2026-02-01T14:00:00Z\",\n        \"subCategoryName\": \"DevOps\",\n        \"subCategorySlug\": \"devops\",\n        \"mainCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\"\n      }\n    ],\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"totalItems\": 2,\n    \"totalPages\": 1,\n    \"hasNextPage\": false,\n    \"hasPreviousPage\": false\n  },\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
         },
         {
           "name": "200 — No filter (discovery)",

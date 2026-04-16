@@ -10,12 +10,12 @@ public sealed record CommunitySummaryDto(
     string Description,
     Guid CategoryId,
     string CategoryName,
-    string CategorySlug,
-    Guid MainCategoryId,
-    string MainCategoryName,
     string? IconUrl,
     string? CoverImageUrl,
     int MemberCount,
     int PostCount,
     bool IsPrivate,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string SubCategoryName,
+    string SubCategorySlug,
+    Guid MainCategoryId);

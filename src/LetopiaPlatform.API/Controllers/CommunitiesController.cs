@@ -51,7 +51,7 @@ public class CommunitiesController : BaseController
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<CommunitySummaryDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(
         [FromQuery] PaginatedQuery query,
-        [FromQuery] string? mainCategory,
+        [FromQuery] string? category,
         [FromQuery] List<string>? subCategorySlugs,
         [FromQuery] string? search,
         [FromQuery] string? sortBy,
@@ -61,7 +61,7 @@ public class CommunitiesController : BaseController
 
         Guid? currentUserId = User.Identity?.IsAuthenticated == true ? GetUserId(User) : null;
 
-        var result = await _communityService.ListAsync(query, mainCategory, subCategorySlugs, search, sortBy, currentUserId, ct);
+        var result = await _communityService.ListAsync(query, category, subCategorySlugs, search, sortBy, currentUserId, ct);
 
         return Ok(ApiResponse<PaginatedResult<CommunitySummaryDto>>
             .SuccessResponse(result));

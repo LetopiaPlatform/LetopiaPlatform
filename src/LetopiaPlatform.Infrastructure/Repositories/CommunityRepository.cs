@@ -99,16 +99,16 @@ internal sealed class CommunityRepository : ICommunityRepository
             .Select(c => new CommunitySummaryDto(
                 c.Id, c.Name, c.Slug, c.Description,
                 c.CategoryId,
-                c.Category.Name,
-                c.Category.Slug,
-                c.Category.ParentCategoryId ?? c.CategoryId,
                 c.Category.ParentCategory != null ? c.Category.ParentCategory.Name : c.Category.Name,
                 c.Category.ParentCategory != null ? c.Category.ParentCategory.IconUrl : c.Category.IconUrl,
                 c.CoverImageUrl,
                 c.MemberCount,
                 c.PostCount,
                 c.IsPrivate,
-                c.CreatedAt))
+                c.CreatedAt,
+                c.Category.Name,
+                c.Category.Slug,
+                c.Category.ParentCategoryId ?? c.CategoryId))
             .ToListAsync(ct);
 
         return PaginatedResult<CommunitySummaryDto>.Create(items, totalItems, query.Page, query.PageSize);
@@ -212,16 +212,16 @@ internal sealed class CommunityRepository : ICommunityRepository
                     uc.Community.Slug,
                     uc.Community.Description,
                     uc.Community.CategoryId,
-                    uc.Community.Category.Name,
-                    uc.Community.Category.Slug,
-                    uc.Community.Category.ParentCategoryId ?? uc.Community.CategoryId,
                     uc.Community.Category.ParentCategory != null ? uc.Community.Category.ParentCategory.Name : uc.Community.Category.Name,
                     uc.Community.Category.ParentCategory != null ? uc.Community.Category.ParentCategory.IconUrl : uc.Community.Category.IconUrl,
                     uc.Community.CoverImageUrl,
                     uc.Community.MemberCount,
                     uc.Community.PostCount,
                     uc.Community.IsPrivate,
-                    uc.Community.CreatedAt),
+                    uc.Community.CreatedAt,
+                    uc.Community.Category.Name,
+                    uc.Community.Category.Slug,
+                    uc.Community.Category.ParentCategoryId ?? uc.Community.CategoryId),
                 uc.JoinedAt))
             .AsNoTracking()
             .ToListAsync(ct);

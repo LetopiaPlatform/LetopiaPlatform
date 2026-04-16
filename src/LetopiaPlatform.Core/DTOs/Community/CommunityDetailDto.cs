@@ -11,9 +11,6 @@ public sealed record CommunityDetailDto(
     string Description,
     Guid CategoryId,
     string CategoryName,
-    string CategorySlug,
-    Guid MainCategoryId,
-    string MainCategoryName,
     string? IconUrl,
     string? CoverImageUrl,
     int MemberCount,
@@ -24,4 +21,7 @@ public sealed record CommunityDetailDto(
     bool IsMember,
     string? UserRole,
     List<string> Rules,
-    List<ChannelSummaryDto> Channels);
+    List<ChannelSummaryDto> Channels,
+    string SubCategoryName,
+    string SubCategorySlug,
+    Guid MainCategoryId);

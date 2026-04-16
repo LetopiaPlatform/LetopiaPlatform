@@ -369,14 +369,14 @@ public class CommunityService : ICommunityService
         return new CommunityDetailDto(
             c.Id, c.Name, c.Slug, c.Description,
             c.CategoryId,
-            c.Category?.Name ?? string.Empty,
-            c.Category?.Slug ?? string.Empty,
-            c.Category?.ParentCategoryId ?? c.CategoryId,
             c.Category?.ParentCategory?.Name ?? c.Category?.Name ?? string.Empty,
             iconUrl,
             c.CoverImageUrl,
             c.MemberCount, c.PostCount, c.IsPrivate,
             c.CreatedAt, c.LastPostAt,
-            isMember, userRole, c.Rules, channels);
+            isMember, userRole, c.Rules, channels,
+            c.Category?.Name ?? string.Empty,
+            c.Category?.Slug ?? string.Empty,
+            c.Category?.ParentCategoryId ?? c.CategoryId);
     }
 }
