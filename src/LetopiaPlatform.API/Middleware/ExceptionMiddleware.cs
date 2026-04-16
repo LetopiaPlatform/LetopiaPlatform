@@ -1,5 +1,6 @@
 using LetopiaPlatform.API.Common;
 using LetopiaPlatform.Core.Exceptions;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace LetopiaPlatform.API.Middleware;
@@ -77,6 +78,14 @@ public class ExceptionMiddleware
                 statusCode = ae.StatusCode;
                 message = ae.Message;
                 _logger.LogWarning(ae, "Application error: ({StatusCode}) {Message}", ae.StatusCode, ae.Message);
+                break;
+
+            case DbUpdateException dbEx
+                when dbEx.InnerException?.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) == true
+                  || dbEx.InnerException?.Message.Contains("unique constraint", StringComparison.OrdinalIgnoreCase) == true:
+                statusCode = StatusCodes.Status409Conflict;
+                message = "A record with the same value already exists.";
+                _logger.LogWarning(dbEx, "Duplicate key violation: {Message}", dbEx.InnerException?.Message);
                 break;
 
             default:
