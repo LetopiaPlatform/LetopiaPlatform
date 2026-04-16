@@ -38,28 +38,33 @@ public static class CategorySeeder
             [
                 "Graphic Design",
                 "UI/UX Design",
+                "Motion Graphics",
+                "Digital Painting",
                 "3D Art",
                 "Animation",
-                "Photography",
-                "Video Production",
-                "Music Production"
+                "Fashion Design",
+                "Filmmaking",
+                "Interior Design"
             ],
             ["Business"] =
             [
                 "Entrepreneurship",
                 "Marketing",
                 "Finance",
+                "E-Commerce",
+                "Real Estate",
+                "Human Resources",
+                "Sales",
+                "Public Relationship",
+                "Stock Market",
                 "Product Management",
                 "Leadership",
-                "E-Commerce"
             ],
             ["Lifestyle"] =
             [
                 "Health & Fitness",
                 "Personal Development",
-                "Travel",
-                "Cooking",
-                "Languages"
+                "Mental Health"
             ],
             ["Science"] =
             [
@@ -71,11 +76,13 @@ public static class CategorySeeder
             ],
             ["Education"] =
             [
-                "Teaching Methods",
-                "Online Learning",
-                "Study Groups",
-                "Research",
-                "Career Development"
+                "Language Learning",
+                "History",
+                "Philosophy",
+                "Literature",
+                "Academic Writing",
+                "Online Teaching",
+                "Political Science"
             ]
         };
 
