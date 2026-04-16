@@ -15,4 +15,7 @@ public sealed record CommunitySummaryDto(
     int MemberCount,
     int PostCount,
     bool IsPrivate,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string SubCategoryName,
+    string SubCategorySlug,
+    Guid MainCategoryId);

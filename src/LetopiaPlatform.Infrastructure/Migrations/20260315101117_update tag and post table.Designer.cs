@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LetopiaPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260312114848_AddAgentAndRoadmapEntities")]
-    partial class AddAgentAndRoadmapEntities
+    [Migration("20260315101117_update tag and post table")]
+    partial class updatetagandposttable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -738,6 +738,13 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<List<string>>("ImageUrls")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasColumnName("image_urls")
+                        .HasDefaultValueSql("'{}'::text[]");
+
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -749,10 +756,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_pinned");
-
-                    b.Property<string>("PostImageUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("Post_image_url");
 
                     b.Property<string>("PostType")
                         .IsRequired()
@@ -1020,29 +1023,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("ResourceLikes", (string)null);
                 });
 
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceTag", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ResourceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("TagName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResourceId", "TagName")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ResourceTags_ResourceId_TagName");
-
-                    b.ToTable("ResourceTags", (string)null);
-                });
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1166,6 +1146,38 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasDatabaseName("ix_roadmap_phases_roadmap_id");
 
                     b.ToTable("roadmap_phases", (string)null);
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Tag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TagName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TargetType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetType", "TargetId")
+                        .HasDatabaseName("IX_Tags_TargetType_TargetId");
+
+                    b.HasIndex("TargetType", "TargetId", "TagName")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Tags_TargetType_TargetId_TagName");
+
+                    b.ToTable("Tags", (string)null);
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.UserCommunity", b =>
@@ -1479,7 +1491,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
                 {
-                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "Author")
+                    b.HasOne("LetopiaPlatform.Core.Entities.UserCommunity", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1570,17 +1582,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Resource");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceTag", b =>
-                {
-                    b.HasOne("LetopiaPlatform.Core.Entities.CommunityResource", "Resource")
-                        .WithMany("Tags")
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Resource");
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
@@ -1735,8 +1736,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
                 {
                     b.Navigation("Likes");
-
-                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTask", b =>

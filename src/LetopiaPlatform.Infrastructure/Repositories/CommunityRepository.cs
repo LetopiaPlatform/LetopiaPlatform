@@ -20,6 +20,7 @@ internal sealed class CommunityRepository : ICommunityRepository
     {
         return await _dbContext.Communities
             .Include(c => c.Category)
+                .ThenInclude(cat => cat.ParentCategory)
             .FirstOrDefaultAsync(c => c.Id == id && c.IsActive, ct);
     }
 
@@ -28,6 +29,7 @@ internal sealed class CommunityRepository : ICommunityRepository
         return await _dbContext.Communities
             .AsNoTracking()
             .Include(c => c.Category)
+                .ThenInclude(cat => cat.ParentCategory)
             .FirstOrDefaultAsync(c => c.Slug == slug && c.IsActive, ct);
     }
 
@@ -45,7 +47,8 @@ internal sealed class CommunityRepository : ICommunityRepository
 
     public async Task<PaginatedResult<CommunitySummaryDto>> ListAsync(
         PaginatedQuery query,
-        string? category = null,
+        string? mainCategory = null,
+        List<string>? subCategorySlugs = null,
         string? search = null,
         string? sortBy = null,
         Guid? currentUserId = null,
@@ -61,9 +64,15 @@ internal sealed class CommunityRepository : ICommunityRepository
                 !c.Members.Any(m => m.UserId == currentUserId.Value));
         }
 
-        if (!string.IsNullOrWhiteSpace(category))
+        if (subCategorySlugs is { Count: > 0 })
         {
-            queryable = queryable.Where(c => c.Category.Slug == category);
+            queryable = queryable.Where(c => subCategorySlugs.Contains(c.Category.Slug));
+        }
+        else if (!string.IsNullOrWhiteSpace(mainCategory))
+        {
+            queryable = queryable.Where(c =>
+                c.Category.ParentCategory != null
+                && c.Category.ParentCategory.Slug == mainCategory);
         }
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -77,7 +86,6 @@ internal sealed class CommunityRepository : ICommunityRepository
         queryable = sortBy?.ToLowerInvariant() switch
         {
             "members" => queryable.OrderByDescending(c => c.MemberCount),
-            "posts" => queryable.OrderByDescending(c => c.PostCount),
             "name" => queryable.OrderBy(c => c.Name),
             "oldest" => queryable.OrderBy(c => c.CreatedAt),
             _ => queryable.OrderByDescending(c => c.CreatedAt) // default to newest
@@ -90,8 +98,17 @@ internal sealed class CommunityRepository : ICommunityRepository
             .Take(query.PageSize)
             .Select(c => new CommunitySummaryDto(
                 c.Id, c.Name, c.Slug, c.Description,
-                c.CategoryId, c.Category.Name, c.Category.IconUrl,
-                c.CoverImageUrl, c.MemberCount, c.PostCount, c.IsPrivate, c.CreatedAt))
+                c.CategoryId,
+                c.Category.ParentCategory != null ? c.Category.ParentCategory.Name : c.Category.Name,
+                c.Category.ParentCategory != null ? c.Category.ParentCategory.IconUrl : c.Category.IconUrl,
+                c.CoverImageUrl,
+                c.MemberCount,
+                c.PostCount,
+                c.IsPrivate,
+                c.CreatedAt,
+                c.Category.Name,
+                c.Category.Slug,
+                c.Category.ParentCategoryId ?? c.CategoryId))
             .ToListAsync(ct);
 
         return PaginatedResult<CommunitySummaryDto>.Create(items, totalItems, query.Page, query.PageSize);
@@ -195,13 +212,16 @@ internal sealed class CommunityRepository : ICommunityRepository
                     uc.Community.Slug,
                     uc.Community.Description,
                     uc.Community.CategoryId,
-                    uc.Community.Category.Name,
-                    uc.Community.Category.IconUrl,
+                    uc.Community.Category.ParentCategory != null ? uc.Community.Category.ParentCategory.Name : uc.Community.Category.Name,
+                    uc.Community.Category.ParentCategory != null ? uc.Community.Category.ParentCategory.IconUrl : uc.Community.Category.IconUrl,
                     uc.Community.CoverImageUrl,
                     uc.Community.MemberCount,
                     uc.Community.PostCount,
                     uc.Community.IsPrivate,
-                    uc.Community.CreatedAt),
+                    uc.Community.CreatedAt,
+                    uc.Community.Category.Name,
+                    uc.Community.Category.Slug,
+                    uc.Community.Category.ParentCategoryId ?? uc.Community.CategoryId),
                 uc.JoinedAt))
             .AsNoTracking()
             .ToListAsync(ct);

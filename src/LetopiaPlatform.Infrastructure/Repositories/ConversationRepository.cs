@@ -17,6 +17,7 @@ internal sealed class ConversationRepository : IConversationRepository
     public async Task<AgentConversation?> GetByIdWithMessagesAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.AgentConversations
+
             .AsNoTracking()
             .Include(c => c.Messages.OrderBy(m => m.CreatedAt))
             .FirstOrDefaultAsync(c => c.Id == id, ct);
@@ -25,6 +26,7 @@ internal sealed class ConversationRepository : IConversationRepository
     public async Task<AgentConversation?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.AgentConversations
+
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id, ct);
     }
@@ -32,6 +34,7 @@ internal sealed class ConversationRepository : IConversationRepository
     public async Task<List<AgentConversation>> GetByUserIdAsync(Guid userId, CancellationToken ct = default)
     {
         return await _context.AgentConversations
+
             .AsNoTracking()
             .Where(c => c.UserId == userId)
             .OrderByDescending(c => c.UpdatedAt)

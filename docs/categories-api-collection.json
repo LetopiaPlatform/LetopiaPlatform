@@ -1,0 +1,503 @@
+{
+  "info": {
+    "name": "Letopia — Categories API",
+    "description": "Category hierarchy endpoints (Main Category → Sub-Category → Community).\n\n## Auth\nCreate/Update/Delete require **Admin** role.\nGet endpoints are public.\n\n## Hierarchy Rules\n- Main categories: `ParentCategoryId = null`, can have icon (SVG only)\n- Sub-categories: `ParentCategoryId = <main-category-id>`, cannot have icon\n- Max depth: 2 (no sub-sub-categories)\n- Communities must belong to a sub-category, not a main category",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7003",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mainCategoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subCategoryId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Get Categories by Type",
+      "description": "Returns all **main** categories of the specified type with their nested sub-categories. Public endpoint.",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categories?type=Community",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "categories"],
+          "query": [
+            {
+              "key": "type",
+              "value": "Community",
+              "description": "Category type: Community or Project"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 — Main categories with sub-categories",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": [\n    {\n      \"id\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n      \"name\": \"Technology\",\n      \"slug\": \"technology\",\n      \"iconUrl\": \"https://cdn.letopia.com/categories/icons/abc123.svg\",\n      \"type\": \"Community\",\n      \"parentCategoryId\": null,\n      \"childCategories\": [\n        {\n          \"id\": \"a1b2c3d4-0000-0000-0000-000000000010\",\n          \"name\": \"Web Development\",\n          \"slug\": \"web-development\",\n          \"iconUrl\": null,\n          \"type\": \"Community\",\n          \"parentCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n          \"childCategories\": null\n        },\n        {\n          \"id\": \"a1b2c3d4-0000-0000-0000-000000000011\",\n          \"name\": \"Mobile Development\",\n          \"slug\": \"mobile-development\",\n          \"iconUrl\": null,\n          \"type\": \"Community\",\n          \"parentCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n          \"childCategories\": null\n        }\n      ]\n    },\n    {\n      \"id\": \"a1b2c3d4-0000-0000-0000-000000000002\",\n      \"name\": \"Science\",\n      \"slug\": \"science\",\n      \"iconUrl\": \"https://cdn.letopia.com/categories/icons/def456.svg\",\n      \"type\": \"Community\",\n      \"parentCategoryId\": null,\n      \"childCategories\": [\n        {\n          \"id\": \"a1b2c3d4-0000-0000-0000-000000000020\",\n          \"name\": \"Physics\",\n          \"slug\": \"physics\",\n          \"iconUrl\": null,\n          \"type\": \"Community\",\n          \"parentCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000002\",\n          \"childCategories\": null\n        }\n      ]\n    }\n  ],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "400 — Invalid type",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 400,\n  \"message\": \"Invalid category type 'InvalidType'.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Category by Slug",
+      "description": "Returns a single category by slug and type. Public endpoint.",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categories/web-development?type=Community",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "categories", "web-development"],
+          "query": [
+            {
+              "key": "type",
+              "value": "Community",
+              "description": "Category type: Community or Project"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 — Found",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-0000-0000-0000-000000000010\",\n    \"name\": \"Web Development\",\n    \"slug\": \"web-development\",\n    \"iconUrl\": null,\n    \"type\": \"Community\",\n    \"parentCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n    \"childCategories\": null\n  },\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "404 — Not found",
+          "status": "Not Found",
+          "code": 404,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 404,\n  \"message\": \"Category 'nonexistent' was not found.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create Main Category",
+      "description": "Creates a main (root) category with an optional SVG icon. Requires **Admin** role.\n\nUses `multipart/form-data` for file upload.",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const json = pm.response.json();",
+              "    if (json.data && json.data.id) {",
+              "        pm.collectionVariables.set('mainCategoryId', json.data.id);",
+              "        console.log('Main category ID saved:', json.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categories",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "categories"]
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "Name",
+              "value": "Technology",
+              "type": "text",
+              "description": "Required. 2-100 characters."
+            },
+            {
+              "key": "Type",
+              "value": "Community",
+              "type": "text",
+              "description": "Required. 'Community' or 'Project'."
+            },
+            {
+              "key": "Icon",
+              "type": "file",
+              "src": "",
+              "description": "Optional. SVG file, max 256 KB. Only for main categories."
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "201 — Created",
+          "status": "Created",
+          "code": 201,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": true,\n  \"statusCode\": 201,\n  \"message\": \"Category created successfully\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n    \"name\": \"Technology\",\n    \"slug\": \"technology\",\n    \"iconUrl\": \"https://cdn.letopia.com/categories/icons/abc123.svg\",\n    \"type\": \"Community\",\n    \"parentCategoryId\": null,\n    \"childCategories\": null\n  },\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "400 — Validation Error",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 400,\n  \"message\": \"Validation failed\",\n  \"errors\": [\"Category name is required.\", \"Type must be Community, Project.\"],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "400 — Invalid SVG",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 400,\n  \"message\": \"Validation failed\",\n  \"errors\": [\"Icon must be an SVG file under 256 KB.\"],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "401 — Unauthorized",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 401,\n  \"message\": \"Unauthorized\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "403 — Forbidden (non-Admin)",
+          "status": "Forbidden",
+          "code": 403,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 403,\n  \"message\": \"Forbidden\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "409 — Duplicate name",
+          "status": "Conflict",
+          "code": 409,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 409,\n  \"message\": \"A Community category with a similar name already exists.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create Sub-Category",
+      "description": "Creates a sub-category under a main category. Requires **Admin** role.\n\n**Rules:**\n- `ParentCategoryId` must reference a root category (not another sub-category)\n- Type must match the parent's type\n- Icon is NOT allowed on sub-categories",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const json = pm.response.json();",
+              "    if (json.data && json.data.id) {",
+              "        pm.collectionVariables.set('subCategoryId', json.data.id);",
+              "        console.log('Sub-category ID saved:', json.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categories",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "categories"]
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "Name",
+              "value": "Web Development",
+              "type": "text",
+              "description": "Required. 2-100 characters."
+            },
+            {
+              "key": "Type",
+              "value": "Community",
+              "type": "text",
+              "description": "Required. Must match parent's type."
+            },
+            {
+              "key": "ParentCategoryId",
+              "value": "{{mainCategoryId}}",
+              "type": "text",
+              "description": "Required for sub-categories. Must be a root category ID."
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "201 — Created",
+          "status": "Created",
+          "code": 201,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": true,\n  \"statusCode\": 201,\n  \"message\": \"Category created successfully\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-0000-0000-0000-000000000010\",\n    \"name\": \"Web Development\",\n    \"slug\": \"web-development\",\n    \"iconUrl\": null,\n    \"type\": \"Community\",\n    \"parentCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n    \"childCategories\": null\n  },\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "400 — Icon on sub-category",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 400,\n  \"message\": \"Only main categories can have icons.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "400 — Max depth exceeded",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 400,\n  \"message\": \"Sub-categories cannot have children. Maximum category depth is 2.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "400 — Type mismatch",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 400,\n  \"message\": \"Sub-category type must match parent type 'Community'.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "404 — Parent not found",
+          "status": "Not Found",
+          "code": 404,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 404,\n  \"message\": \"Parent Category '00000000-0000-0000-0000-000000000000' was not found.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Category",
+      "description": "Updates a category name and/or icon. Requires **Admin** role.\n\n**Icon rules:**\n- Set `Icon` to upload a new SVG (replaces existing)\n- Set `RemoveIcon = true` to delete the current icon\n- Sub-categories cannot have icons",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categories/{{mainCategoryId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "categories", "{{mainCategoryId}}"]
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "Name",
+              "value": "Technology & Engineering",
+              "type": "text",
+              "description": "Required. 2-100 characters."
+            },
+            {
+              "key": "Icon",
+              "type": "file",
+              "src": "",
+              "description": "Optional. SVG file, max 256 KB. Only for main categories."
+            },
+            {
+              "key": "RemoveIcon",
+              "value": "false",
+              "type": "text",
+              "description": "Optional. Set to 'true' to delete the current icon.",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 — Updated",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Category updated successfully\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n    \"name\": \"Technology & Engineering\",\n    \"slug\": \"technology-engineering\",\n    \"iconUrl\": \"https://cdn.letopia.com/categories/icons/new123.svg\",\n    \"type\": \"Community\",\n    \"parentCategoryId\": null,\n    \"childCategories\": [\n      {\n        \"id\": \"a1b2c3d4-0000-0000-0000-000000000010\",\n        \"name\": \"Web Development\",\n        \"slug\": \"web-development\",\n        \"iconUrl\": null,\n        \"type\": \"Community\",\n        \"parentCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n        \"childCategories\": null\n      }\n    ]\n  },\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "400 — Icon on sub-category",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 400,\n  \"message\": \"Only main categories can have icons.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "404 — Not found",
+          "status": "Not Found",
+          "code": 404,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 404,\n  \"message\": \"Category 'a1b2c3d4-0000-0000-0000-000000000099' was not found.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Category — Remove Icon",
+      "description": "Updates a category and removes its icon. Requires **Admin** role.",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categories/{{mainCategoryId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "categories", "{{mainCategoryId}}"]
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "Name",
+              "value": "Technology",
+              "type": "text"
+            },
+            {
+              "key": "RemoveIcon",
+              "value": "true",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 — Icon removed",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Category updated successfully\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n    \"name\": \"Technology\",\n    \"slug\": \"technology\",\n    \"iconUrl\": null,\n    \"type\": \"Community\",\n    \"parentCategoryId\": null,\n    \"childCategories\": []\n  },\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Delete Category",
+      "description": "Deletes a category. Requires **Admin** role.\n\n**Cannot delete if:**\n- Category has sub-categories\n- Category has communities linked to it\n\nAlso deletes the icon file from storage if present.",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categories/{{subCategoryId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "categories", "{{subCategoryId}}"]
+        }
+      },
+      "response": [
+        {
+          "name": "204 — Deleted",
+          "status": "No Content",
+          "code": 204,
+          "header": [],
+          "body": ""
+        },
+        {
+          "name": "404 — Not found",
+          "status": "Not Found",
+          "code": 404,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 404,\n  \"message\": \"Category 'a1b2c3d4-0000-0000-0000-000000000099' was not found.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "409 — Has dependents",
+          "status": "Conflict",
+          "code": 409,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": false,\n  \"statusCode\": 409,\n  \"message\": \"Cannot delete a category that has subcategories or communities linked to it.\",\n  \"errors\": [],\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "List Communities (with category filters)",
+      "description": "List communities with optional category filtering.\n\n**Filter modes:**\n- No filter: paginated discovery of all communities\n- `category`: filter by main category slug\n- `subCategorySlugs`: filter by specific sub-categories (can select multiple)\n- `subCategorySlugs` takes priority over `category` when both provided\n\nPublic endpoint. Authenticated users see communities they haven't joined.",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/communities?category=technology&subCategorySlugs=devops&subCategorySlugs=ai-machine-learning&search=&sortBy=newest&page=1&pageSize=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "communities"],
+          "query": [
+            {
+              "key": "category",
+              "value": "technology",
+              "description": "Optional. Main category slug. Returns all communities under this main category."
+            },
+            {
+              "key": "subCategorySlugs",
+              "value": "devops",
+              "description": "Optional. Repeated param for multi-select. Filters by specific sub-category slugs."
+            },
+            {
+              "key": "subCategorySlugs",
+              "value": "ai-machine-learning",
+              "description": "Second sub-category selection (repeat the key for each)."
+            },
+            {
+              "key": "search",
+              "value": "",
+              "description": "Optional. Search by community name or description (case-insensitive).",
+              "disabled": true
+            },
+            {
+              "key": "sortBy",
+              "value": "newest",
+              "description": "Optional. Sort: newest (default), oldest, members, name."
+            },
+            {
+              "key": "page",
+              "value": "1",
+              "description": "Page number (default: 1)."
+            },
+            {
+              "key": "pageSize",
+              "value": "20",
+              "description": "Items per page (default: 10)."
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 — With category filter",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b1b2c3d4-0000-0000-0000-000000000001\",\n        \"name\": \"React Devs\",\n        \"slug\": \"react-devs\",\n        \"description\": \"A community for React developers\",\n        \"categoryId\": \"a1b2c3d4-0000-0000-0000-000000000010\",\n        \"categoryName\": \"Technology\",\n        \"iconUrl\": \"https://cdn.letopia.com/categories/icons/tech.svg\",\n        \"coverImageUrl\": \"https://cdn.letopia.com/communities/covers/react.jpg\",\n        \"memberCount\": 1250,\n        \"postCount\": 340,\n        \"isPrivate\": false,\n        \"createdAt\": \"2026-01-15T10:00:00Z\",\n        \"subCategoryName\": \"Web Development\",\n        \"subCategorySlug\": \"web-development\",\n        \"mainCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\"\n      },\n      {\n        \"id\": \"b1b2c3d4-0000-0000-0000-000000000002\",\n        \"name\": \"DevOps Engineers\",\n        \"slug\": \"devops-engineers\",\n        \"description\": \"CI/CD, Docker, Kubernetes and more\",\n        \"categoryId\": \"a1b2c3d4-0000-0000-0000-000000000012\",\n        \"categoryName\": \"Technology\",\n        \"iconUrl\": \"https://cdn.letopia.com/categories/icons/tech.svg\",\n        \"coverImageUrl\": null,\n        \"memberCount\": 890,\n        \"postCount\": 156,\n        \"isPrivate\": false,\n        \"createdAt\": \"2026-02-01T14:00:00Z\",\n        \"subCategoryName\": \"DevOps\",\n        \"subCategorySlug\": \"devops\",\n        \"mainCategoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\"\n      }\n    ],\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"totalItems\": 2,\n    \"totalPages\": 1,\n    \"hasNextPage\": false,\n    \"hasPreviousPage\": false\n  },\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        },
+        {
+          "name": "200 — No filter (discovery)",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": {\n    \"items\": [],\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"totalItems\": 0,\n    \"totalPages\": 0,\n    \"hasNextPage\": false,\n    \"hasPreviousPage\": false\n  },\n  \"timestamp\": \"2026-03-18T12:00:00Z\"\n}"
+        }
+      ]
+    }
+  ]
+}

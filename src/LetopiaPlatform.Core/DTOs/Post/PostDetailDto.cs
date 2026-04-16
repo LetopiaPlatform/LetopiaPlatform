@@ -4,13 +4,13 @@ using LetopiaPlatform.Core.Enums;
 namespace LetopiaPlatform.Core.DTOs.Post;
 
 /// <summary>
-/// Detailed information of a post.
+/// Detailed information of a post including all images and tags.
 /// </summary>
 public record PostDetailDto(
     Guid Id,
     string Title,
     string Content,
-    string? PostImageUrl,
+    List<string> ImageUrls,
     AuthorDto AuthorInfo,
     PostType PostType,
     int Upvotes,
@@ -19,4 +19,5 @@ public record PostDetailDto(
     bool IsPinned,
     DateTime CreatedAt,
     string? CurrentUserReaction,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    List<string> Tags);

@@ -133,6 +133,7 @@ public static class DependencyInjection
     {
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
+        services.AddHttpClient();
         services.Configure<GoogleAuthSettings>(configuration.GetSection(GoogleAuthSettings.SectionName));
         services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -148,6 +149,7 @@ public static class DependencyInjection
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IReactionRepository, ReactionRepository>();
+        services.AddScoped<ITagRepository, TagRepository>();
 
         services.AddScoped<IPostAuthorizationService, PostAuthorizationService>();
         services.AddScoped<IPostService, PostService>();
@@ -159,11 +161,13 @@ public static class DependencyInjection
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
-        services.AddScoped<IConversationRepository, ConversationRepository>(); 
+        services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
+
         services.AddScoped<ICommunityTaskService, CommunityTaskService>();
+
         return services;
     }
 

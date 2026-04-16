@@ -91,7 +91,7 @@ public class AuthService : IAuthService
 
     public async Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken = default)
     {
-        var googleUserInfo = await _googleTokenValidator.ValidateAsync(request.IdToken);
+        var googleUserInfo = await _googleTokenValidator.ValidateAsync(request.AccessToken);
         if (googleUserInfo == null)
         {
             return Result<AuthResponse>.Failure("Invalid Google token.", 401);

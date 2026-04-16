@@ -1,4 +1,3 @@
-
 namespace LetopiaPlatform.Agent.Configuration;
 
 /// <summary>
