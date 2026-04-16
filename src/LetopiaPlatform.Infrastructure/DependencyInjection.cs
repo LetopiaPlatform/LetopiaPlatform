@@ -161,11 +161,13 @@ public static class DependencyInjection
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
-        services.AddScoped<IConversationRepository, ConversationRepository>(); 
+        services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
+
         services.AddScoped<ICommunityTaskService, CommunityTaskService>();
+
         return services;
     }
 
