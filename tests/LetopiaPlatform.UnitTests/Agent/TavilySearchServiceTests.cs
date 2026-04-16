@@ -94,7 +94,7 @@ public class TavilySearchServiceTests
             });
         });
 
-        using var service = CreateService(handler);
+        var service = CreateService(handler);
 
         // Act
         var results = await service.SearchAsync("test query");
