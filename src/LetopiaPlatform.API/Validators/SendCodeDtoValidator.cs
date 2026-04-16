@@ -14,7 +14,7 @@ public class SendCodeDtoValidator : AbstractValidator<SendCodeDto>
 
         RuleFor(x => x.Purpose)
             .NotEmpty().WithMessage("Purpose is required")
-            .Must(p => p == nameof(VerificationPurpose.EmailVerification) || p == nameof(VerificationPurpose.PasswordReset))
+            .Must(p => p == nameof(OtpPurpose.EmailVerification) || p == nameof(OtpPurpose.PasswordReset))
             .WithMessage("Purpose must be 'EmailVerification' or 'PasswordReset'");
     }
 }

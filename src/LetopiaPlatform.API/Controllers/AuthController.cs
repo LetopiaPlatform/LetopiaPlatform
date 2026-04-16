@@ -59,7 +59,7 @@ public class AuthController : BaseController
     {
         HttpContext.AddBusinessContext("action", "send_code");
 
-        if (!Enum.TryParse<VerificationPurpose>(request.Purpose, out var purpose))
+        if (!Enum.TryParse<OtpPurpose>(request.Purpose, out var purpose))
             return HandleResult(Result.Failure("Invalid purpose. Must be 'EmailVerification' or 'PasswordReset'."));
 
         var result = await _authService.SendVerificationCodeAsync(new SendCodeRequest(

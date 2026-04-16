@@ -4,10 +4,12 @@ using LetopiaPlatform.Core.DTOs.Auth.Response;
 using LetopiaPlatform.Core.DTOs.Email;
 using LetopiaPlatform.Core.Entities.Identity;
 using LetopiaPlatform.Core.Enums;
+using LetopiaPlatform.Core.AppSettings;
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace LetopiaPlatform.Infrastructure.Identity;
 
@@ -20,19 +22,24 @@ public class AuthService : IAuthService
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IGoogleTokenValidator _googleTokenValidator;
     private readonly IEmailService _emailService;
+    private readonly string _assetsBaseUrl;
+    private readonly string _frontendBaseUrl;
 
     public AuthService(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         IJwtTokenService jwtTokenService,
         IGoogleTokenValidator googleTokenValidator,
-        IEmailService emailService)
+        IEmailService emailService,
+        IOptions<SmtpSettings> smtpSettings)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _jwtTokenService = jwtTokenService;
         _googleTokenValidator = googleTokenValidator;
         _emailService = emailService;
+        _assetsBaseUrl = smtpSettings.Value.EmailAssetsBaseUrl.TrimEnd('/');
+        _frontendBaseUrl = smtpSettings.Value.FrontendBaseUrl.TrimEnd('/');
     }
 
     public async Task<Result> SignUpAsync(SignUpRequest request)
@@ -66,7 +73,10 @@ public class AuthService : IAuthService
         }   
 
         // Send Verification code instead of returning JWT
-        await SendCodeToUserAsync(user, VerificationPurpose.EmailVerification);
+        await SendCodeToUserAsync(user, OtpPurpose.EmailVerification);
+
+        // Send Welcome email
+        SendWelcomeEmail(user);
 
         return Result.Success(201);
     }
@@ -205,6 +215,9 @@ public class AuthService : IAuthService
         user.UpdatedAt = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);
 
+        // Send onboarding email after successful verification
+        SendOnboardingEmail(user);
+
         var tokenResult = await _jwtTokenService.GenerateTokenAsync(user);
         var response = BuildAuthResponse(user, tokenResult);
         return Result<AuthResponse>.Success(response);
@@ -216,7 +229,7 @@ public class AuthService : IAuthService
         if (user == null)
             return Result.Success(); // Prevent email enumeration
 
-        await SendCodeToUserAsync(user, VerificationPurpose.PasswordReset);
+        await SendCodeToUserAsync(user, OtpPurpose.PasswordReset);
         return Result.Success();
     }
 
@@ -244,22 +257,26 @@ public class AuthService : IAuthService
 
     #region Private helpers
 
-    private async Task SendCodeToUserAsync(User user, VerificationPurpose purpose)
+    private async Task SendCodeToUserAsync(User user, OtpPurpose purpose)
     {
         var code = await _userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider);
-        
-        var (title, subject, body) = purpose switch
-        {
-            VerificationPurpose.EmailVerification => (
-                title: "Verify Your Email",
-                subject: "Your Email Verification Code",
-                body: $"<p>Your verification code is:</p><h1 style=\"text-align:center; letter-spacing: 8px; font-size: 32px;\">{code}</h1><p>This code expires in 10 minutes.</p>"
+        var userName = user.FullName ?? EmailTemplates.DefaultUserName;
 
+        var (title, subject, body, afterCodeBody, illustration) = purpose switch
+        {
+            OtpPurpose.EmailVerification => (
+                EmailTemplates.VerifyTitle,
+                EmailTemplates.VerifySubject,
+                EmailTemplates.VerifyBody,
+                EmailTemplates.VerifyAfterCodeBody,
+                EmailTemplates.VerifyIllustration
             ),
-            VerificationPurpose.PasswordReset => (
-                title: "Reset Your Password",
-                subject: "Your Password Reset Code",
-                body: $"<p>Your password reset code is:</p><h1 style=\"text-align:center; letter-spacing: 8px; font-size: 32px;\">{code}</h1><p>This code expires in 10 minutes. If you didn't request this, ignore this email.</p>"
+            OtpPurpose.PasswordReset => (
+                EmailTemplates.ResetTitle,
+                EmailTemplates.ResetSubject,
+                EmailTemplates.ResetBody,
+                EmailTemplates.ResetAfterCodeBody,
+                EmailTemplates.ResetPasswordIllustration
             ),
             _ => throw new ArgumentException("Invalid verification purpose.")
         };
@@ -268,7 +285,41 @@ public class AuthService : IAuthService
             To: user.Email!,
             Subject: subject,
             Title: title,
-            Body: body
+            Body: body,
+            UserName: userName,
+            Code: code,
+            AfterCodeBody: afterCodeBody,
+            IllustrationUrl: $"{_assetsBaseUrl}/{illustration}"
+        ));
+    }
+
+    private void SendWelcomeEmail(User user)
+    {
+        var userName = user.FullName ?? EmailTemplates.DefaultUserName;
+
+        _emailService.Enqueue(new EmailMessage(
+            To: user.Email!,
+            Subject: EmailTemplates.WelcomeSubject,
+            Title: EmailTemplates.WelcomeTitle,
+            Body: EmailTemplates.WelcomeBody,
+            UserName: userName,
+            IllustrationUrl: $"{_assetsBaseUrl}/{EmailTemplates.WelcomeIllustration}"
+        ));
+    }
+
+    private void SendOnboardingEmail(User user)
+    {
+        var userName = user.FullName ?? EmailTemplates.DefaultUserName;
+
+        _emailService.Enqueue(new EmailMessage(
+            To: user.Email!,
+            Subject: EmailTemplates.OnboardingSubject,
+            Title: EmailTemplates.OnboardingTitle,
+            Body: EmailTemplates.OnboardingBody,
+            UserName: userName,
+            ButtonText: EmailTemplates.OnboardingButtonText,
+            ButtonUrl: _frontendBaseUrl,
+            IllustrationUrl: $"{_assetsBaseUrl}/{EmailTemplates.OnboardingIllustration}"
         ));
     }
 

@@ -10,4 +10,6 @@ public sealed class SmtpSettings
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public bool UseSsl { get; set; } = true;
+    public string EmailAssetsBaseUrl { get; set; } = string.Empty;
+    public string FrontendBaseUrl { get; set; } = string.Empty;
 }
