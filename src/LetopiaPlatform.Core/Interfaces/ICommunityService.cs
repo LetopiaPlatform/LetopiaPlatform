@@ -25,7 +25,8 @@ public interface ICommunityService
     /// Lists communities with optional filtering, searching, and sorting.
     /// </summary>
     /// <param name="query">The pagination and filtering query parameters.</param>
-    /// <param name="category">The category to filter communities by.</param>
+    /// <param name="mainCategory">The main category to filter communities by.</param>
+    /// <param name="subCategorySlugs">Optional sub-category filters.</param>
     /// <param name="search">The search term to filter communities by name or description.</param>
     /// <param name="sortBy">The field to sort the communities by.</param>
     /// <param name="currentUserId">The ID of the current user, if available, to include membership context in the results.</param>
@@ -33,7 +34,8 @@ public interface ICommunityService
     /// <returns>A paginated list of community summaries.</returns>
     Task<PaginatedResult<CommunitySummaryDto>> ListAsync(
         PaginatedQuery query,
-        string? category = null,
+        string? mainCategory = null,
+        List<string>? subCategorySlugs = null,
         string? search = null,
         string? sortBy = null,
         Guid? currentUserId = null,
