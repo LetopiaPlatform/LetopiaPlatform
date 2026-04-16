@@ -4,6 +4,7 @@ using LetopiaPlatform.Core.Entities;
 using LetopiaPlatform.Core.Enums;
 using LetopiaPlatform.Core.Exceptions;
 using LetopiaPlatform.Core.Interfaces;
+using LetopiaPlatform.Core.Services.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.Extensions.Logging;
 
@@ -13,17 +14,20 @@ public class CategoryService : ICategoryService
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly IUnitOfWork<ApplicationDbContext> _unitOfWork;
+    private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<CategoryService> _logger;
 
     public CategoryService(
         ICategoryRepository categoryRepository,
         IUnitOfWork<ApplicationDbContext> unitOfWork,
+        IFileStorageService fileStorageService,
         ILogger<CategoryService> logger
     )
     {
         _categoryRepository = categoryRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task<CategoryDto> CreateAsync(
@@ -35,21 +39,53 @@ public class CategoryService : ICategoryService
             throw new AppException($"Invalid category type {request.Type}", 400);
         }
 
-        if (await _categoryRepository.SlugExistsAsync(request.Name, type, ct: ct))
+        // Hierarchy validation
+        if (request.ParentCategoryId.HasValue)
         {
-            throw new ConflictException($"A {type} category with a similar name already exists.");
+            var parent = await _categoryRepository.GetByIdAsync(request.ParentCategoryId.Value, ct)
+                ?? throw new NotFoundException("Parent Category", request.ParentCategoryId.Value);
+
+            // Enforce max depth = 2: parent must be a root category.
+            if (parent.ParentCategoryId is not null)
+            {
+                throw new AppException("Sub-categories cannot have children. Maximum category depth is 2.", 400);
+            }
+
+            // Enforce type consistency: child must match parent type
+            if (parent.Type != type)
+            {
+                throw new AppException($"Sub-category type must match parent type '{parent.Type}'.", 400);
+            }
+
+            // Sub-categories cannot have icons
+            if (request.Icon is not null)
+            {
+                throw new AppException("Only main categories can have icons.", 400);
+            }
         }
 
         var slug = await SlugGenerator.GenerateUniqueAsync(
             request.Name,
             async candidate => await _categoryRepository.SlugExistsAsync(candidate, type, ct: ct));
 
+        string? iconUrl = null;
+        if (request.Icon is not null)
+        {
+            var result = await _fileStorageService.UploadSvgAsync(request.Icon, "categories/icons", ct: ct);
+            if (!result.IsSuccess)
+            {
+                throw new AppException($"Icon upload failed: {result.Error}", 400);
+            }
+            iconUrl = result.Value;
+        }
+
         var category = new Category
         {
             Name = request.Name,
             Slug = slug,
-            IconUrl = request.IconUrl,
-            Type = type
+            IconUrl = iconUrl,
+            Type = type,
+            ParentCategoryId = request.ParentCategoryId
         };
 
         _categoryRepository.Add(category);
@@ -74,7 +110,36 @@ public class CategoryService : ICategoryService
         
         category.Name = request.Name;
         category.Slug = newSlug;
-        category.IconUrl = request.IconUrl;
+
+        bool isSubCategory = category.ParentCategoryId is not null;
+
+        if (request.Icon is not null && isSubCategory)
+        {
+            throw new AppException("Only main categories can have icons.", 400);
+        }
+
+        if (request.RemoveIcon)
+        {
+            if (category.IconUrl is not null)
+            {
+                await _fileStorageService.DeleteAsync(category.IconUrl, ct);
+                category.IconUrl = null;
+            }
+        }
+        else if (request.Icon is not null)
+        {
+            if (category.IconUrl is not null)
+            {
+                await _fileStorageService.DeleteAsync(category.IconUrl, ct);
+            }
+
+            var result = await _fileStorageService.UploadSvgAsync(request.Icon, "categories/icons", ct: ct);
+            if (!result.IsSuccess)
+            {
+                throw new AppException($"Icon upload failed: {result.Error}", 400);
+            }
+            category.IconUrl = result.Value;
+        }
 
         _categoryRepository.Update(category);
         await _unitOfWork.SaveChangesAsync(ct);
@@ -90,7 +155,12 @@ public class CategoryService : ICategoryService
 
         if (await _categoryRepository.HasDependentsAsync(id, ct))
         {
-            throw new ConflictException("Cannot delete a category that has communities linked to it.");
+            throw new ConflictException("Cannot delete a category that has subcategories or communities linked to it.");
+        }
+
+        if (category.IconUrl is not null)
+        {
+            await _fileStorageService.DeleteAsync(category.IconUrl, ct);
         }
 
         _categoryRepository.Delete(category);
@@ -131,7 +201,9 @@ public class CategoryService : ICategoryService
             category.Name,
             category.Slug,
             category.IconUrl,
-            category.Type.ToString()
+            category.Type.ToString(),
+            category.ParentCategoryId,
+            category.ChildCategories?.Select(MapToDto).ToList() is { Count: > 0 } children ? children : null
         );
     }
 

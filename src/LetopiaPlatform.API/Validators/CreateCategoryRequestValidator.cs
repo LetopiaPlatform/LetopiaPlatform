@@ -17,9 +17,10 @@ public class CreateCategoryRequestValidator : AbstractValidator<CreateCategoryRe
             .NotEmpty().WithMessage("Category type is required.")
             .Must(BeValidCategoryType).WithMessage($"Type must be {string.Join(", ", Enum.GetNames(typeof(CategoryType)))}.");
         
-        RuleFor(x => x.IconUrl)
-            .Must(BeValidUrl).WithMessage("Icon URL must be a valid URL.")
-            .When(x => !string.IsNullOrEmpty(x.IconUrl));
+        RuleFor(x => x.Icon)
+            .Must(BeValidSvgFile!)
+            .WithMessage("Icon must be an SVG file under 256 KB.")
+            .When(x => x.Icon is not null);
     }
 
     private static bool BeValidCategoryType(string type)
@@ -27,8 +28,10 @@ public class CreateCategoryRequestValidator : AbstractValidator<CreateCategoryRe
         return Enum.TryParse<CategoryType>(type, ignoreCase: true, out _);
     }
 
-    private static bool BeValidUrl(string? url)
+    private static bool BeValidSvgFile(Microsoft.AspNetCore.Http.IFormFile file)
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        var extension = System.IO.Path.GetExtension(file.FileName);
+        return string.Equals(extension, ".svg", StringComparison.OrdinalIgnoreCase)
+            && file.Length <= 256 * 1024;
     }
 }

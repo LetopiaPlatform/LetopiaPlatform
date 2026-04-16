@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace LetopiaPlatform.Core.DTOs.Category;
 
 /// <summary>
@@ -7,4 +9,5 @@ namespace LetopiaPlatform.Core.DTOs.Category;
 public sealed record CreateCategoryRequest(
     string Name,
     string Type,
-    string? IconUrl = null);
+    Guid? ParentCategoryId = null,
+    IFormFile? Icon = null);

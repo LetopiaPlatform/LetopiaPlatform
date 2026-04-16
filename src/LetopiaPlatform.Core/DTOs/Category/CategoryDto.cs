@@ -8,5 +8,7 @@ public sealed record CategoryDto(
     string Name,
     string Slug,
     string? IconUrl,
-    string Type
+    string Type,
+    Guid? ParentCategoryId = null,
+    IEnumerable<CategoryDto>? ChildCategories = null
 );

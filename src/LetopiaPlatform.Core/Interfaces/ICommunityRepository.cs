@@ -45,7 +45,8 @@ public interface ICommunityRepository
     /// Lists communities with pagination and optional filtering.
     /// </summary>
     /// <param name="query">Pagination parameters.</param>
-    /// <param name="category">Optional category filter.</param>
+    /// <param name="mainCategory">Optional main category filter.</param>
+    /// <param name="subCategorySlugs">Optional sub-category filters.</param>
     /// <param name="search">Optional search term.</param>
     /// <param name="sortBy">Optional sort field.</param>
     /// <param name="currentUserId">The ID of the current user, if available, to include membership context in the results.</param>
@@ -53,7 +54,8 @@ public interface ICommunityRepository
     /// <returns>A paginated result of community summaries.</returns>
     Task<PaginatedResult<CommunitySummaryDto>> ListAsync(
         PaginatedQuery query,
-        string? category = null,
+        string? mainCategory = null,
+        List<string>? subCategorySlugs = null,
         string? search = null,
         string? sortBy = null,
         Guid? currentUserId = null,

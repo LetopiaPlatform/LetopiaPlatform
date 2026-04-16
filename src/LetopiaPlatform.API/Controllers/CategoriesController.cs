@@ -40,7 +40,7 @@ public class CategoriesController : BaseController
     
     [HttpPost(Router.Categories.Prefix)]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Create(CreateCategoryRequest request, CancellationToken ct)
+    public async Task<IActionResult> Create([FromForm] CreateCategoryRequest request, CancellationToken ct)
     {
         HttpContext.AddBusinessContext("action", "create_category");
 
@@ -51,7 +51,7 @@ public class CategoriesController : BaseController
 
     [HttpPut(Router.Categories.Update)]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Update(Guid id, UpdateCategoryRequest request, CancellationToken ct)
+    public async Task<IActionResult> Update(Guid id, [FromForm] UpdateCategoryRequest request, CancellationToken ct)
     {
         HttpContext.AddBusinessContext("action", "update_category");
         HttpContext.AddBusinessContext("category_id", id.ToString());

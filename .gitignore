@@ -98,3 +98,7 @@ appsettings.*.json
 # Logs
 logs/
 *.log
+
+# Uploaded content (local dev)
+**/wwwroot/categories/
+**/wwwroot/communities/
