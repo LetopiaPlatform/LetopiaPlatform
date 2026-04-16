@@ -151,6 +151,7 @@ public static class DependencyInjection
         services.AddScoped<IReactionRepository, ReactionRepository>();
         services.AddScoped<ITagRepository, TagRepository>();
 
+        services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IPostAuthorizationService, PostAuthorizationService>();
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<ICommentService, CommentService>();
@@ -165,7 +166,6 @@ public static class DependencyInjection
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
-
         services.AddScoped<ICommunityTaskService, CommunityTaskService>();
 
         return services;
