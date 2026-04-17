@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-
   <ItemGroup>
     <ProjectReference Include="..\LetopiaPlatform.Core\LetopiaPlatform.Core.csproj" />
   </ItemGroup>

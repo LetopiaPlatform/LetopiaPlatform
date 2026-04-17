@@ -25,4 +25,7 @@ public class Community : AuditableEntity
     public ICollection<Post> Posts { get; set; } = [];
     public ICollection<UserCommunity> Members { get; set; } = [];
     public ICollection<Channel> Channels { get; set; } = [];
+
+    public ICollection<CommunityTaskCategory> TaskCategories { get; set; } = [];
+    public ICollection<CommunityTask> Tasks { get; set; } = [];
 }

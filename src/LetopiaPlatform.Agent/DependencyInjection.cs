@@ -7,22 +7,24 @@ using Microsoft.Extensions.DependencyInjection;
 namespace LetopiaPlatform.Agent;
 
 /// <summary>
-/// Registers agent-layer services into the dependency injection container.
+/// Provides extension methods for setting up dependency injection for the Agent layer.
 /// </summary>
 public static class DependencyInjection
 {
     /// <summary>
-    /// Adds agent services including LLM configuration and web search integration.
+    /// Registers the Agent layer services and configurations into the dependency injection container.
     /// </summary>
-    /// <param name="services">The service collection to configure.</param>
-    /// <param name="configuration">Application configuration.</param>
-    /// <returns>The configured service collection for chaining.</returns>
     public static IServiceCollection AddAgentServices(
-        this IServiceCollection services, IConfiguration configuration)
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        services.Configure<AgentSettings>(configuration.GetSection(AgentSettings.SectionName));
+        services.Configure<AgentSettings>(
+            configuration.GetSection(AgentSettings.SectionName));
 
-        // Tavily web search
+        services.Configure<WebSearchSettings>(
+            configuration.GetSection(WebSearchSettings.SectionName));
+
+        // Register Tavily web search service with typed HttpClient
         services.AddHttpClient<TavilySearchService>();
         services.AddScoped<IWebSearchService, TavilySearchService>();
 

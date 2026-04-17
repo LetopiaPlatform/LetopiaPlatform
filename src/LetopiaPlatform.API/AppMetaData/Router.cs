@@ -11,6 +11,12 @@ public static class Router
         public const string Prefix = $"{Rule}/auth";
         public const string SignUp = $"{Prefix}/signup";
         public const string Login = $"{Prefix}/login";
+        public const string GoogleLogin = $"{Prefix}/google";
+        public const string SendCode = $"{Prefix}/send-code";
+        public const string VerifyEmail = $"{Prefix}/verify-email";
+        public const string ResetPassword = $"{Prefix}/reset-password";
+        public const string ForgotPassword = $"{Prefix}/forgot-password";
+
     }
 
     public static class Users
@@ -18,10 +24,7 @@ public static class Router
         public const string Prefix = $"{Rule}/users";
         public const string Me = $"{Prefix}/me";
         public const string Update = $"{Prefix}/me";
-
-        // File operations scoped to the current user
-        public const string UploadFile = $"{Prefix}/me/files";
-        public const string DeleteFile = $"{Prefix}/me/files";
+        public const string Avatar = $"{Prefix}/me/avatar";
     }
 
 
@@ -98,21 +101,52 @@ public static class Router
     public static class Posts
     {
         public const string Prefix = $"{Rule}/posts";
-
-        // Creation & Listing (Scoped to Community/Channel)
-        // Note: Using a different prefix for creation/listing to accommodate parent IDs
+        // Scoped to Community/Channel
         public const string Base = $"{Rule}/communities/{{communityId:guid}}";
         public const string Create = $"{Base}/channels/{{channelId:guid}}/posts";
         public const string List = $"{Base}/channels/{{channelId:guid}}/posts";
-
+        public const string Pinned = $"{Base}/channels/{{channelId:guid}}/posts/pinned";
         // Resource Specific
         public const string GetById = $"{Prefix}/{{postId:guid}}";
         public const string Update = $"{Prefix}/{{postId:guid}}";
         public const string Delete = $"{Prefix}/{{postId:guid}}";
-
+        public const string TogglePin = $"{Prefix}/{{postId:guid}}/pin";
         // Nested Resources
         public const string Comments = $"{Prefix}/{{postId:guid}}/comments";
         public const string React = $"{Prefix}/{{postId:guid}}/react";
+    }
+
+    public static class CommunityTaskCategory
+    {
+        public const string Prefix = $"{Rule}/CommunityTaskCategory";
+
+        public const string GetAll = $"{Prefix}/{{communityId:guid}}/GetAll";
+        public const string Create = $"{Prefix}/{{communityId:guid}}/Create";
+
+
+        public const string GetCategoryById = $"{Prefix}/{{communityId:guid}}/{{categoryid:guid}}";
+
+        public const string Update = $"{Prefix}/Update/{{id:guid}}";
+        public const string Delete = $"{Prefix}/Delete/{{id:guid}}";
+    }
+
+    public static class CommunityTask
+    {
+        public const string Prefix = $"{Rule}/CommunityTask";
+
+        public const string GetAll = $"{Prefix}/{{communityId:guid}}/GetAll";
+        public const string Create = $"{Prefix}/{{communityId:guid}}/Create";
+        public const string GetTodayProgress = $"{Prefix}/{{communityId:guid}}/GetTodayProgress";
+
+        public const string Update = $"{Prefix}/Update/{{communityTaskid:guid}}";
+        public const string Delete = $"{Prefix}/Delete/{{communityTaskid:guid}}";
+        public const string Toggle = $"{Prefix}/Toggle/{{taskid:guid}}";
+    }
+
+    public static class Search
+    {
+        public const string Prefix = $"{Rule}/search";
+        public const string Query = Prefix;
     }
 }
 

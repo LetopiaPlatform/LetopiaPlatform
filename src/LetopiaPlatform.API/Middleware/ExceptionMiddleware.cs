@@ -1,5 +1,6 @@
 using LetopiaPlatform.API.Common;
 using LetopiaPlatform.Core.Exceptions;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace LetopiaPlatform.API.Middleware;
@@ -21,6 +22,7 @@ public class ExceptionMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        context.Request.EnableBuffering();
         try
         {
             await _next(context);
@@ -78,10 +80,38 @@ public class ExceptionMiddleware
                 _logger.LogWarning(ae, "Application error: ({StatusCode}) {Message}", ae.StatusCode, ae.Message);
                 break;
 
+            case DbUpdateException dbEx
+                when dbEx.InnerException?.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) == true
+                  || dbEx.InnerException?.Message.Contains("unique constraint", StringComparison.OrdinalIgnoreCase) == true:
+                statusCode = StatusCodes.Status409Conflict;
+                message = "A record with the same value already exists.";
+                _logger.LogWarning(dbEx, "Duplicate key violation: {Message}", dbEx.InnerException?.Message);
+                break;
+
             default:
                 statusCode = StatusCodes.Status500InternalServerError;
                 message = "An internal server error occurred.";
-                _logger.LogError(exception, "Unhandled exception on: {Method} {Path}", context.Request.Method, context.Request.Path);
+
+                var rootCause = GetInnermostException(exception);
+                var requestBody = await ReadRequestBodyAsync(context);
+
+                _logger.LogError(exception,
+                    "Unhandled exception on: {Method} {Path}{QueryString} | " +
+                    "ExceptionType: {ExceptionType} | Message: {ExceptionMessage} | " +
+                    "InnerException: {InnerException} | RootCause: {RootCauseType}: {RootCauseMessage} | " +
+                    "RequestBody: {RequestBody} | " +
+                    "User: {UserId} | TraceId: {TraceId}",
+                    context.Request.Method,
+                    context.Request.Path,
+                    Sanitize(context.Request.QueryString.ToString()),
+                    exception.GetType().FullName,
+                    Sanitize(exception.Message),
+                    Sanitize(exception.InnerException?.Message ?? "N/A"),
+                    rootCause.GetType().FullName,
+                    Sanitize(rootCause.Message),
+                    Sanitize(requestBody),
+                    context.User?.FindFirst("sub")?.Value ?? "anonymous",
+                    context.TraceIdentifier);
                 break;
         }
 
@@ -100,5 +130,41 @@ public class ExceptionMiddleware
 
         context.Response.StatusCode = statusCode;
         await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
+    }
+
+    private static async Task<string> ReadRequestBodyAsync(HttpContext context)
+    {
+        try
+        {
+            context.Request.Body.Position = 0;
+            using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
+            var body = await reader.ReadToEndAsync();
+            return string.IsNullOrWhiteSpace(body) ? "N/A" : body.Length > 4096 ? body[..4096] + "...(truncated)" : body;
+        }
+        catch
+        {
+            return "N/A";
+        }
+    }
+
+    private static Exception GetInnermostException(Exception exception)
+    {
+        while (exception.InnerException != null)
+            exception = exception.InnerException;
+        return exception;
+    }
+
+    /// <summary>
+    /// Strips newlines and control characters to prevent log injection / log forging.
+    /// </summary>
+    private static string Sanitize(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value;
+
+        return value
+            .Replace("\r", "", StringComparison.Ordinal)
+            .Replace("\n", "", StringComparison.Ordinal)
+            .Replace("\t", " ", StringComparison.Ordinal);
     }
 }

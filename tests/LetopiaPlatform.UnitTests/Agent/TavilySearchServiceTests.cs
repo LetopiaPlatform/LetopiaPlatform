@@ -21,7 +21,7 @@ public class TavilySearchServiceTests
     private static TavilySearchService CreateService(HttpMessageHandler handler)
     {
         var httpClient = new HttpClient(handler);
-        var settings = Options.Create(new AgentSettings { TavilyApiKey = FakeApiKey });
+        var settings = Options.Create(new WebSearchSettings { TavilyApiKey = FakeApiKey });
         var logger = Mock.Of<ILogger<TavilySearchService>>();
         return new TavilySearchService(httpClient, settings, logger);
     }
@@ -87,10 +87,12 @@ public class TavilySearchServiceTests
     {
         // Arrange
         var handler = new MockHttpMessageHandler((_, _) =>
-            Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError)
+        {
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError)
             {
                 Content = new StringContent("Internal Server Error")
-            }));
+            });
+        });
 
         var service = CreateService(handler);
 

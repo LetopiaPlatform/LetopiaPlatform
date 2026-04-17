@@ -46,12 +46,12 @@ public class ProjectService : IProjectService
         return Result<ProjectDetailsResponseDto>.Success(MapToDetails(project));
     }
 
-    public async Task<Result<Guid>> CreateAsync(CreateProjectRequestDto request, CancellationToken ct = default)
+    public async Task<Result<Guid>> CreateAsync(Guid ownerId, CreateProjectRequestDto request, CancellationToken ct = default)
     {
         string? coverUrl = null;
         if (request.CoverImage != null)
         {
-            var upload = await _fileService.UploadAsync(request.CoverImage, "projects");
+            var upload = await _fileService.UploadAsync(request.CoverImage, "projects", ct);
             if (!upload.IsSuccess) return Result<Guid>.Failure("Image upload failed", 400);
             coverUrl = upload.Value;
         }
@@ -61,7 +61,7 @@ public class ProjectService : IProjectService
             Title = request.Title,
             Description = request.Description,
             CategoryId = request.CategoryId,
-            OwnerId = request.OwnerId,
+            OwnerId = ownerId,
             CoverImageUrl = coverUrl,
             StartDate = request.StartDate,
             Deadline = request.EndDate,
@@ -78,14 +78,18 @@ public class ProjectService : IProjectService
     }
 
     //-----UpdateProject-----------------------------------------------------
-    public async Task<Result<string>> UpdateAsync(Guid id, UpdateProjectRequestDto request, CancellationToken ct = default)
+    public async Task<Result<string>> UpdateAsync(Guid id, Guid userId, UpdateProjectRequestDto request, CancellationToken ct = default)
     {
         var project = await _projectRepo.GetByIdAsync(id);
         if (project is null) return Result<string>.Failure("Project not found", 404);
 
+        if (project.OwnerId != userId)
+            return Result<string>.Failure("You are not authorized to update this project", 403);
+
+
         if (request.CoverImage != null)
         {
-            var upload = await _fileService.UploadAsync(request.CoverImage, "projects");
+            var upload = await _fileService.UploadAsync(request.CoverImage, "projects", ct);
             if (upload.IsSuccess) project.CoverImageUrl = upload.Value;
         }
 
@@ -105,10 +109,13 @@ public class ProjectService : IProjectService
         return Result<string>.Success("UpdateOperationIsSuccessfully");
     }
     //-----DeleteProject-----------------------------------------------------
-    public async Task<Result<string>> DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task<Result<string>> DeleteAsync(Guid id, Guid userId, CancellationToken ct = default)
     {
         var project = await _projectRepo.GetByIdAsync(id);
         if (project is null) return Result<string>.Failure("Project not found", 404);
+
+        if (project.OwnerId != userId)
+            return Result<string>.Failure("You are not authorized to delete this project", 403);
 
         await _projectRepo.DeleteAsync(project);
         return Result<string>.Success("DeleteOperationIsSuccessfully");

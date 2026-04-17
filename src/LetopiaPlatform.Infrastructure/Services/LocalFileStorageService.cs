@@ -1,11 +1,12 @@
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.Services.Interfaces;
+using LetopiaPlatform.Infrastructure.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
 namespace LetopiaPlatform.Infrastructure.Services;
 
-public class FileStorageService : IFileStorageService
+public class LocalFileStorageService : IFileStorageService
 {
     private readonly IWebHostEnvironment _env;
     private readonly IHttpContextAccessor _accessor;
@@ -18,13 +19,13 @@ public class FileStorageService : IFileStorageService
 
     private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
 
-    public FileStorageService(IWebHostEnvironment env, IHttpContextAccessor accessor)
+    public LocalFileStorageService(IWebHostEnvironment env, IHttpContextAccessor accessor)
     {
         _env = env;
         _accessor = accessor;
     }
 
-    public async Task<Result<string>> UploadAsync(IFormFile file, string directory)
+    public async Task<Result<string>> UploadAsync(IFormFile file, string directory, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -49,7 +50,7 @@ public class FileStorageService : IFileStorageService
             var fullPath = Path.Combine(folderPath, fileName);
 
             using var stream = new FileStream(fullPath, FileMode.Create);
-            await file.CopyToAsync(stream);
+            await file.CopyToAsync(stream, cancellationToken);
 
             var request = _accessor.HttpContext?.Request;
             var url = $"{request?.Scheme}://{request?.Host}/{directory}/{fileName}";
@@ -62,14 +63,14 @@ public class FileStorageService : IFileStorageService
         }
     }
     
-    public async Task<Result<string>> ReplaceAsync(IFormFile newFile, string directory, string? oldFilePath)
+    public async Task<Result<string>> ReplaceAsync(IFormFile newFile, string directory, string? oldFilePath, CancellationToken cancellationToken = default)
     {
         try
         {
             if (!string.IsNullOrEmpty(oldFilePath))
-                await DeleteAsync(oldFilePath);
+                await DeleteAsync(oldFilePath, cancellationToken);
 
-            return await UploadAsync(newFile, directory);
+            return await UploadAsync(newFile, directory, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -77,7 +78,7 @@ public class FileStorageService : IFileStorageService
         }
     }
 
-    public Task<Result> DeleteAsync(string filePath)
+    public Task<Result> DeleteAsync(string filePath, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -110,6 +111,52 @@ public class FileStorageService : IFileStorageService
         catch (Exception ex)
         {
             return Task.FromResult(Result.Failure($"Delete failed: {ex.Message}"));
+        }
+    }
+
+    public async Task<Result<string>> UploadSvgAsync(IFormFile file, string directory, long maxSizeBytes = 262144, CancellationToken ct = default)
+    {
+        try
+        {
+            if (file is null || file.Length == 0)
+                return Result<string>.Failure("No file provided");
+
+            if (file.Length > maxSizeBytes)
+                return Result<string>.Failure($"File exceeds maximum size of {maxSizeBytes / 1024} KB");
+
+            var extension = Path.GetExtension(file.FileName);
+            if (!string.Equals(extension, ".svg", StringComparison.OrdinalIgnoreCase))
+                return Result<string>.Failure("Only SVG files are allowed");
+
+            if (!string.Equals(file.ContentType, "image/svg+xml", StringComparison.OrdinalIgnoreCase))
+                return Result<string>.Failure("File must have content type 'image/svg+xml'");
+
+            var validationError = SvgSanitizer.Validate(file);
+            if (validationError is not null)
+                return Result<string>.Failure(validationError);
+
+            var folderPath = GetSafeFolderPath(directory);
+            if (folderPath == null)
+                return Result<string>.Failure("Invalid directory");
+
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            var fileName = $"{Guid.NewGuid()}.svg";
+            var safeFileName = Path.GetFileName(fileName);
+            var fullPath = Path.Combine(folderPath, safeFileName);
+
+            using var stream = new FileStream(fullPath, FileMode.Create);
+            await file.CopyToAsync(stream, ct);
+
+            var request = _accessor.HttpContext?.Request;
+            var url = $"{request?.Scheme}://{request?.Host}/{directory}/{fileName}";
+
+            return Result<string>.Success(url);
+        }
+        catch (Exception ex)
+        {
+            return Result<string>.Failure($"SVG upload failed: {ex.Message}");
         }
     }
 

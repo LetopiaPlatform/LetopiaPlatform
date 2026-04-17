@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace LetopiaPlatform.Core.DTOs.Category;
 
 /// <summary>
@@ -5,5 +7,5 @@ namespace LetopiaPlatform.Core.DTOs.Category;
 /// </summary>
 public sealed record UpdateCategoryRequest(
     string Name,
-    string? IconUrl
-);
+    IFormFile? Icon = null,
+    bool RemoveIcon = false);

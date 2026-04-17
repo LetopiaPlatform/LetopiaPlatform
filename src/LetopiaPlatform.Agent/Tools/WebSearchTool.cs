@@ -30,12 +30,7 @@ public static class WebSearchTool
                 CancellationToken ct = default) =>
             {
                 var results = await searchService.SearchAsync(query, max_results, ct);
-                return results.Select(r => new
-                {
-                    title = r.Title,
-                    url = r.Url,
-                    snippet = r.Snippet
-                });
+                return results.Select(r => new { r.Title, r.Url, r.Snippet });
             },
             name: "search_web",
             description:

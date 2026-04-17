@@ -91,6 +91,10 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
+                    b.Property<Guid?>("ParentCategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_category_id");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -105,12 +109,21 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ParentCategoryId")
+                        .HasDatabaseName("ix_categories_parent_category_id");
+
                     b.HasIndex("Type")
                         .HasDatabaseName("ix_categories_type");
 
                     b.HasIndex("Slug", "Type")
                         .IsUnique()
                         .HasDatabaseName("ix_categories_slug_type");
+
+                    b.HasIndex("Name", "Type", "ParentCategoryId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_categories_name_type_parent");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("Name", "Type", "ParentCategoryId"), false);
 
                     b.ToTable("categories", (string)null);
                 });
@@ -357,6 +370,174 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("communities", (string)null);
                 });
 
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CommunityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("LikesCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<int>("ViewsCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommunityId");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.ToTable("CommunityResources", (string)null);
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<Guid>("CommunityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("community_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("Deadline")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deadline");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Active")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_community_tasks_category_id");
+
+                    b.HasIndex("CommunityId")
+                        .HasDatabaseName("ix_community_tasks_community_id");
+
+                    b.ToTable("community_tasks", (string)null);
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTaskCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ColorHex")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("#6366f1")
+                        .HasColumnName("color_hex");
+
+                    b.Property<Guid>("CommunityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("community_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("IconKey")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("icon_key");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommunityId")
+                        .HasDatabaseName("ix_community_task_categories_community_id");
+
+                    b.ToTable("community_task_categories", (string)null);
+                });
+
+
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -570,6 +751,13 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<List<string>>("ImageUrls")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasColumnName("image_urls")
+                        .HasDefaultValueSql("'{}'::text[]");
+
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -581,10 +769,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_pinned");
-
-                    b.Property<string>("PostImageUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("Post_image_url");
 
                     b.Property<string>("PostType")
                         .IsRequired()
@@ -826,6 +1010,60 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("reactions", (string)null);
                 });
 
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ResourceId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ResourceLikes_ResourceId_UserId");
+
+                    b.ToTable("ResourceLikes", (string)null);
+                });
+
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TagName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceId", "TagName")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ResourceTags_ResourceId_TagName");
+
+                    b.ToTable("ResourceTags", (string)null);
+                });
+
+
+
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
                     b.Property<Guid>("Id")
@@ -951,6 +1189,39 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("roadmap_phases", (string)null);
                 });
 
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Tag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TagName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TargetType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetType", "TargetId")
+                        .HasDatabaseName("IX_Tags_TargetType_TargetId");
+
+                    b.HasIndex("TargetType", "TargetId", "TagName")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Tags_TargetType_TargetId_TagName");
+
+                    b.ToTable("Tags", (string)null);
+                });
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.UserCommunity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -987,6 +1258,41 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasDatabaseName("ix_user_communities_user_community");
 
                     b.ToTable("user_communities", (string)null);
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.UserTaskProgress", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("task_id");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsCompleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_completed");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("UserId", "TaskId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("user_task_progress", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -1110,6 +1416,18 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Category", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Category", "ParentCategory")
+                        .WithMany("ChildCategories")
+                        .HasForeignKey("ParentCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ParentCategory");
+                });
+
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Channel", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
@@ -1166,6 +1484,57 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
+
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
+                        .WithMany()
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "UploadedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Community");
+
+                    b.Navigation("UploadedBy");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTask", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.CommunityTaskCategory", "Category")
+                        .WithMany("Tasks")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
+                        .WithMany("Tasks")
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Community");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTaskCategory", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
+                        .WithMany("TaskCategories")
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Community");
+                });
+
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.AgentConversation", "Conversation")
@@ -1179,7 +1548,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
                 {
-                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "Author")
+                    b.HasOne("LetopiaPlatform.Core.Entities.UserCommunity", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1253,6 +1622,39 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.CommunityResource", "Resource")
+                        .WithMany("Likes")
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Resource");
+
+                    b.Navigation("User");
+                });
+
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceTag", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.CommunityResource", "Resource")
+                        .WithMany("Tags")
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Resource");
+                });
+
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.AgentConversation", "Conversation")
@@ -1298,6 +1700,25 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Community");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.UserTaskProgress", b =>
+                {
+                    b.HasOne("LetopiaPlatform.Core.Entities.CommunityTask", "Task")
+                        .WithMany("UserProgresses")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Task");
 
                     b.Navigation("User");
                 });
@@ -1360,6 +1781,8 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Category", b =>
                 {
+                    b.Navigation("ChildCategories");
+
                     b.Navigation("Communities");
                 });
 
@@ -1377,6 +1800,25 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Members");
 
                     b.Navigation("Posts");
+
+                    b.Navigation("TaskCategories");
+
+                    b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
+                {
+                    b.Navigation("Likes");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTask", b =>
+                {
+                    b.Navigation("UserProgresses");
+                });
+
+            modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityTaskCategory", b =>
+                {
+                    b.Navigation("Tasks");
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.User", b =>

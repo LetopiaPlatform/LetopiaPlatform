@@ -1,0 +1,64 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug API (http)",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/LetopiaPlatform.API/LetopiaPlatform.API.csproj",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5256"
+            }
+        },
+        {
+            "name": "Debug API (https)",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/LetopiaPlatform.API/LetopiaPlatform.API.csproj",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:7003;http://localhost:5256"
+            }
+        },
+        {
+            "name": "Debug API (coreclr)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/LetopiaPlatform.API/bin/Debug/net8.0/LetopiaPlatform.API.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/LetopiaPlatform.API",
+            "stopAtEntry": false,
+            "console": "integratedTerminal",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5256"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/src/LetopiaPlatform.API/Views"
+            },
+            "logging": {
+                "moduleLoad": false
+            }
+        },
+        {
+            "name": "Debug Unit Tests",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/tests/LetopiaPlatform.UnitTests/LetopiaPlatform.UnitTests.csproj"
+        },
+        {
+            "name": "Debug Integration Tests",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/tests/LetopiaPlatform.IntegrationTests/LetopiaPlatform.IntegrationTests.csproj"
+        },
+        {
+            "name": "Attach to Process",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command:pickProcess}"
+        }
+    ]
+}
