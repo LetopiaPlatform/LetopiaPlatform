@@ -47,12 +47,15 @@ public sealed class SmtpEmailService
         await client.ConnectAsync(
             _settings.Host,
             _settings.Port,
-            _settings.UseSsl ? SecureSocketOptions.StartTls
+            _settings.UseSsl ? SecureSocketOptions.SslOnConnect
                              : SecureSocketOptions.Auto,
          cancellationToken);
 
          if (!string.IsNullOrEmpty(_settings.Username))
-            await client.AuthenticateAsync(_settings.Username, _settings.Password, cancellationToken);
+         {
+            var credentials = new System.Net.NetworkCredential(_settings.Username, _settings.Password);
+            await client.AuthenticateAsync(System.Text.Encoding.UTF8, credentials, cancellationToken);
+         }
         
         await client.SendAsync(mime, cancellationToken);
         await client.DisconnectAsync(quit: true, cancellationToken: cancellationToken);
