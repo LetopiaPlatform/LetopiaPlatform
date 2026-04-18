@@ -41,11 +41,6 @@ public class AgentSettings
     public string GeminiModelId { get; set; } = "gemini-2.5-flash";
 
     /// <summary>
-    /// API key used for Tavily web search service.
-    /// </summary>
-    public string TavilyApiKey { get; set; } = string.Empty;
-
-    /// <summary>
     /// Maximum number of tokens allowed for a single conversation context.
     /// </summary>
     public int MaxConversationTokens { get; set; } = 4000;
