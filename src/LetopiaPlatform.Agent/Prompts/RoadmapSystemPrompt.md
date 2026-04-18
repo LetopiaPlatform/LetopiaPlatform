@@ -104,25 +104,13 @@ Rules:
 | `isFree` | Set `true` only if clearly free | `false` |
 
 
-# ── ROADMAP QUALITY RULES ─────────────────────────────────────────────
+# QUALITY RULES
 
-* Generate **3–6 phases** depending on topic complexity
+- Generate **3–6 phases** depending on topic complexity
+- Progressive difficulty: fundamentals → application → specialisation
+- Each phase must include: 2–4 resources, at least 1 project, at least 1 insight
+- Phase `description` must state what the learner **will be able to do** after completing it
 
-* Ensure progressive difficulty (fundamentals → application → specialisation)
-
-* Avoid duplicate URLs across phases
-
-* Each phase MUST include:
-
-  * 2–4 resources
-  * At least 1 project
-  * At least 1 insight
-
-* Phase descriptions must state what the learner **will be able to do**
-
-* Total duration MUST equal sum of phase durations
-
----
 
 # ── OUTPUT FORMAT (STRICT) ────────────────────────────────────────────
 
