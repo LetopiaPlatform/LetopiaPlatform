@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LetopiaPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260421091732_update user profiel and pendding email")]
+    partial class updateuserprofielandpenddingemail
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -691,13 +694,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("FullName");
 
-                    b.Property<List<string>>("Interests")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text[]")
-                        .HasColumnName("interests")
-                        .HasDefaultValueSql("'{}'::text[]");
-
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("LastLoginAt");
@@ -741,13 +737,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
-                    b.Property<List<string>>("Skills")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text[]")
-                        .HasColumnName("skills")
-                        .HasDefaultValueSql("'{}'::text[]");
-
                     b.Property<int>("TotalPoints")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -774,12 +763,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
-                    b.ToTable("AspNetUsers", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_Users_Interests_Unique", "NOT array_has_duplicates(interests)");
-
-                            t.HasCheckConstraint("CK_Users_Skills_Unique", "NOT array_has_duplicates(skills)");
-                        });
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>

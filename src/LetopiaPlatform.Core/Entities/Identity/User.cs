@@ -1,3 +1,5 @@
+using LetopiaPlatform.Core.Common;
+using LetopiaPlatform.Core.Enums;
 using LetopiaPlatform.Core.Interfaces;
 using Microsoft.AspNetCore.Identity;
 
@@ -12,6 +14,15 @@ public class User : IdentityUser<Guid>, IAuditable
     public string Role { get; set; } = "Learner"; // Learner / Guide / Architect
 
     public bool EmailVerified { get; set; }
+    /// ====================================================
+    public PrivacySettings PrivacySettings { get; set; } = new();
+    public string? Location { get; set; }
+    public NotificationPreferences NotificationPreferences { get; set; } = new();
+    public List<SocialLink>? SocialLinks { get; set; } = new();
+    public List<string> Skills { get; set; } = new();
+    public List<string> Interests { get; set; } = new();
+
+    /// ====================================================
 
     public int TotalPoints { get; set; }
     public int CurrentStreak { get; set; }

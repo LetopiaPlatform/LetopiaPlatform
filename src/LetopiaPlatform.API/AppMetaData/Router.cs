@@ -22,11 +22,21 @@ public static class Router
     public static class Users
     {
         public const string Prefix = $"{Rule}/users";
+
         public const string Me = $"{Prefix}/me";
         public const string Update = $"{Prefix}/me";
         public const string Avatar = $"{Prefix}/me/avatar";
-    }
 
+        // Public profile
+        public const string GetById = $"{Prefix}/{{id:guid}}";
+
+        // Email change
+        public const string EmailChangeRequest = $"{Prefix}/me/email/change-request";
+        public const string EmailChangeConfirm = $"{Prefix}/me/email/confirm";
+
+        // Preferences
+        public const string Preferences = $"{Prefix}/me/preferences";
+    }
 
     public static class Communities
     {

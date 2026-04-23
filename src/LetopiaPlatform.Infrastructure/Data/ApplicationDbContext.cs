@@ -26,6 +26,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<ResourceLike> ResourceLikes=> Set<ResourceLike>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<ProjectCategory> ProjectCategorys => Set<ProjectCategory>();
+    public DbSet<PendingEmailChange> PendingEmailChange => Set<PendingEmailChange>();
     public DbSet<Roadmap> Roadmaps => Set<Roadmap>();
     public DbSet<RoadmapPhase> RoadmapPhases => Set<RoadmapPhase>();
     public DbSet<AgentConversation> AgentConversations => Set<AgentConversation>();
