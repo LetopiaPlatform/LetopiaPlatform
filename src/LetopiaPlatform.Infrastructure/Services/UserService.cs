@@ -187,8 +187,11 @@ public class UserService : IUserService
         // 2 — security notice to OLD email
         await _emailService.SendEmailChangeNotificationAsync(
             user.Email!, user.FullName ?? user.UserName!, request.NewEmail, ct);
-
-        _logger.LogInformation("Email change requested for user {UserId} → {NewEmail}", userId, request.NewEmail);
+        var safeNewEmailForLog = (request.NewEmail ?? string.Empty)
+    .Replace("\r", string.Empty)
+    .Replace("\n", string.Empty);
+        _logger.LogInformation("Email change requested for user {UserId} → {NewEmail}", userId, safeNewEmailForLog);
+      
         return Result.Success();
     }
 
