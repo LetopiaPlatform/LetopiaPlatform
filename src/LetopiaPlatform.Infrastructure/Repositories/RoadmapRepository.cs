@@ -18,6 +18,7 @@ internal sealed class RoadmapRepository : IRoadmapRepository
     {
         return await _context.Roadmaps
 
+
             .AsNoTracking()
             .Include(r => r.Phases.OrderBy(p => p.Order))
             .FirstOrDefaultAsync(r => r.Id == id, ct);
@@ -26,6 +27,7 @@ internal sealed class RoadmapRepository : IRoadmapRepository
     public async Task<List<Roadmap>> GetByUserIdAsync(Guid userId, CancellationToken ct = default)
     {
         return await _context.Roadmaps
+
 
             .AsNoTracking()
             .Where(r => r.UserId == userId)
@@ -36,6 +38,7 @@ internal sealed class RoadmapRepository : IRoadmapRepository
     public async Task<RoadmapPhase?> GetPhaseByIdAsync(Guid phaseId, CancellationToken ct = default)
     {
         return await _context.RoadmapPhases
+
 
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == phaseId, ct);
