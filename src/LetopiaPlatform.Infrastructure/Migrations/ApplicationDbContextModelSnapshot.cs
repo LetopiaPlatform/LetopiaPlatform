@@ -537,6 +537,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 });
 
 
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1188,6 +1189,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("roadmap_phases", (string)null);
                 });
 
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Tag", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1414,6 +1416,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Category", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Category", "ParentCategory")
@@ -1423,6 +1426,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.Navigation("ParentCategory");
                 });
+
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Channel", b =>
                 {
@@ -1479,6 +1483,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.Navigation("CreatedByUser");
                 });
+
 
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
@@ -1648,7 +1653,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.Navigation("Resource");
                 });
-
 
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
