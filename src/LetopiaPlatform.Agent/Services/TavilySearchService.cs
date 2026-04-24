@@ -26,9 +26,6 @@ public class TavilySearchService : IWebSearchService
     /// <summary>
     /// Initializes a new instance of the <see cref="TavilySearchService"/> class.
     /// </summary>
-    /// <param name="httpClient">Typed HTTP client used to communicate with the Tavily API.</param>
-    /// <param name="settings">Web search configuration settings.</param>
-    /// <param name="logger">Logger instance.</param>
     public TavilySearchService(
         HttpClient httpClient,
         IOptions<WebSearchSettings> settings,
@@ -42,17 +39,13 @@ public class TavilySearchService : IWebSearchService
     /// <summary>
     /// Executes a search query against the Tavily API and returns structured results.
     /// </summary>
-    /// <param name="query">Search query.</param>
-    /// <param name="maxResults">Maximum number of results to return. Use 0 or less to use the limit from WebSearchSettings.MaxResults.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>List of mapped <see cref="SearchResult"/> objects.</returns>
-        public async Task<List<SearchResult>> SearchAsync(
-            string query,
-            int maxResults = 5,
-            CancellationToken ct = default)
+    public async Task<List<SearchResult>> SearchAsync(
+        string query,
+        int maxResults = 5,
+        CancellationToken ct = default)
+    {
+        try
         {
-            try
-            {
             var resultsLimit = maxResults <= 0 ? _settings.MaxResults : maxResults;
 
             var requestBody = new TavilySearchRequest
@@ -69,14 +62,14 @@ public class TavilySearchService : IWebSearchService
                 ct).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning(
-                        "Tavily API returned non-success status {StatusCode} for query: {Query}",
-                        response.StatusCode,
-                        query);
+            {
+                _logger.LogWarning(
+                    "Tavily API returned non-success status {StatusCode} for query: {Query}",
+                    response.StatusCode,
+                    query);
 
-                    return [];
-                }
+                return [];
+            }
 
             var tavilyResponse = await response.Content
                 .ReadFromJsonAsync<TavilySearchResponse>(JsonOptions, ct)
