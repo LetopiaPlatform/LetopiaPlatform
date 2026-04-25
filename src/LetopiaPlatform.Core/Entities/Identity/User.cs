@@ -23,5 +23,4 @@ public class User : IdentityUser<Guid>, IAuditable
     public virtual ICollection<Project> OwnedProjects { get; set; } = new HashSet<Project>();
 
     public virtual ICollection<ProjectMember> ProjectMemberships { get; set; } = new HashSet<ProjectMember>();
-    public virtual ICollection<UserRefreshToken> RefreshTokens { get; set; } = new HashSet<UserRefreshToken>();
 }

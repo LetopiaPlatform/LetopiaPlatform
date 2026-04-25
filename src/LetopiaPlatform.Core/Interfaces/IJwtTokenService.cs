@@ -1,28 +1,17 @@
-using System.Security.Claims;
+using LetopiaPlatform.Core.DTOs.Auth.Response;
 using LetopiaPlatform.Core.Entities.Identity;
 
 namespace LetopiaPlatform.Core.Interfaces;
 
 /// <summary>
-/// Service for managing JSON Web Tokens, including generation, validation, and refresh logic.
+/// Generates JSON Web Tokens for authenticated users.
 /// </summary>
 public interface IJwtTokenService
 {
     /// <summary>
-    /// Generates a JWT Access Token for the specified user.
-    /// Following SRP: Only handles Access Token generation.
+    /// Generates a JWT token for the given user.
     /// </summary>
-    string GenerateJwtToken(User user);
-
-    /// <summary>
-    /// Generates a secure random string to be used as a Refresh Token.
-    /// Following SRP: Only handles the raw string generation.
-    /// </summary>
-    string GenerateRefreshToken();
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
+    /// <param name="user">The user to generate a token for.</param>
+    /// <returns>A token result containing the access token and expiration.</returns>
+    Task<TokenResult> GenerateTokenAsync(User user);
 }

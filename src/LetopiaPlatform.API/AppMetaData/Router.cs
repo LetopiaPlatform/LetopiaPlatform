@@ -12,8 +12,6 @@ public static class Router
         public const string SignUp = $"{Prefix}/signup";
         public const string Login = $"{Prefix}/login";
         public const string GoogleLogin = $"{Prefix}/google";
-        public const string RefreshToken = $"{Prefix}/RefreshToken";
-
         public const string SendCode = $"{Prefix}/send-code";
         public const string VerifyEmail = $"{Prefix}/verify-email";
         public const string ResetPassword = $"{Prefix}/reset-password";
@@ -75,7 +73,6 @@ public static class Router
         public const string Update = $"{Prefix}/Update/{{id}}";
         public const string Delete = $"{Prefix}/Delete/{{id}}";
     }
-
     public static class ProjectMembers
     {
         public const string Prefix = $"{Rule}/project-members";
@@ -85,8 +82,8 @@ public static class Router
 
         public const string GetMembers = $"{Prefix}/members/{{projectId}}";
         public const string MyProjects = $"{Prefix}/my-projects";
-    }
 
+    }
     public static class Comments
     {
         public const string Prefix = $"{Rule}/comments";
@@ -98,26 +95,22 @@ public static class Router
         // Interactions
         public const string React = $"{Prefix}/{{commentId:guid}}/react";
 
-        // Replies
+        // If you plan to add fetching sub-comments/replies later:
         public const string GetReplies = $"{Prefix}/{{commentId:guid}}/replies";
     }
-
     public static class Posts
     {
         public const string Prefix = $"{Rule}/posts";
-
         // Scoped to Community/Channel
         public const string Base = $"{Rule}/communities/{{communityId:guid}}";
         public const string Create = $"{Base}/channels/{{channelId:guid}}/posts";
         public const string List = $"{Base}/channels/{{channelId:guid}}/posts";
         public const string Pinned = $"{Base}/channels/{{channelId:guid}}/posts/pinned";
-
         // Resource Specific
         public const string GetById = $"{Prefix}/{{postId:guid}}";
         public const string Update = $"{Prefix}/{{postId:guid}}";
         public const string Delete = $"{Prefix}/{{postId:guid}}";
         public const string TogglePin = $"{Prefix}/{{postId:guid}}/pin";
-
         // Nested Resources
         public const string Comments = $"{Prefix}/{{postId:guid}}/comments";
         public const string React = $"{Prefix}/{{postId:guid}}/react";
@@ -129,6 +122,7 @@ public static class Router
 
         public const string GetAll = $"{Prefix}/{{communityId:guid}}/GetAll";
         public const string Create = $"{Prefix}/{{communityId:guid}}/Create";
+
 
         public const string GetCategoryById = $"{Prefix}/{{communityId:guid}}/{{categoryid:guid}}";
 
@@ -157,9 +151,3 @@ public static class Router
 }
 
 
-    public static class Search
-    {
-        public const string Prefix = $"{Rule}/search";
-        public const string Query = Prefix;
-    }
-}

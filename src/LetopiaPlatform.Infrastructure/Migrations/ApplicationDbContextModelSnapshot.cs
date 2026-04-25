@@ -717,67 +717,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.UserRefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("AddedTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("added_time");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expiry_date");
-
-                    b.Property<bool>("IsRevoked")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_revoked");
-
-                    b.Property<bool>("IsUsed")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_used");
-
-                    b.Property<string>("JwtId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("jwt_id");
-
-                    b.Property<string>("RefreshTokenHash")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("refresh_token_hash");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("JwtId")
-                        .HasDatabaseName("ix_user_refresh_tokens_jwt_id");
-
-                    b.HasIndex("RefreshTokenHash")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_refresh_tokens_hash");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_user_refresh_tokens_user_id");
-
-                    b.HasIndex("RefreshTokenHash", "UserId")
-                        .HasDatabaseName("ix_user_refresh_tokens_hash_user");
-
-                    b.ToTable("user_refresh_tokens", (string)null);
-                });
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1607,17 +1546,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Conversation");
                 });
 
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.UserRefreshToken", b =>
-                {
-                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
-                        .WithMany("RefreshTokens")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.UserCommunity", "Author")
@@ -1898,8 +1826,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("OwnedProjects");
 
                     b.Navigation("ProjectMemberships");
-
-                    b.Navigation("RefreshTokens");
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>

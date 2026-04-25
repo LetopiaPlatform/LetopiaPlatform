@@ -1,23 +1,19 @@
 namespace LetopiaPlatform.Core.DTOs.Auth.Response;
 
 public record AuthResponse(
-    TokenResult JwtToken,
-    string RefreshToken,
-    UserDto User
+  TokenResult JwtToken,
+  UserDto User
 );
-
 
 public record TokenResult(
     string Token,
     DateTime ExpiresAt
-
 );
-
 
 public record UserDto(
     string Id,
     string Email,
     string FullName,
-    string? Role,
+    string Role,
     string? AvatarUrl
 );
