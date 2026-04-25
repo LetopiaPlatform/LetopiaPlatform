@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LetopiaPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315220117_addUserRefreshTokenTable")]
+    partial class addUserRefreshTokenTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -91,10 +94,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
-                    b.Property<Guid?>("ParentCategoryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("parent_category_id");
-
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -109,21 +108,12 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentCategoryId")
-                        .HasDatabaseName("ix_categories_parent_category_id");
-
                     b.HasIndex("Type")
                         .HasDatabaseName("ix_categories_type");
 
                     b.HasIndex("Slug", "Type")
                         .IsUnique()
                         .HasDatabaseName("ix_categories_slug_type");
-
-                    b.HasIndex("Name", "Type", "ParentCategoryId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_categories_name_type_parent");
-
-                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("Name", "Type", "ParentCategoryId"), false);
 
                     b.ToTable("categories", (string)null);
                 });
@@ -370,7 +360,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("communities", (string)null);
                 });
 
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
                 {
                     b.Property<Guid>("Id")
@@ -535,8 +524,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.ToTable("community_task_categories", (string)null);
                 });
-
-
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
@@ -752,9 +739,12 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.Property<string>("RefreshTokenHash")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasColumnType("text")
                         .HasColumnName("refresh_token_hash");
+
+                    b.Property<string>("Token")
+                        .HasColumnType("text")
+                        .HasColumnName("token");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -766,7 +756,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasDatabaseName("ix_user_refresh_tokens_jwt_id");
 
                     b.HasIndex("RefreshTokenHash")
-                        .IsUnique()
                         .HasDatabaseName("ix_user_refresh_tokens_hash");
 
                     b.HasIndex("UserId")
@@ -1071,7 +1060,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("reactions", (string)null);
                 });
 
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1097,33 +1085,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.ToTable("ResourceLikes", (string)null);
                 });
-
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceTag", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ResourceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("TagName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResourceId", "TagName")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ResourceTags_ResourceId_TagName");
-
-                    b.ToTable("ResourceTags", (string)null);
-                });
-
-
-
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
@@ -1249,7 +1210,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.ToTable("roadmap_phases", (string)null);
                 });
-
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Tag", b =>
                 {
@@ -1477,18 +1437,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Category", b =>
-                {
-                    b.HasOne("LetopiaPlatform.Core.Entities.Category", "ParentCategory")
-                        .WithMany("ChildCategories")
-                        .HasForeignKey("ParentCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("ParentCategory");
-                });
-
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Channel", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
@@ -1545,8 +1493,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
-
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.CommunityResource", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Community", "Community")
@@ -1594,7 +1540,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.Navigation("Community");
                 });
-
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ConversationMessage", b =>
                 {
@@ -1694,7 +1639,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceLike", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.CommunityResource", "Resource")
@@ -1713,19 +1657,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
                     b.Navigation("User");
                 });
-
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.ResourceTag", b =>
-                {
-                    b.HasOne("LetopiaPlatform.Core.Entities.CommunityResource", "Resource")
-                        .WithMany("Tags")
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Resource");
-                });
-
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Roadmap", b =>
                 {
@@ -1853,8 +1784,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Category", b =>
                 {
-                    b.Navigation("ChildCategories");
-
                     b.Navigation("Communities");
                 });
 
