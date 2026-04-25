@@ -155,11 +155,3 @@ public static class Router
         public const string Query = Prefix;
     }
 }
-
-
-    public static class Search
-    {
-        public const string Prefix = $"{Rule}/search";
-        public const string Query = Prefix;
-    }
-}
