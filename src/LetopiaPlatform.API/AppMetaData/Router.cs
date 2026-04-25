@@ -18,6 +18,7 @@ public static class Router
         public const string VerifyEmail = $"{Prefix}/verify-email";
         public const string ResetPassword = $"{Prefix}/reset-password";
         public const string ForgotPassword = $"{Prefix}/forgot-password";
+
     }
 
     public static class Users
@@ -147,6 +148,14 @@ public static class Router
         public const string Delete = $"{Prefix}/Delete/{{communityTaskid:guid}}";
         public const string Toggle = $"{Prefix}/Toggle/{{taskid:guid}}";
     }
+
+    public static class Search
+    {
+        public const string Prefix = $"{Rule}/search";
+        public const string Query = Prefix;
+    }
+}
+
 
     public static class Search
     {
