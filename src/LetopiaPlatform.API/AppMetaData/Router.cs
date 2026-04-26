@@ -165,6 +165,7 @@ public static class Router
         public const string Prefix = $"{Rule}/search";
         public const string Query = Prefix;
     }
+
     public static class Agent
     {
         public const string Prefix = $"{Rule}/agent";
