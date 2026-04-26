@@ -18,7 +18,6 @@ public static class Router
         public const string VerifyEmail = $"{Prefix}/verify-email";
         public const string ResetPassword = $"{Prefix}/reset-password";
         public const string ForgotPassword = $"{Prefix}/forgot-password";
-
     }
 
     public static class Users

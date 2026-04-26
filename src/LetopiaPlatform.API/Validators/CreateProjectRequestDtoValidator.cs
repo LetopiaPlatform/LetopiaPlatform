@@ -31,8 +31,8 @@ public class CreateProjectRequestDtoValidator : AbstractValidator<CreateProjectR
 
 
 
-        // 4. Milestones (Validating the nested list)
-        RuleForEach(x => x.Milestones).SetValidator(new CreateMilestoneDtoValidator());
+        //// 4. Milestones (Validating the nested list)
+        //RuleForEach(x => x.Milestones).SetValidator(new CreateMilestoneDtoValidator());
 
         // 5. Cover Image Validation (Size and Type)
         RuleFor(x => x.CoverImage)

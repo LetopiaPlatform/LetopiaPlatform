@@ -45,6 +45,7 @@ public interface IAuthService
     /// </summary>
     /// <param name="request">The request containing the user's email, the verification code, and the purpose of the verification.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A result indicating the success or failure of the operation.</returns>
     Task<Result<AuthResponse>> VerifyEmailAsync(VerifyEmailRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -52,7 +53,7 @@ public interface IAuthService
     /// </summary>
     /// <param name="request">The request containing the user's email.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>A result indicating the success or failure of the operation.</returns>
+    /// <returns>A result indicating the success or failure of the password reset operation.</returns>
     Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>

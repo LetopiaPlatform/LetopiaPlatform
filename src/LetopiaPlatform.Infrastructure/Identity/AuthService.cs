@@ -16,6 +16,7 @@ using LetopiaPlatform.Core.Services.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace LetopiaPlatform.Infrastructure.Identity;
@@ -80,9 +81,7 @@ public class AuthService : IAuthService
 
         var roleResult = await _userManager.AddToRoleAsync(user, "Learner");
         if (!roleResult.Succeeded)
-        {
             return Result.Failure("Failed to assign default role.", 500);
-        }
 
         await SendCodeToUserAsync(user, OtpPurpose.EmailVerification);
         SendWelcomeEmail(user);
@@ -111,16 +110,11 @@ public class AuthService : IAuthService
     {
         var googleUserInfo = await _googleTokenValidator.ValidateAsync(request.AccessToken);
         if (googleUserInfo == null)
-        {
             return Result<AuthResponse>.Failure("Invalid Google token.", 401);
-        }
 
         var user = await _userManager.FindByLoginAsync(GoogleProvider, googleUserInfo.GoogleId);
         if (user != null)
-        {
-            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-            return Result<AuthResponse>.Success(authResponse);
-        }
+            return Result<AuthResponse>.Success(await CreateFullAuthResponseAsync(user, cancellationToken));
 
         user = await _userManager.FindByEmailAsync(googleUserInfo.Email);
         if (user != null)
@@ -140,8 +134,7 @@ public class AuthService : IAuthService
             user.UpdatedAt = DateTime.UtcNow;
             await _userManager.UpdateAsync(user);
 
-            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-            return Result<AuthResponse>.Success(authResponse);
+            return Result<AuthResponse>.Success(await CreateFullAuthResponseAsync(user, cancellationToken));
         }
 
         user = new User
@@ -168,14 +161,15 @@ public class AuthService : IAuthService
 
         await _userManager.AddToRoleAsync(user, "Learner");
 
-        var finalAuthResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-        return Result<AuthResponse>.Success(finalAuthResponse, 201);
+        var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
+        return Result<AuthResponse>.Success(authResponse, 201);
     }
 
     public async Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
     {
         var principal = _jwtTokenService.GetPrincipalFromExpiredToken(request.AccessToken);
-        if (principal == null) return Result<AuthResponse>.Failure("Invalid access token", 400);
+        if (principal == null)
+            return Result<AuthResponse>.Failure("Invalid access token", 400);
 
         var userIdClaim = principal.FindFirstValue(ClaimTypes.NameIdentifier);
         var jti = principal.FindFirstValue(JwtRegisteredClaimNames.Jti);
@@ -184,7 +178,8 @@ public class AuthService : IAuthService
             return Result<AuthResponse>.Failure("Invalid token claims", 400);
 
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user == null) return Result<AuthResponse>.Failure("User not found", 404);
+        if (user == null)
+            return Result<AuthResponse>.Failure("User not found", 404);
 
         var refreshTokenHash = ComputeSha256Hash(request.RefreshToken);
         var storedToken = await _userRefreshTokenRepository.GetTableAsTracking()
