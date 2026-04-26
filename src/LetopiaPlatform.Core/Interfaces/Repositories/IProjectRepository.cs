@@ -19,4 +19,6 @@ public interface IProjectRepository : IGenericRepository<Project>
     /// </summary>
     Task<Project?> GetProjectWithDetailsAsync(Guid id, CancellationToken ct = default);
 
+    Task<bool> IsTitleExistsInCategoryAsync(string title, Guid categoryId, CancellationToken ct = default);
+
 }

@@ -155,3 +155,23 @@ public static class Router
         public const string Query = Prefix;
     }
 }
+<<<<<<< HEAD
+
+
+
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+
+    public static class Search
+    {
+        public const string Prefix = $"{Rule}/search";
+        public const string Query = Prefix;
+    }
+}
+>>>>>>> 1ffb18be0816185e446b8c619cbe640eb130eafc
+=======
+>>>>>>> 97493235b7350e5bec383d0f8807bb1a6b77d66a
+>>>>>>> main

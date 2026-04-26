@@ -4,12 +4,14 @@ public record ProjectDetailsResponseDto(
     string Title,
     string Description,
     string CategoryName,
-    int ProgressPercentage,
     string TimeLeftText,
     List<string> Skills,
     List<string> ProjectGoals,
+    List<string> TimelineEvents,
     DateTime StartDate,
     DateTime Deadline,
     string? CoverImageUrl,
-    string Status
+    string Status,
+    string OwnerName,
+    List<MilestoneResponseDto> Milestones
 );
