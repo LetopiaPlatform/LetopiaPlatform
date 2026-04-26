@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LetopiaPlatform.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -38,6 +39,14 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(p => p.TimelineEvents)
             .HasColumnName("timeline_events")
             .HasColumnType("text[]");
+
+        builder.Property(p => p.Milestones)
+     .HasColumnName("milestones")
+     .HasColumnType("jsonb")
+     .HasConversion(
+         v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
+         v => JsonSerializer.Deserialize<List<ProjectMilestoneDetails>>(v, (JsonSerializerOptions)null!) ?? new List<ProjectMilestoneDetails>()
+     );
 
         // 4. Enums & Booleans
         builder.Property(p => p.DifficultyLevel)

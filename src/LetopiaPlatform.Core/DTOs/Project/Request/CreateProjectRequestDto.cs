@@ -20,8 +20,9 @@ public record CreateProjectRequestDto(
 
     List<string> TimelineEvents,
 
-    List<CreateMilestoneDto> Milestones,
+    //List<CreateMilestoneDto> Milestones,
 
+    string? Milestones,
 
     IFormFile? CoverImage
 );

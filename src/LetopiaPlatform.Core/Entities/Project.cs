@@ -33,5 +33,13 @@ public class Project : AuditableEntity
 
     public virtual ICollection<ProjectMember> Members { get; set; } = new HashSet<ProjectMember>();
 
-    public virtual ICollection<ProjectMilestoneDetails> Milestones { get; set; } = new HashSet<ProjectMilestoneDetails>();
+    public List<ProjectMilestoneDetails> Milestones { get; set; } = [];
+
+}
+
+public class ProjectMilestoneDetails
+{
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+
 }
