@@ -7,8 +7,7 @@ namespace LetopiaPlatform.Core.Interfaces;
 /// <summary>
 /// Coordinates multiple repository operations within a single database transaction.
 /// </summary>
-/// <typeparam name="TContext">The database context type managed by this unit of work.</typeparam>
-public interface IUnitOfWork<TContext> : IAsyncDisposable, IDisposable
+public interface IUnitOfWork : IAsyncDisposable, IDisposable
 {
     /// <summary>
     /// Persists all pending changes to the database.
@@ -31,3 +30,7 @@ public interface IUnitOfWork<TContext> : IAsyncDisposable, IDisposable
     /// </summary>
     Task RollbackAsync();
 }
+
+/// <inheritdoc cref="IUnitOfWork"/>
+/// <typeparam name="TContext">The database context type managed by this unit of work.</typeparam>
+public interface IUnitOfWork<TContext> : IUnitOfWork { }

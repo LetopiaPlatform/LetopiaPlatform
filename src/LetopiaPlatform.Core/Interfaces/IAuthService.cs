@@ -28,6 +28,11 @@ public interface IAuthService
     Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Validates an expired JWT and a refresh token to issue a new pair of tokens.
+    /// </summary>
+    Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Sends a verification code to the user's email for purposes such as email verification or password reset.
     /// </summary>
     /// <param name="request">The request containing the user's email and the purpose of the verification code.</param>
@@ -57,9 +62,4 @@ public interface IAuthService
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A result indicating the success or failure of the password reset operation.</returns>
     Task<Result> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Validates an expired JWT and a refresh token to issue a new pair of tokens.
-    /// </summary>
-    Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default);
 }

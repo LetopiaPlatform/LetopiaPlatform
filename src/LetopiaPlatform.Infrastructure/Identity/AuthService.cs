@@ -28,7 +28,6 @@ public class AuthService : IAuthService
     private readonly SignInManager<User> _signInManager;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IGoogleTokenValidator _googleTokenValidator;
-
     private readonly IUnitOfWork<ApplicationDbContext> _unitOfWork;
     private readonly IUserRefreshTokenRepository _userRefreshTokenRepository;
     private readonly IEmailService _emailService;
@@ -74,9 +73,14 @@ public class AuthService : IAuthService
 
         var identityResult = await _userManager.CreateAsync(user, request.Password);
         if (!identityResult.Succeeded)
-            return Result.Failure(identityResult.Errors.Select(e => e.Description).ToList(), 400);
+        {
+            var errors = identityResult.Errors.Select(e => e.Description).ToList();
+            return Result.Failure(errors, 400);
+        }
 
-        await _userManager.AddToRoleAsync(user, "Learner");
+        var roleResult = await _userManager.AddToRoleAsync(user, "Learner");
+        if (!roleResult.Succeeded)
+            return Result.Failure("Failed to assign default role.", 500);
 
         await SendCodeToUserAsync(user, OtpPurpose.EmailVerification);
         SendWelcomeEmail(user);
@@ -87,10 +91,12 @@ public class AuthService : IAuthService
     public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null) return Result<AuthResponse>.Failure("Invalid email or password.", 401);
+        if (user == null)
+            return Result<AuthResponse>.Failure("Invalid email or password.", 401);
 
         var signInResult = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
-        if (!signInResult.Succeeded) return Result<AuthResponse>.Failure("Invalid email or password.", 401);
+        if (!signInResult.Succeeded)
+            return Result<AuthResponse>.Failure("Invalid email or password.", 401);
 
         if (!user.EmailVerified)
             return Result<AuthResponse>.Failure("Email not verified. Please verify your email before logging in.", 403);
@@ -103,16 +109,11 @@ public class AuthService : IAuthService
     {
         var googleUserInfo = await _googleTokenValidator.ValidateAsync(request.AccessToken);
         if (googleUserInfo == null)
-        {
             return Result<AuthResponse>.Failure("Invalid Google token.", 401);
-        }
 
         var user = await _userManager.FindByLoginAsync(GoogleProvider, googleUserInfo.GoogleId);
         if (user != null)
-        {
-            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-            return Result<AuthResponse>.Success(authResponse);
-        }
+            return Result<AuthResponse>.Success(await CreateFullAuthResponseAsync(user, cancellationToken));
 
         user = await _userManager.FindByEmailAsync(googleUserInfo.Email);
         if (user != null)
@@ -132,8 +133,7 @@ public class AuthService : IAuthService
             user.UpdatedAt = DateTime.UtcNow;
             await _userManager.UpdateAsync(user);
 
-            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-            return Result<AuthResponse>.Success(authResponse);
+            return Result<AuthResponse>.Success(await CreateFullAuthResponseAsync(user, cancellationToken));
         }
 
         user = new User
@@ -160,14 +160,14 @@ public class AuthService : IAuthService
 
         await _userManager.AddToRoleAsync(user, "Learner");
 
-        var finalAuthResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-        return Result<AuthResponse>.Success(finalAuthResponse, 201);
+        return Result<AuthResponse>.Success(await CreateFullAuthResponseAsync(user, cancellationToken), 201);
     }
 
     public async Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
     {
         var principal = _jwtTokenService.GetPrincipalFromExpiredToken(request.AccessToken);
-        if (principal == null) return Result<AuthResponse>.Failure("Invalid access token", 400);
+        if (principal == null)
+            return Result<AuthResponse>.Failure("Invalid access token", 400);
 
         var userIdClaim = principal.FindFirstValue(ClaimTypes.NameIdentifier);
         var jti = principal.FindFirstValue(JwtRegisteredClaimNames.Jti);
@@ -176,7 +176,8 @@ public class AuthService : IAuthService
             return Result<AuthResponse>.Failure("Invalid token claims", 400);
 
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user == null) return Result<AuthResponse>.Failure("User not found", 404);
+        if (user == null)
+            return Result<AuthResponse>.Failure("User not found", 404);
 
         var refreshTokenHash = ComputeSha256Hash(request.RefreshToken);
         var storedToken = await _userRefreshTokenRepository.GetTableAsTracking()
@@ -236,8 +237,7 @@ public class AuthService : IAuthService
 
         SendOnboardingEmail(user);
 
-        var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-        return Result<AuthResponse>.Success(authResponse);
+        return Result<AuthResponse>.Success(await CreateFullAuthResponseAsync(user, cancellationToken));
     }
 
     public async Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
@@ -272,6 +272,8 @@ public class AuthService : IAuthService
         return Result.Success();
     }
 
+    #region Private helpers
+
     private async Task<AuthResponse> CreateFullAuthResponseAsync(User user, CancellationToken ct)
     {
         var accessToken = _jwtTokenService.GenerateJwtToken(user);
@@ -303,36 +305,66 @@ public class AuthService : IAuthService
     private async Task SendCodeToUserAsync(User user, OtpPurpose purpose)
     {
         var code = await _userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider);
+        var userName = user.FullName ?? EmailTemplates.DefaultUserName;
+
+        var (title, subject, body, afterCodeBody, illustration) = purpose switch
+        {
+            OtpPurpose.EmailVerification => (
+                EmailTemplates.VerifyTitle,
+                EmailTemplates.VerifySubject,
+                EmailTemplates.VerifyBody,
+                EmailTemplates.VerifyAfterCodeBody,
+                EmailTemplates.VerifyIllustration
+            ),
+            OtpPurpose.PasswordReset => (
+                EmailTemplates.ResetTitle,
+                EmailTemplates.ResetSubject,
+                EmailTemplates.ResetBody,
+                EmailTemplates.ResetAfterCodeBody,
+                EmailTemplates.ResetPasswordIllustration
+            ),
+            _ => throw new ArgumentException("Invalid verification purpose.")
+        };
 
         _emailService.Enqueue(new EmailMessage(
             To: user.Email!,
-            Subject: "Verification Code",
-            Title: "Your Code",
-            Body: "Use this code to continue",
-            UserName: user.FullName,
-            Code: code
+            Subject: subject,
+            Title: title,
+            Body: body,
+            UserName: userName,
+            Code: code,
+            AfterCodeBody: afterCodeBody,
+            IllustrationUrl: $"{_assetsBaseUrl}/{illustration}"
         ));
     }
 
     private void SendWelcomeEmail(User user)
     {
+        var userName = user.FullName ?? EmailTemplates.DefaultUserName;
+
         _emailService.Enqueue(new EmailMessage(
             To: user.Email!,
-            Subject: "Welcome",
-            Title: "Welcome!",
-            Body: "Glad to have you",
-            UserName: user.FullName
+            Subject: EmailTemplates.WelcomeSubject,
+            Title: EmailTemplates.WelcomeTitle,
+            Body: EmailTemplates.WelcomeBody,
+            UserName: userName,
+            IllustrationUrl: $"{_assetsBaseUrl}/{EmailTemplates.WelcomeIllustration}"
         ));
     }
 
     private void SendOnboardingEmail(User user)
     {
+        var userName = user.FullName ?? EmailTemplates.DefaultUserName;
+
         _emailService.Enqueue(new EmailMessage(
             To: user.Email!,
-            Subject: "Getting Started",
-            Title: "Welcome aboard",
-            Body: "Start exploring now",
-            UserName: user.FullName
+            Subject: EmailTemplates.OnboardingSubject,
+            Title: EmailTemplates.OnboardingTitle,
+            Body: EmailTemplates.OnboardingBody,
+            UserName: userName,
+            ButtonText: EmailTemplates.OnboardingButtonText,
+            ButtonUrl: _frontendBaseUrl,
+            IllustrationUrl: $"{_assetsBaseUrl}/{EmailTemplates.OnboardingIllustration}"
         ));
     }
 
@@ -341,4 +373,6 @@ public class AuthService : IAuthService
         var bytes = Encoding.UTF8.GetBytes(rawData);
         return Convert.ToBase64String(SHA256.HashData(bytes));
     }
+
+    #endregion
 }

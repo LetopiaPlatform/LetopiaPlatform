@@ -150,6 +150,7 @@ public static class DependencyInjection
     {
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IUnitOfWork<ApplicationDbContext>>());
         services.AddHttpClient();
         services.Configure<GoogleAuthSettings>(configuration.GetSection(GoogleAuthSettings.SectionName));
         services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
