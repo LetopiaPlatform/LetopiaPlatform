@@ -29,7 +29,6 @@ public class AuthService : IAuthService
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IGoogleTokenValidator _googleTokenValidator;
 
-    // merged
     private readonly IUnitOfWork<ApplicationDbContext> _unitOfWork;
     private readonly IUserRefreshTokenRepository _userRefreshTokenRepository;
     private readonly IEmailService _emailService;
@@ -50,10 +49,8 @@ public class AuthService : IAuthService
         _signInManager = signInManager;
         _jwtTokenService = jwtTokenService;
         _googleTokenValidator = googleTokenValidator;
-
         _unitOfWork = unitOfWork;
         _userRefreshTokenRepository = userRefreshTokenRepository;
-
         _emailService = emailService;
         _assetsBaseUrl = smtpSettings.Value.EmailAssetsBaseUrl.TrimEnd('/');
         _frontendBaseUrl = smtpSettings.Value.FrontendBaseUrl.TrimEnd('/');
@@ -102,6 +99,71 @@ public class AuthService : IAuthService
         return Result<AuthResponse>.Success(authResponse);
     }
 
+    public async Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken = default)
+    {
+        var googleUserInfo = await _googleTokenValidator.ValidateAsync(request.AccessToken);
+        if (googleUserInfo == null)
+        {
+            return Result<AuthResponse>.Failure("Invalid Google token.", 401);
+        }
+
+        var user = await _userManager.FindByLoginAsync(GoogleProvider, googleUserInfo.GoogleId);
+        if (user != null)
+        {
+            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
+            return Result<AuthResponse>.Success(authResponse);
+        }
+
+        user = await _userManager.FindByEmailAsync(googleUserInfo.Email);
+        if (user != null)
+        {
+            var loginResult = await _userManager.AddLoginAsync(user,
+                new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
+
+            if (!loginResult.Succeeded)
+                return Result<AuthResponse>.Failure("Failed to link Google account.", 500);
+
+            user.EmailConfirmed = true;
+            user.EmailVerified = true;
+
+            if (string.IsNullOrEmpty(user.AvatarUrl))
+                user.AvatarUrl = googleUserInfo.PictureUrl;
+
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+
+            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
+            return Result<AuthResponse>.Success(authResponse);
+        }
+
+        user = new User
+        {
+            UserName = googleUserInfo.Email,
+            Email = googleUserInfo.Email,
+            FullName = googleUserInfo.Name,
+            EmailConfirmed = true,
+            EmailVerified = true,
+            AvatarUrl = googleUserInfo.PictureUrl,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        var createResult = await _userManager.CreateAsync(user);
+        if (!createResult.Succeeded)
+        {
+            var errors = createResult.Errors.Select(e => e.Description).ToList();
+            return Result<AuthResponse>.Failure(errors, 400);
+        }
+
+        await _userManager.AddLoginAsync(user,
+            new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
+
+        await _userManager.AddToRoleAsync(user, "Learner");
+
+        var finalAuthResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
+        return Result<AuthResponse>.Success(finalAuthResponse, 201);
+    }
+
     public async Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
     {
         var principal = _jwtTokenService.GetPrincipalFromExpiredToken(request.AccessToken);
@@ -146,73 +208,7 @@ public class AuthService : IAuthService
             throw;
         }
     }
-    public async Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken = default)
-    {
-        var googleUserInfo = await _googleTokenValidator.ValidateAsync(request.AccessToken);
-        if (googleUserInfo == null)
-        {
-            return Result<AuthResponse>.Failure("Invalid Google token.", 401);
-        }
 
-        // 1. Check if user already has this Google login linked
-        var user = await _userManager.FindByLoginAsync(GoogleProvider, googleUserInfo.GoogleId);
-        if (user != null)
-        {
-            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-            return Result<AuthResponse>.Success(authResponse);
-        }
-
-        // 2. Check if email exists but not linked to Google
-        user = await _userManager.FindByEmailAsync(googleUserInfo.Email);
-        if (user != null)
-        {
-            var loginResult = await _userManager.AddLoginAsync(user,
-                new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
-
-            if (!loginResult.Succeeded)
-                return Result<AuthResponse>.Failure("Failed to link Google account.", 500);
-
-            user.EmailConfirmed = true;
-            user.EmailVerified = true;
-
-            if (string.IsNullOrEmpty(user.AvatarUrl))
-                user.AvatarUrl = googleUserInfo.PictureUrl;
-
-            user.UpdatedAt = DateTime.UtcNow;
-            await _userManager.UpdateAsync(user);
-
-            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-            return Result<AuthResponse>.Success(authResponse);
-        }
-
-        // 3. New User
-        user = new User
-        {
-            UserName = googleUserInfo.Email,
-            Email = googleUserInfo.Email,
-            FullName = googleUserInfo.Name,
-            EmailConfirmed = true,
-            EmailVerified = true,
-            AvatarUrl = googleUserInfo.PictureUrl,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        var createResult = await _userManager.CreateAsync(user);
-        if (!createResult.Succeeded)
-        {
-            var errors = createResult.Errors.Select(e => e.Description).ToList();
-            return Result<AuthResponse>.Failure(errors, 400);
-        }
-
-        await _userManager.AddLoginAsync(user,
-            new UserLoginInfo(GoogleProvider, googleUserInfo.GoogleId, GoogleProvider));
-
-        await _userManager.AddToRoleAsync(user, "Learner");
-
-        var finalAuthResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-        return Result<AuthResponse>.Success(finalAuthResponse, 201);
-    }
     public async Task<Result> SendVerificationCodeAsync(SendCodeRequest request, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
