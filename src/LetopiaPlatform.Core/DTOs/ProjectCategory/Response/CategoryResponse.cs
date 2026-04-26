@@ -5,7 +5,7 @@ public record CategoryResponse(
     string Slug,
     string? IconUrl,
     int DisplayOrder,
-    List<ProjectSummaryResponse> Projects // القائمة اللي ضفناها في الـ Mapping
+    List<ProjectSummaryResponse> Projects
 );
 
 public record ProjectSummaryResponse(

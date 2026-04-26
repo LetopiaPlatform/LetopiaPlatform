@@ -30,6 +30,8 @@ public class ProjectCategoryService : IProjectCategoryService
     public async Task<Result<CategoryResponse>> GetBySlugAsync(string slug, CancellationToken ct = default)
     {
         _logger.LogInformation("Fetching category details for slug: {Slug}", slug);
+
+
         var category = await _projectCategoryRepository.GetCategoryWithProjectsAsync(slug, ct);
 
         if (category is null)
@@ -40,7 +42,6 @@ public class ProjectCategoryService : IProjectCategoryService
 
         return Result<CategoryResponse>.Success(MapToResponse(category));
     }
-
     public async Task<Result<Dictionary<Guid, int>>> GetCategoryStatsAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Fetching project counts per category");

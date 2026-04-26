@@ -14,8 +14,11 @@ public interface IProjectCategoryService
     Task<Result<IEnumerable<CategoryResponse>>> GetAllOrderedAsync(CancellationToken ct = default);
 
     /// <summary>
-    ///Determinre if a category exists by slug and return its details along with non-full projects in that category
+    /// 
     /// </summary>
+    /// <param name="slug"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     Task<Result<CategoryResponse>> GetBySlugAsync(string slug, CancellationToken ct = default);
 
     /// <summary>
