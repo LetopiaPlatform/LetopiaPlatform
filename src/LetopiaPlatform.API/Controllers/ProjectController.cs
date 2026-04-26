@@ -52,7 +52,7 @@ public class ProjectController : BaseController
     public async Task<IActionResult> CreateProject([FromForm] CreateProjectRequestDto request)
     {
 
-        var ownerId = GetUserIdFromToken();
+        var ownerId = GetUserId();
         HttpContext.AddBusinessContext("action", "create_project");
         HttpContext.AddBusinessContext("owner_id", ownerId.ToString());
 
@@ -73,7 +73,7 @@ public class ProjectController : BaseController
 
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromForm] UpdateProjectRequestDto request)
     {
-        var ownerId = GetUserIdFromToken();
+        var ownerId = GetUserId();
         HttpContext.AddBusinessContext("action", "update_project");
         HttpContext.AddBusinessContext("project_id", id.ToString());
 

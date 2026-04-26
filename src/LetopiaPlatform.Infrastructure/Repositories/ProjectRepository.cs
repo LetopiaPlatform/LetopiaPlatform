@@ -57,4 +57,15 @@ public class ProjectRepository : GenericRepository<Project>, IProjectRepository
                 .ThenInclude(m => m.Member)
             .FirstOrDefaultAsync(p => p.Id == id, ct);
     }
+
+    public async Task<bool> IsTitleExistsInCategoryAsync(string title, Guid categoryId, CancellationToken ct = default)
+    {
+        return await _projects.AnyAsync(p =>
+            p.Title == title &&
+            p.CategoryId == categoryId,
+            ct);
+    }
+
+
+
 }

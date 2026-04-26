@@ -163,6 +163,14 @@ public static class Router
 =======
 
 
+
+=======
+<<<<<<< HEAD
+>>>>>>> 2c462ddb241916e75612c627eecded6fbfcbe955
+<<<<<<< HEAD
+=======
+
+
     public static class Search
     {
         public const string Prefix = $"{Rule}/search";
@@ -172,3 +180,7 @@ public static class Router
 >>>>>>> 1ffb18be0816185e446b8c619cbe640eb130eafc
 =======
 >>>>>>> 97493235b7350e5bec383d0f8807bb1a6b77d66a
+<<<<<<< HEAD
+=======
+>>>>>>> main
+>>>>>>> 2c462ddb241916e75612c627eecded6fbfcbe955
