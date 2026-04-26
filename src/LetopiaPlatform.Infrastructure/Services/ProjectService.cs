@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Project.Request;
 using LetopiaPlatform.Core.DTOs.Project.Response;
@@ -16,6 +17,8 @@ public class ProjectService : IProjectService
     private readonly IFileStorageService _fileService;
     private readonly ILogger<ProjectService> _logger;
     private IUnitOfWork<ApplicationDbContext> _unitOfWork;
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
     public ProjectService(IProjectRepository projectRepo, IFileStorageService fileService, ILogger<ProjectService> logger,
                   IUnitOfWork<ApplicationDbContext> unitOfWork)
     {
@@ -72,6 +75,50 @@ public class ProjectService : IProjectService
             coverUrl = upload.Value;
         }
 
+
+
+        _logger.LogInformation("RAW MILESTONES DATA: ---> {Data} <---", request.Milestones);
+        List<ProjectMilestoneDetails> milestonesList = [];
+
+        if (!string.IsNullOrWhiteSpace(request.Milestones) && request.Milestones != "string")
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var rawJson = request.Milestones.Trim();
+
+                using var doc = JsonDocument.Parse(rawJson);
+                var root = doc.RootElement;
+
+                if (root.ValueKind == JsonValueKind.String)
+                {
+                    var content = root.GetString();
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        milestonesList = JsonSerializer.Deserialize<List<ProjectMilestoneDetails>>(content, options) ?? [];
+                    }
+                }
+                else if (root.ValueKind == JsonValueKind.Array)
+                {
+                    milestonesList = JsonSerializer.Deserialize<List<ProjectMilestoneDetails>>(rawJson, options) ?? [];
+                }
+                else if (root.ValueKind == JsonValueKind.Object)
+                {
+                    var singleMilestone = JsonSerializer.Deserialize<ProjectMilestoneDetails>(rawJson, options);
+                    if (singleMilestone != null)
+                    {
+                        milestonesList.Add(singleMilestone);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Milestone Parsing failed. Input: {Input}", request.Milestones);
+            }
+        }
+
+        _logger.LogInformation("MILESTONES COUNT TO SAVE: {Count}", milestonesList.Count);
+
         var project = new Project
         {
             Title = request.Title,
@@ -96,12 +143,7 @@ public class ProjectService : IProjectService
             Status = ProjectStatus.Recruiting,
 
 
-            Milestones = request.Milestones.Select(m => new ProjectMilestoneDetails
-            {
-                Title = m.Title,
-                Description = m.Description,
-                CreatedAt = DateTime.UtcNow
-            }).ToList()
+            Milestones = milestonesList
         };
 
         try
@@ -196,8 +238,7 @@ public class ProjectService : IProjectService
      p.Owner?.FullName ?? "Unknown", // OwnerName
      p.Milestones.Select(m => new MilestoneResponseDto(
          m.Title,
-         m.Description,
-         m.CreatedAt
+         m.Description
      )).ToList()                     // Milestones
  );
     private static string CalculateTimeLeft(DateTime deadline)
@@ -207,4 +248,5 @@ public class ProjectService : IProjectService
         if (diff.TotalDays >= 7) return $"{(int)(diff.TotalDays / 7)} weeks left";
         return $"{(int)diff.TotalDays} days left";
     }
+
 }

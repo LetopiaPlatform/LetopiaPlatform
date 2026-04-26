@@ -44,16 +44,32 @@ public static class DependencyInjection
     // -----------------------------------------------------------
     // Database
     // -----------------------------------------------------------
+    //private static IServiceCollection AddDatabase(
+    //    this IServiceCollection services,
+    //    IConfiguration configuration)
+    //{
+    //    services.AddDbContext<ApplicationDbContext>(options =>
+    //        options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+    //    return services;
+    //}
     private static IServiceCollection AddDatabase(
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        // 1. إعداد الـ DataSourceBuilder لتفعيل الـ JSON الديناميكي
+        var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(connectionString);
+        dataSourceBuilder.EnableDynamicJson(); // السطر ده هو "كلمة السر" لحل مشكلة الـ Milestones
+        var dataSource = dataSourceBuilder.Build();
+
+        // 2. تسجيل الـ DbContext باستخدام الـ dataSource الجديد
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(dataSource));
 
         return services;
     }
-
     // -----------------------------------------------------------
     // Identity
     // -----------------------------------------------------------
