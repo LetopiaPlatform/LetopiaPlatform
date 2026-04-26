@@ -31,13 +31,19 @@ public interface IAuthService
     Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Validates an expired JWT and a refresh token to issue a new pair of tokens.
+    /// </summary>
+    Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Sends a verification code to the user's email for purposes such as email verification or password reset.
     /// </summary>
     Task<Result> SendVerificationCodeAsync(SendCodeRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Verifies the code sent to the user's email.
+    /// Verifies the code sent to the user's email and returns an authentication response on success.
     /// </summary>
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
     /// <param name="request">The request containing the user's email and the purpose of the verification code.</param>
@@ -51,6 +57,8 @@ public interface IAuthService
     /// <param name="request">The request containing the user's email, the verification code, and the purpose of the verification.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
 >>>>>>> 1ffb18be0816185e446b8c619cbe640eb130eafc
+=======
+>>>>>>> 97493235b7350e5bec383d0f8807bb1a6b77d66a
     Task<Result<AuthResponse>> VerifyEmailAsync(VerifyEmailRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -62,6 +70,7 @@ public interface IAuthService
     /// Resets the user's password after verifying the provided code.
     /// </summary>
     Task<Result> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default);
+<<<<<<< HEAD
 
     /// <summary>
     /// Validates an expired JWT and a refresh token to issue a new pair of tokens.
@@ -82,4 +91,6 @@ public interface IAuthService
     /// <returns>A result indicating the success or failure of the password reset operation.</returns>
     Task<Result> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default);
 >>>>>>> 1ffb18be0816185e446b8c619cbe640eb130eafc
+=======
+>>>>>>> 97493235b7350e5bec383d0f8807bb1a6b77d66a
 }
