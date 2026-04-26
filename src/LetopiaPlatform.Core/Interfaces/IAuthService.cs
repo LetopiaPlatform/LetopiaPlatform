@@ -39,6 +39,7 @@ public interface IAuthService
     /// Sends a verification code to the user's email for purposes such as email verification or password reset.
     /// </summary>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     Task<Result> SendVerificationCodeAsync(SendCodeRequest request, CancellationToken cancellationToken = default);
 
@@ -52,6 +53,8 @@ public interface IAuthService
 =======
 >>>>>>> main
 >>>>>>> 2c462ddb241916e75612c627eecded6fbfcbe955
+=======
+>>>>>>> cdfa246fe4889ae2a425401075b383598ae4a0fd
     /// <param name="request">The request containing the user's email and the purpose of the verification code.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A result indicating the success or failure of the operation.</returns>
@@ -62,6 +65,7 @@ public interface IAuthService
     /// </summary>
     /// <param name="request">The request containing the user's email, the verification code, and the purpose of the verification.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> 1ffb18be0816185e446b8c619cbe640eb130eafc
 =======
@@ -74,11 +78,14 @@ public interface IAuthService
 >>>>>>> 97493235b7350e5bec383d0f8807bb1a6b77d66a
 >>>>>>> main
 >>>>>>> 2c462ddb241916e75612c627eecded6fbfcbe955
+=======
+>>>>>>> cdfa246fe4889ae2a425401075b383598ae4a0fd
     Task<Result<AuthResponse>> VerifyEmailAsync(VerifyEmailRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Sends a password reset code to the user's email.
     /// </summary>
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
     Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default);
@@ -101,6 +108,8 @@ public interface IAuthService
     /// <returns>A result indicating the success or failure of the password reset operation.</returns>
 =======
 >>>>>>> main
+=======
+>>>>>>> cdfa246fe4889ae2a425401075b383598ae4a0fd
     /// <param name="request">The request containing the user's email.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A result indicating the success or failure of the operation.</returns>
@@ -114,6 +123,7 @@ public interface IAuthService
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A result indicating the success or failure of the password reset operation.</returns>
     Task<Result> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default);
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> 1ffb18be0816185e446b8c619cbe640eb130eafc
 =======
@@ -131,4 +141,6 @@ public interface IAuthService
 >>>>>>> 97493235b7350e5bec383d0f8807bb1a6b77d66a
 >>>>>>> main
 >>>>>>> 2c462ddb241916e75612c627eecded6fbfcbe955
+=======
+>>>>>>> cdfa246fe4889ae2a425401075b383598ae4a0fd
 }

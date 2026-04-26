@@ -44,4 +44,10 @@ public class AgentSettings
     /// Maximum number of tokens allowed for a single conversation context.
     /// </summary>
     public int MaxConversationTokens { get; set; } = 4000;
+
+    /// <summary>
+    /// Maximum number of agent loop iterations (LLM calls) before the agent gives up.
+    /// Prevents runaway tool-call loops.
+    /// </summary>
+    public int MaxAgentIterations { get; set; } = 10;
 }
