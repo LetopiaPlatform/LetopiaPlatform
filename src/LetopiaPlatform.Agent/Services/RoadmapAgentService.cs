@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
+using LetopiaPlatform.Agent.Configuration;
 using LetopiaPlatform.Agent.Prompts;
 using LetopiaPlatform.Agent.Tools;
 using LetopiaPlatform.Core.DTOs.Agent;
@@ -10,13 +12,12 @@ using LetopiaPlatform.Core.Exceptions;
 using LetopiaPlatform.Core.Interfaces;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace LetopiaPlatform.Agent.Services;
 
 public class RoadmapAgentService : IRoadmapAgentService
 {
-    private const int MaxIterations = 10;
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -29,6 +30,7 @@ public class RoadmapAgentService : IRoadmapAgentService
     private readonly IConversationRepository _conversationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<RoadmapAgentService> _logger;
+    private readonly AgentSettings _settings;
 
     public RoadmapAgentService(
         IChatClient chatClient,
@@ -36,7 +38,8 @@ public class RoadmapAgentService : IRoadmapAgentService
         IRoadmapRepository roadmapRepository,
         IConversationRepository conversationRepository,
         IUnitOfWork unitOfWork,
-        ILogger<RoadmapAgentService> logger)
+        ILogger<RoadmapAgentService> logger,
+        IOptions<AgentSettings> settings)
     {
         _chatClient = chatClient;
         _webSearchService = webSearchService;
@@ -44,6 +47,7 @@ public class RoadmapAgentService : IRoadmapAgentService
         _conversationRepository = conversationRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _settings = settings.Value;
     }
 
     public AgentType AgentType => AgentType.RoadmapGenerator;
@@ -95,6 +99,7 @@ public class RoadmapAgentService : IRoadmapAgentService
         if (conversation.UserId != userId)
             throw new ForbiddenException();
 
+        // Persist user message to DB first
         _conversationRepository.AddMessage(new ConversationMessage
         {
             ConversationId = conversationId,
@@ -104,51 +109,56 @@ public class RoadmapAgentService : IRoadmapAgentService
         });
         await _unitOfWork.SaveChangesAsync(ct);
 
+        // Build the chat history from the persisted messages which now include
+        // the user message we just saved — no need to add it again manually.
         var messages = conversation.Messages
             .OrderBy(m => m.CreatedAt)
             .Select(ToChatMessage)
             .ToList();
-        messages.Add(new ChatMessage(ChatRole.User, userMessage));
+
+        // Guard: if the last persisted message is not the user message we just added
+        // (e.g. EF tracking didn't append it to the navigation), add it to avoid a missing turn.
+        if (messages.Count == 0 || messages[^1].Role != ChatRole.User
+            || messages[^1].Text != userMessage)
+        {
+            messages.Add(new ChatMessage(ChatRole.User, userMessage));
+        }
 
         var searchTool = WebSearchTool.Create(_webSearchService);
         var options = new ChatOptions { Tools = [searchTool] };
 
-        // C# forbids yield inside catch blocks. The agent loop is delegated to
-        // RunAgentLoopAsync (a regular async Task method) which collects all events
-        // and errors. We then replay them here, yielding outside any catch block.
-        var result = await RunAgentLoopAsync(
-            conversation, conversationId, messages, searchTool, options, ct);
+        // Producer-consumer: the agent loop writes events to a Channel,
+        // and we yield them here in real-time as they arrive.
+        var channel = System.Threading.Channels.Channel.CreateUnbounded<AgentStreamEvent>(
+            new System.Threading.Channels.UnboundedChannelOptions { SingleWriter = true });
 
-        if (result.Cancelled)
-            yield break;
+        // Fire the producer as a background task
+        _ = RunAgentLoopAsync(conversation, conversationId, messages,
+            searchTool, options, channel.Writer, ct);
 
-        foreach (var ev in result.Events)
+        // Consumer: yield each event as soon as it arrives
+        await foreach (AgentStreamEvent ev in channel.Reader.ReadAllAsync(ct))
+        {
             yield return ev;
-
-        if (result.Error is not null)
-            yield return new AgentStreamEvent("error", result.Error);
+        }
     }
 
     /// <summary>
-    /// Runs the agent loop non-iteratively, collecting all events into a list.
-    /// This is required because C# forbids yield inside catch blocks.
-    /// Real-time delta streaming is sacrificed in the error-boundary layer;
-    /// all deltas are buffered and replayed. The normal (no-exception) path
-    /// still produces the full event sequence.
+    /// Runs the agent while-loop, writing events to the channel writer in real-time.
+    /// Guarantees the writer is completed when the method exits (success or failure).
     /// </summary>
-    private async Task<AgentLoopResult> RunAgentLoopAsync(
+    private async Task RunAgentLoopAsync(
         AgentConversation conversation,
         Guid conversationId,
         List<ChatMessage> messages,
         AIFunction searchTool,
         ChatOptions options,
+        ChannelWriter<AgentStreamEvent> writer,
         CancellationToken ct)
     {
-        var events = new List<AgentStreamEvent>();
-
         try
         {
-            for (int i = 0; i < MaxIterations; i++)
+            for (int i = 0; i < _settings.MaxAgentIterations; i++)
             {
                 var textBuffer = new StringBuilder();
                 var toolCalls = new List<FunctionCallContent>();
@@ -158,7 +168,7 @@ public class RoadmapAgentService : IRoadmapAgentService
                     if (update.Text is not null)
                     {
                         textBuffer.Append(update.Text);
-                        events.Add(new AgentStreamEvent("delta", update.Text));
+                        await writer.WriteAsync(new AgentStreamEvent("delta", update.Text), ct);
                     }
 
                     toolCalls.AddRange(update.Contents.OfType<FunctionCallContent>());
@@ -166,7 +176,8 @@ public class RoadmapAgentService : IRoadmapAgentService
 
                 if (toolCalls.Count > 0)
                 {
-                    events.Add(new AgentStreamEvent("status", "Searching for resources..."));
+                    await writer.WriteAsync(
+                        new AgentStreamEvent("status", "Searching for resources..."), ct);
 
                     var assistantContents = new List<AIContent>();
                     if (textBuffer.Length > 0)
@@ -207,7 +218,7 @@ public class RoadmapAgentService : IRoadmapAgentService
                 var resultEvent = await ProcessCompletedResponseAsync(conversation, fullText, ct);
 
                 if (resultEvent is not null)
-                    events.Add(resultEvent);
+                    await writer.WriteAsync(resultEvent, ct);
 
                 _conversationRepository.AddMessage(new ConversationMessage
                 {
@@ -218,30 +229,46 @@ public class RoadmapAgentService : IRoadmapAgentService
                 });
                 await _unitOfWork.SaveChangesAsync(ct);
 
-                events.Add(new AgentStreamEvent("done", null));
-                return new AgentLoopResult(events, null, false);
+                await writer.WriteAsync(new AgentStreamEvent("done", null), ct);
+                return;
             }
 
             // Exhausted all iterations
-            return new AgentLoopResult(events, "Max iterations reached", false);
+            await writer.WriteAsync(
+                new AgentStreamEvent("error", "Max iterations reached"), ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            _logger.LogInformation("Stream cancelled for conversation {ConversationId}", conversationId);
-            return new AgentLoopResult(events, null, Cancelled: true);
+            _logger.LogInformation(
+                "Stream cancelled for conversation {ConversationId}", conversationId);
+            // Channel completes in finally — consumer stops reading
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Agent loop failed for conversation {ConversationId}", conversationId);
-            return new AgentLoopResult(events, ex.Message, false);
+            _logger.LogError(ex,
+                "Agent loop failed for conversation {ConversationId}", conversationId);
+            // Never leak ex.Message to the client — log it above, return a safe message
+            try
+            {
+                await writer.WriteAsync(
+                    new AgentStreamEvent("error", "An unexpected error occurred. Please try again."), ct);
+            }
+            catch
+            {
+                // Consumer may have already disconnected; swallow
+            }
+        }
+        finally
+        {
+            writer.Complete();
         }
     }
 
-    private sealed record AgentLoopResult(
-        List<AgentStreamEvent> Events,
-        string? Error,
-        bool Cancelled);
-
+    /// <summary>
+    /// Inspects the completed LLM response for structured JSON between markers.
+    /// If found, persists the roadmap/phase and returns the corresponding event.
+    /// Returns null if no structured data markers are present.
+    /// </summary>
     private async Task<AgentStreamEvent?> ProcessCompletedResponseAsync(
         AgentConversation conversation,
         string fullText,
@@ -252,26 +279,48 @@ public class RoadmapAgentService : IRoadmapAgentService
 
         if (conversation.RoadmapId is null)
         {
-            var roadmapData = JsonSerializer.Deserialize<RoadmapJson>(json, JsonOptions)!;
-            var roadmap = CreateRoadmapEntity(roadmapData, conversation);
-            _roadmapRepository.Add(roadmap);
-            conversation.RoadmapId = roadmap.Id;
-            conversation.Status = ConversationStatus.Completed;
-            await _unitOfWork.SaveChangesAsync(ct);
-            return new AgentStreamEvent("roadmap_complete", new { roadmapId = roadmap.Id });
+            try
+            {
+                if (JsonSerializer.Deserialize<RoadmapJson>(json, JsonOptions) is not { } roadmapData)
+                    return new AgentStreamEvent("error", "Failed to parse roadmap data.");
+
+                var roadmap = CreateRoadmapEntity(roadmapData, conversation);
+                _roadmapRepository.Add(roadmap);
+                conversation.RoadmapId = roadmap.Id;
+                conversation.Status = ConversationStatus.Completed;
+                return new AgentStreamEvent("roadmap_complete", new { roadmapId = roadmap.Id });
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex,
+                    "LLM produced malformed roadmap JSON for conversation {ConversationId}",
+                    conversation.Id);
+                return new AgentStreamEvent("error", "Failed to parse roadmap data.");
+            }
         }
         else
         {
-            var phaseData = JsonSerializer.Deserialize<PhaseJson>(json, JsonOptions)!;
-            if (phaseData.PhaseId is null)
-                throw new InvalidOperationException("Phase edit JSON missing phaseId");
+            try
+            {
+                if (JsonSerializer.Deserialize<PhaseJson>(json, JsonOptions) is not { } phaseData)
+                    return new AgentStreamEvent("error", "Failed to parse phase data.");
 
-            var phase = await _roadmapRepository.GetPhaseByIdAsync(phaseData.PhaseId.Value, ct)
-                ?? throw new NotFoundException(nameof(RoadmapPhase), phaseData.PhaseId.Value);
+                if (phaseData.PhaseId is null)
+                    return new AgentStreamEvent("error", "Phase update is missing a phase identifier.");
 
-            UpdatePhaseEntity(phase, phaseData);
-            await _unitOfWork.SaveChangesAsync(ct);
-            return new AgentStreamEvent("phase_updated", new { phaseId = phase.Id });
+                var phase = await _roadmapRepository.GetPhaseByIdAsync(phaseData.PhaseId.Value, ct)
+                    ?? throw new NotFoundException(nameof(RoadmapPhase), phaseData.PhaseId.Value);
+
+                UpdatePhaseEntity(phase, phaseData);
+                return new AgentStreamEvent("phase_updated", new { phaseId = phase.Id });
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex,
+                    "LLM produced malformed phase JSON for conversation {ConversationId}",
+                    conversation.Id);
+                return new AgentStreamEvent("error", "Failed to parse phase data.");
+            }
         }
     }
 

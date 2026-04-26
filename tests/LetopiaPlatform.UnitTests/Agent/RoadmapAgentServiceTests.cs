@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LetopiaPlatform.Agent.Configuration;
 using LetopiaPlatform.Agent.Services;
 using LetopiaPlatform.Core.DTOs.Agent;
 using LetopiaPlatform.Core.Entities;
@@ -7,6 +8,7 @@ using LetopiaPlatform.Core.Exceptions;
 using LetopiaPlatform.Core.Interfaces;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace LetopiaPlatform.UnitTests.Agent;
@@ -28,13 +30,16 @@ public class RoadmapAgentServiceTests
 
     public RoadmapAgentServiceTests()
     {
+        var settings = Options.Create(new AgentSettings { MaxAgentIterations = 10 });
+
         _service = new RoadmapAgentService(
             _mockChatClient.Object,
             _mockWebSearch.Object,
             _mockRoadmapRepo.Object,
             _mockConversationRepo.Object,
             _mockUnitOfWork.Object,
-            Mock.Of<ILogger<RoadmapAgentService>>());
+            Mock.Of<ILogger<RoadmapAgentService>>(),
+            settings);
     }
 
     [Fact]
@@ -133,7 +138,7 @@ public class RoadmapAgentServiceTests
         _mockConversationRepo.Verify(
             r => r.AddMessage(It.Is<ConversationMessage>(m => m.Role == MessageRole.Tool)),
             Times.Once);
-        // SaveChangesAsync at least twice: tool-call persist + final assistant message
+        // SaveChangesAsync at least twice: user message persist + tool-call persist + final assistant message
         _mockUnitOfWork.Verify(
             u => u.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.AtLeast(2));
@@ -266,6 +271,47 @@ public class RoadmapAgentServiceTests
         Assert.Contains("Max iterations reached", errorEvent.Data?.ToString());
     }
 
+    [Fact]
+    public async Task ProcessMessageLlmExceptionYieldsSafeError()
+    {
+        var conversationId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        SetupConversation(conversationId, userId);
+
+        _mockChatClient
+            .Setup(c => c.CompleteStreamingAsync(
+                It.IsAny<IList<ChatMessage>>(),
+                It.IsAny<ChatOptions?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(() => ThrowingAsyncEnumerable<StreamingChatCompletionUpdate>(
+                new InvalidOperationException("SQL connection string leaked!")));
+
+        var events = await CollectEvents(conversationId, "hello", userId);
+
+        var errorEvent = events.Last();
+        Assert.Equal("error", errorEvent.Type);
+        // Must NOT contain the original exception message
+        Assert.DoesNotContain("SQL", errorEvent.Data?.ToString() ?? "");
+        Assert.Contains("unexpected error", errorEvent.Data?.ToString() ?? "",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ProcessMessageMalformedJsonYieldsParseError()
+    {
+        var conversationId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        SetupConversation(conversationId, userId);
+
+        SetupStreamingTextResponse("StartOfAnswer\n{broken json!!!\nEndOfAnswer");
+
+        var events = await CollectEvents(conversationId, "generate", userId);
+
+        Assert.Contains(events, e =>
+            e.Type == "error"
+            && (e.Data?.ToString() ?? "").Contains("Failed to parse", StringComparison.OrdinalIgnoreCase));
+    }
+
     #region Helpers
 
     private AgentConversation SetupConversation(Guid conversationId, Guid userId, Guid? roadmapId = null)
@@ -330,6 +376,15 @@ public class RoadmapAgentServiceTests
             yield return item;
             await Task.CompletedTask;
         }
+    }
+
+    private static async IAsyncEnumerable<T> ThrowingAsyncEnumerable<T>(Exception ex)
+    {
+        await Task.CompletedTask;
+        throw ex;
+#pragma warning disable CS0162 // Unreachable code — required for async iterator shape
+        yield break;
+#pragma warning restore CS0162
     }
 
     #endregion
