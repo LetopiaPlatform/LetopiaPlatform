@@ -76,7 +76,8 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 name: "timeline_events",
                 table: "projects",
                 type: "text[]",
-                nullable: false);
+                nullable: false,
+                defaultValueSql: "ARRAY[]::text[]");
 
             migrationBuilder.CreateTable(
                 name: "project_milestones",
