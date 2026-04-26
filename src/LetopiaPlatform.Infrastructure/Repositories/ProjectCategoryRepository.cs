@@ -48,9 +48,8 @@ public class ProjectCategoryRepository : GenericRepository<ProjectCategory>, IPr
     public async Task<ProjectCategory?> GetCategoryWithProjectsAsync(string slug, CancellationToken ct = default)
     {
         return await _projectCategories
-            .Include(pc => pc.Projects.Where(p => !p.IsFull))
+            .Include(pc => pc.Projects)
             .FirstOrDefaultAsync(pc => pc.Slug == slug, ct);
     }
-
 
 }

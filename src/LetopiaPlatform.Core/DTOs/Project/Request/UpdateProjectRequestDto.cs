@@ -12,5 +12,5 @@ public record UpdateProjectRequestDto(
     int MaxMembers,
     List<string> RequiredSkills,
     List<string> Goals,
-    IFormFile? CoverImage // اختياري في حالة التحديث
+    IFormFile? CoverImage
 );

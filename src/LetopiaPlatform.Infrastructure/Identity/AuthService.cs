@@ -107,51 +107,6 @@ public class AuthService : IAuthService
         return Result<AuthResponse>.Success(authResponse);
     }
 
-    public async Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
-    {
-        var principal = _jwtTokenService.GetPrincipalFromExpiredToken(request.AccessToken);
-        if (principal == null) return Result<AuthResponse>.Failure("Invalid access token", 400);
-
-        var userIdClaim = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-        var jti = principal.FindFirstValue(JwtRegisteredClaimNames.Jti);
-
-        if (!Guid.TryParse(userIdClaim, out Guid userId))
-            return Result<AuthResponse>.Failure("Invalid token claims", 400);
-
-        var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user == null) return Result<AuthResponse>.Failure("User not found", 404);
-
-        var refreshTokenHash = ComputeSha256Hash(request.RefreshToken);
-        var storedToken = await _userRefreshTokenRepository.GetTableAsTracking()
-            .FirstOrDefaultAsync(x => x.RefreshTokenHash == refreshTokenHash && x.UserId == userId, cancellationToken);
-
-        if (storedToken == null || storedToken.IsUsed || storedToken.IsRevoked || storedToken.JwtId != jti || storedToken.ExpiryDate < DateTime.UtcNow)
-            return Result<AuthResponse>.Failure("Invalid, expired or reused refresh token", 401);
-
-        try
-        {
-            await _unitOfWork.BeginTransactionAsync();
-
-            storedToken.IsUsed = true;
-            await _userRefreshTokenRepository.UpdateAsync(storedToken);
-
-            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
-
-            await _unitOfWork.CommitAsync();
-            return Result<AuthResponse>.Success(authResponse);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            await _unitOfWork.RollbackAsync();
-            return Result<AuthResponse>.Failure("Security Alert: Token is being used simultaneously.", 409);
-        }
-        catch
-        {
-            await _unitOfWork.RollbackAsync();
-            throw;
-        }
-    }
-
     public async Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken = default)
     {
         var googleUserInfo = await _googleTokenValidator.ValidateAsync(request.AccessToken);
@@ -215,6 +170,51 @@ public class AuthService : IAuthService
 
         var finalAuthResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
         return Result<AuthResponse>.Success(finalAuthResponse, 201);
+    }
+
+    public async Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var principal = _jwtTokenService.GetPrincipalFromExpiredToken(request.AccessToken);
+        if (principal == null) return Result<AuthResponse>.Failure("Invalid access token", 400);
+
+        var userIdClaim = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        var jti = principal.FindFirstValue(JwtRegisteredClaimNames.Jti);
+
+        if (!Guid.TryParse(userIdClaim, out Guid userId))
+            return Result<AuthResponse>.Failure("Invalid token claims", 400);
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) return Result<AuthResponse>.Failure("User not found", 404);
+
+        var refreshTokenHash = ComputeSha256Hash(request.RefreshToken);
+        var storedToken = await _userRefreshTokenRepository.GetTableAsTracking()
+            .FirstOrDefaultAsync(x => x.RefreshTokenHash == refreshTokenHash && x.UserId == userId, cancellationToken);
+
+        if (storedToken == null || storedToken.IsUsed || storedToken.IsRevoked || storedToken.JwtId != jti || storedToken.ExpiryDate < DateTime.UtcNow)
+            return Result<AuthResponse>.Failure("Invalid, expired or reused refresh token", 401);
+
+        try
+        {
+            await _unitOfWork.BeginTransactionAsync();
+
+            storedToken.IsUsed = true;
+            await _userRefreshTokenRepository.UpdateAsync(storedToken);
+
+            var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
+
+            await _unitOfWork.CommitAsync();
+            return Result<AuthResponse>.Success(authResponse);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await _unitOfWork.RollbackAsync();
+            return Result<AuthResponse>.Failure("Security Alert: Token is being used simultaneously.", 409);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<Result> SendVerificationCodeAsync(SendCodeRequest request, CancellationToken cancellationToken = default)

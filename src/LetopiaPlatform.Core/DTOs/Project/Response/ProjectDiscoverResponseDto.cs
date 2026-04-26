@@ -3,11 +3,12 @@ public record ProjectDiscoverResponseDto(
     Guid Id,
     string Title,
     string CategoryName,
-    string? DifficultyLevel,
-    string Status,
-    List<string> Skills,
+    string? DifficultyLevel, // Beginner, Intermediate, Advanced
+    string Status,           // Recruiting, In Progress, etc.
+    List<string> Skills,     // Displayed as Chips in UI
     string? CoverImageUrl,
-    int ProgressPercentage,
-    int MembersCount,
-    string TimeLeft
+    int MembersCount,        // Number of current team members
+    string TimeLeft,         // Calculated string (e.g., "3 days left")
+    Guid OwnerId,            // To allow navigation to Owner's profile
+    string OwnerName         // To display "By: OwnerName" in the card
 );
