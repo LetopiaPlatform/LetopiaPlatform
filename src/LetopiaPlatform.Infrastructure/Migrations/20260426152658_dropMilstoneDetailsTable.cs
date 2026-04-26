@@ -21,7 +21,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
             table: "projects",
             type: "jsonb",
             nullable: false,
-            defaultValue: "[]"); 
+            defaultValueSql: "'[]'::jsonb"); 
         }
 
         /// <inheritdoc />
