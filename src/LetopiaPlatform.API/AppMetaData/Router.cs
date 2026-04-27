@@ -18,6 +18,7 @@ public static class Router
         public const string VerifyEmail = $"{Prefix}/verify-email";
         public const string ResetPassword = $"{Prefix}/reset-password";
         public const string ForgotPassword = $"{Prefix}/forgot-password";
+
     }
 
     public static class Users
@@ -153,7 +154,6 @@ public static class Router
         public const string Prefix = $"{Rule}/search";
         public const string Query = Prefix;
     }
-
     public static class Agent
     {
         public const string Prefix = $"{Rule}/agent";

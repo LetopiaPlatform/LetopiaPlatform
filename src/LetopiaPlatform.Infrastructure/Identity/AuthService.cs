@@ -185,7 +185,8 @@ public class AuthService : IAuthService
         var storedToken = await _userRefreshTokenRepository.GetTableAsTracking()
             .FirstOrDefaultAsync(x => x.RefreshTokenHash == refreshTokenHash && x.UserId == userId, cancellationToken);
 
-        if (storedToken == null || storedToken.IsUsed || storedToken.IsRevoked || storedToken.JwtId != jti || storedToken.ExpiryDate < DateTime.UtcNow)
+        if (storedToken == null || storedToken.IsUsed || storedToken.IsRevoked ||
+            storedToken.JwtId != jti || storedToken.ExpiryDate < DateTime.UtcNow)
             return Result<AuthResponse>.Failure("Invalid, expired or reused refresh token", 401);
 
         try
