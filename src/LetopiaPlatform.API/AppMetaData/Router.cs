@@ -162,6 +162,14 @@ public static class Router
         public const string ConversationById = $"{Prefix}/conversations/{{conversationId}}";
         public const string Messages = $"{Prefix}/conversations/{{conversationId}}/messages";
     }
+
+    public static class Roadmaps
+    {
+        public const string Prefix = $"{Rule}/roadmaps";
+        public const string List = Prefix;
+        public const string GetById = $"{Prefix}/{{roadmapId}}";
+        public const string UpdatePhaseStatus = $"{Prefix}/{{roadmapId}}/phases/{{phaseId}}/status";
+    }
 }
 
 

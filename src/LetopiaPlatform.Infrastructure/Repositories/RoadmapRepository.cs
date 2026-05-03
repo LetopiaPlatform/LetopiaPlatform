@@ -17,9 +17,6 @@ internal sealed class RoadmapRepository : IRoadmapRepository
     public async Task<Roadmap?> GetByIdWithPhasesAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.Roadmaps
-
-
-            .AsNoTracking()
             .Include(r => r.Phases.OrderBy(p => p.Order))
             .FirstOrDefaultAsync(r => r.Id == id, ct);
     }
@@ -27,9 +24,8 @@ internal sealed class RoadmapRepository : IRoadmapRepository
     public async Task<List<Roadmap>> GetByUserIdAsync(Guid userId, CancellationToken ct = default)
     {
         return await _context.Roadmaps
-
-
             .AsNoTracking()
+            .Include(r => r.Phases)
             .Where(r => r.UserId == userId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(ct);
