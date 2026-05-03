@@ -16,6 +16,7 @@ using LetopiaPlatform.Core.Services.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace LetopiaPlatform.Infrastructure.Identity;
@@ -160,7 +161,8 @@ public class AuthService : IAuthService
 
         await _userManager.AddToRoleAsync(user, "Learner");
 
-        return Result<AuthResponse>.Success(await CreateFullAuthResponseAsync(user, cancellationToken), 201);
+        var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
+        return Result<AuthResponse>.Success(authResponse, 201);
     }
 
     public async Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
@@ -238,7 +240,8 @@ public class AuthService : IAuthService
 
         SendOnboardingEmail(user);
 
-        return Result<AuthResponse>.Success(await CreateFullAuthResponseAsync(user, cancellationToken));
+        var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
+        return Result<AuthResponse>.Success(authResponse);
     }
 
     public async Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
