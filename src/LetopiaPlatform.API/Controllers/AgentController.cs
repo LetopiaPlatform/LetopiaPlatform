@@ -170,9 +170,25 @@ public class AgentController : BaseController
                 return;
             }
 
-            // Real IO problem — let it surface
-            _logger.LogError(ex, "Unexpected IO error for {ConversationId}", conversationId);
-            throw;
+            // Attempt to send an error event to the client before closing.
+            try
+            {
+                var errorData = JsonSerializer.Serialize(new { message = "An internal error occurred." }, JsonOptions);
+                await Response.WriteAsync($"event: error\ndata: {errorData}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+            }
+            catch (IOException)
+            {
+                // Connection dropped while writing error event — swallow.
+            }
+            catch (ObjectDisposedException)
+            {
+                // Response stream already disposed — swallow.
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // Response cancelled during error write — swallow.
+            }
         }
     }
 }
