@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using LetopiaPlatform.API.AppMetaData;
 using LetopiaPlatform.API.Common;
@@ -199,7 +200,7 @@ public class AgentController : BaseController
             // Client disconnected — no action needed.
             _logger.LogInformation("SSE stream cancelled for conversation {ConversationId}", conversationId);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
             _logger.LogError(ex, "SSE stream error for conversation {ConversationId}", conversationId);
 
@@ -210,9 +211,17 @@ public class AgentController : BaseController
                 await Response.WriteAsync($"event: error\ndata: {errorData}\n\n", ct);
                 await Response.Body.FlushAsync(ct);
             }
-            catch
+            catch (IOException)
             {
-                // Response may already be closed — swallow.
+                // Connection dropped while writing error event — swallow.
+            }
+            catch (ObjectDisposedException)
+            {
+                // Response stream already disposed — swallow.
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // Response cancelled during error write — swallow.
             }
         }
     }
