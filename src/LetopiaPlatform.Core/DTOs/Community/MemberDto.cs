@@ -7,6 +7,7 @@ namespace LetopiaPlatform.Core.DTOs.Community;
 public sealed record MemberDto(
     Guid UserId,
     string FullName,
+    string? Bio,
     string? AvatarUrl,
     string Role,
     DateTime JoinedAt);
