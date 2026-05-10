@@ -325,9 +325,20 @@ public class CommunityService : ICommunityService
         if (targetMembership.Role == CommunityRole.Moderator && callerMembership.Role != CommunityRole.Owner)
             throw new ForbiddenException("Only the owner can remove a moderator.");
 
-        _communityRepository.RemoveMember(targetMembership);
-        await _unitOfWork.SaveChangesAsync(ct);
-        await _communityRepository.DecrementMemberCountAsync(communityId, ct);
+        await _unitOfWork.beginTransactionAsync();
+        try
+        {
+            _communityRepository.RemoveMember(targetMembership);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _communityRepository.DecrementMemberCountAsync(communityId, ct);
+            await _unitOfWork.CommitAsync();
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+
 
         _logger.LogInformation(
             "Community Service - User {TargetUserId} removed from community {CommunityId} by {CallerId}",
