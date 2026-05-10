@@ -283,17 +283,24 @@ public class PostService : IPostService
         var post = await GetPostOrThrowAsync(postId);
 
         var membership = await _communityRepo.GetMembershipAsync(post.CommunityId, userId, ct);
+
         if (membership is null || post.AuthorId != membership.Id)
             throw new ForbiddenException("You are not allowed to delete this post.");
+
+        if (post.IsDeleted)
+            return Result.Success();
+
+        var community = await _communityRepo.GetByIdAsync(post.CommunityId, ct)
+            ?? throw new NotFoundException($"Community {post.CommunityId} not found.");
 
         await _unitOfWork.BeginTransactionAsync();
 
         try
         {
-            await _communityRepo.IncrementPostCountAsync(post.CommunityId, -1, ct);
-
             post.IsDeleted = true;
             post.UpdatedAt = DateTime.UtcNow;
+
+            community.PostCount--;
 
             await _unitOfWork.SaveChangesAsync(ct);
 
@@ -307,7 +314,6 @@ public class PostService : IPostService
             throw;
         }
     }
-
     // ─────────────────────────────
     // PRIVATE HELPERS
     // ─────────────────────────────
