@@ -93,8 +93,9 @@ public class PostService : IPostService
 
             if (request.Tags.Count > 0)
                 await _tagRepo.ReplaceTagsAsync(TagTarget.Post, post.Id, request.Tags, ct);
-
+            await _communityRepo.IncrementPostCountAsync(communityId, 1, ct);
             await _unitOfWork.SaveChangesAsync(ct);
+           
             await _unitOfWork.CommitAsync();
         }
         catch
@@ -287,9 +288,9 @@ public class PostService : IPostService
 
         post.IsDeleted = true;
         post.UpdatedAt = DateTime.UtcNow;
-
+        await _communityRepo.IncrementPostCountAsync(post.CommunityId, -1, ct);
         await _unitOfWork.SaveChangesAsync(ct);
-
+       
         return Result.Success();
     }
 

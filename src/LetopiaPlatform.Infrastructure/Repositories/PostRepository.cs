@@ -57,6 +57,7 @@ public class PostRepository : GenericRepository<Post>, IPostRepository
 
         var q = _context.Posts
             .Include(p => p.Author)
+            .ThenInclude(a => a.User)
             .Where(p =>
                 p.CommunityId == communityId &&
                 p.ChannelId == channelId &&
@@ -103,7 +104,7 @@ public class PostRepository : GenericRepository<Post>, IPostRepository
             .ToListAsync(ct);
     }
 
-    // ── Get by author ─────────────────────────────────────────────────────────
+ 
 
 
 

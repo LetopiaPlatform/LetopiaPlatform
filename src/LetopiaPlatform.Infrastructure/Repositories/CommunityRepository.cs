@@ -189,7 +189,17 @@ internal sealed class CommunityRepository : ICommunityRepository
     {
         _dbContext.AddRange(channels);
     }
-
+    public async Task IncrementPostCountAsync(Guid communityId, int value, CancellationToken ct = default)
+    {
+        await _dbContext.Communities
+            .Where(c => c.Id == communityId)
+            .ExecuteUpdateAsync(setters =>
+                setters.SetProperty(
+                    c => c.PostCount,
+                    c => c.PostCount + value
+                ),
+                ct);
+    }
     public async Task<List<Channel>> GetChannelsAsync(Guid communityId, CancellationToken ct = default)
     {
         return await _dbContext.Channels
