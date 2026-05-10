@@ -1650,6 +1650,13 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
                         .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.UserRefreshToken", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
