@@ -286,12 +286,26 @@ public class PostService : IPostService
         if (membership is null || post.AuthorId != membership.Id)
             throw new ForbiddenException("You are not allowed to delete this post.");
 
-        post.IsDeleted = true;
-        post.UpdatedAt = DateTime.UtcNow;
-        await _communityRepo.IncrementPostCountAsync(post.CommunityId, -1, ct);
-        await _unitOfWork.SaveChangesAsync(ct);
-       
-        return Result.Success();
+        await _unitOfWork.BeginTransactionAsync();
+
+        try
+        {
+            await _communityRepo.IncrementPostCountAsync(post.CommunityId, -1, ct);
+
+            post.IsDeleted = true;
+            post.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            await _unitOfWork.CommitAsync();
+
+            return Result.Success();
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
     }
 
     // ─────────────────────────────
