@@ -47,7 +47,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("DROP FUNCTION IF EXISTS array_has_duplicates(text[]);");
             migrationBuilder.DropCheckConstraint(
                 name: "CK_Users_Interests_Unique",
                 table: "AspNetUsers");
@@ -55,6 +54,8 @@ namespace LetopiaPlatform.Infrastructure.Migrations
             migrationBuilder.DropCheckConstraint(
                 name: "CK_Users_Skills_Unique",
                 table: "AspNetUsers");
+
+            migrationBuilder.Sql("DROP FUNCTION IF EXISTS array_has_duplicates(text[]);");
 
             migrationBuilder.DropColumn(
                 name: "interests",

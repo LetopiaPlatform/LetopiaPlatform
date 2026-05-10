@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using LetopiaPlatform.Core.DTOs.Email;
@@ -35,7 +36,7 @@ public static class EmailMessages
             Subject: "Email change requested on your account",
             Title: "Security Notice",
             Body: $"A request was made to change your Letopia account email to " +
-                          $"<strong>{newEmail}</strong>.<br/><br/>" +
+                          $"<strong>{WebUtility.HtmlEncode(newEmail)}</strong>.<br/><br/>" +
                           "If this was you, confirm it from your new address — no action needed here. " +
                           "If this wasn't you, please secure your account immediately.",
             UserName: userName,

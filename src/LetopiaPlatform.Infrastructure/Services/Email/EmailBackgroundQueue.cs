@@ -115,6 +115,7 @@ public sealed class EmailBackgroundQueue : BackgroundService, IEmailService
     public Task SendEmailChangeConfirmationAsync(
     string toEmail, string userName, string confirmUrl, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         Enqueue(EmailMessages.EmailChangeConfirmation(toEmail, userName, confirmUrl));
         return Task.CompletedTask;
     }
@@ -122,6 +123,7 @@ public sealed class EmailBackgroundQueue : BackgroundService, IEmailService
     public Task SendEmailChangeNotificationAsync(
         string toEmail, string userName, string newEmail, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         Enqueue(EmailMessages.EmailChangeNotification(toEmail, userName, newEmail));
         return Task.CompletedTask;
     }

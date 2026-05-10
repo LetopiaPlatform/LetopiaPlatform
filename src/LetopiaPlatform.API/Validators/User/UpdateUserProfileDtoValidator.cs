@@ -25,8 +25,8 @@ public class UpdateUserProfileDtoValidator : AbstractValidator<UpdateProfileRequ
 
         // ── Location ──────────────────────────────
         RuleFor(x => x.Location)
-            .MaximumLength(200)
-            .WithMessage("Location must be at most 200 characters.");
+            .MaximumLength(100)
+            .WithMessage("Location must be at most 100 characters.");
 
         // ── Social Links ──────────────────────────
         RuleFor(x => x.SocialLinks)
@@ -34,7 +34,7 @@ public class UpdateUserProfileDtoValidator : AbstractValidator<UpdateProfileRequ
             {
                 if (links == null) return true;
                 var duplicates = links
-                    .GroupBy(x => x.Provider)
+                    .GroupBy(x => x.Provider, StringComparer.OrdinalIgnoreCase)
                     .Any(g => g.Count() > 1);
                 return !duplicates;
             })
@@ -94,6 +94,7 @@ public class UpdateUserProfileDtoValidator : AbstractValidator<UpdateProfileRequ
 
     private static bool BeAValidUrl(string url)
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out _);
+        return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 }

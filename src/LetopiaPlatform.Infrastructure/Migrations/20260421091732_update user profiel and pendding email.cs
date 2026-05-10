@@ -66,14 +66,14 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 table: "AspNetUsers",
                 type: "jsonb",
                 nullable: false,
-                defaultValue: "");
+                defaultValueSql: "'{}'::jsonb");
 
             migrationBuilder.AddColumn<string>(
                 name: "PrivacySettings",
                 table: "AspNetUsers",
                 type: "jsonb",
                 nullable: false,
-                defaultValue: "");
+                defaultValueSql: "'{}'::jsonb");
 
             migrationBuilder.AddColumn<string>(
                 name: "SocialLinks",

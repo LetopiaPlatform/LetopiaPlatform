@@ -9,7 +9,7 @@ namespace LetopiaPlatform.Core.DTOs.User;
 public sealed record PublicUserProfileResponse(
     Guid Id,
     string FullName,
-    string Email,
+    string? Email,
     string Role,
     string? PhoneNumber,
     string? Bio,

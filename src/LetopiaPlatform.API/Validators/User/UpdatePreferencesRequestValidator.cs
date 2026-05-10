@@ -12,8 +12,6 @@ public class UpdatePreferencesRequestValidator : AbstractValidator<UpdatePrefere
             .SetValidator(new PrivacySettingsValidator() as IValidator<PrivacySettings?>)
             .When(x => x.PrivacySettings != null);
 
-        RuleFor(x => x.NotificationPreferences)
-            .NotNull(); 
     }
 }
 

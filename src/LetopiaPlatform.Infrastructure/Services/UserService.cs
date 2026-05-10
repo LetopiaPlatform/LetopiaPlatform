@@ -103,9 +103,9 @@ public class UserService : IUserService
 
         if (request.SocialLinks is not null)
         {
-            user.SocialLinks?.Clear();
-
-            user.SocialLinks?.AddRange(
+            user.SocialLinks ??= [];
+            user.SocialLinks.Clear();
+            user.SocialLinks.AddRange(
                 request.SocialLinks
                     .DistinctBy(s => s.Provider.ToLowerInvariant())
                     .Select(s => new SocialLink(s.Provider, s.Url))
@@ -151,7 +151,8 @@ public class UserService : IUserService
             return Result.Failure("User not found", 404);
 
         // Block if already in use
-        var taken = await _userRepository.FindAsync(u => u.Email == request.NewEmail);
+        var normalizedNew = request.NewEmail.ToUpperInvariant();
+        var taken = await _userRepository.FindAsync(u => u.NormalizedEmail == normalizedNew);
         if (taken.Any())
             return Result.Failure("Email already in use", 409);
 
@@ -224,6 +225,7 @@ public class UserService : IUserService
         user.NormalizedEmail = pending.NewEmail.ToUpperInvariant();
         user.NormalizedUserName = pending.NewEmail.ToUpperInvariant();
         user.EmailVerified = true;
+        user.EmailConfirmed = true;
         user.SecurityStamp = Guid.NewGuid().ToString(); // invalidates all active sessions
         user.UpdatedAt = DateTime.UtcNow;
         pending.IsUsed = true;
@@ -279,7 +281,18 @@ public class UserService : IUserService
         user.SocialLinks = new();
         user.PrivacySettings = new();
         user.NotificationPreferences = new();
+        user.Skills = [];
+        user.Interests = [];
         user.UpdatedAt = DateTime.UtcNow;
+
+        // Revoke any pending email change tokens
+        var pendingTokens = await _pendingEmailRepository
+            .FindAsync(p => p.UserId == userId && !p.IsUsed);
+        foreach (var token in pendingTokens)
+        {
+            token.IsUsed = true;
+            await _pendingEmailRepository.UpdateAsync(token);
+        }
 
         // TODO: cascade — transfer / archive owned projects, revoke memberships, etc.
 
@@ -348,8 +361,8 @@ public class UserService : IUserService
             FullName: user.FullName ?? string.Empty,
 
             Email: user.PrivacySettings?.ShowEmailAddress == true
-                ? user.Email ?? string.Empty
-                : string.Empty,
+                ? user.Email
+                : null,
 
             Role: user.Role.ToString(),
 
