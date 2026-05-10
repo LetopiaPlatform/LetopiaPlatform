@@ -34,10 +34,15 @@ internal sealed class RoadmapRepository : IRoadmapRepository
     public async Task<RoadmapPhase?> GetPhaseByIdAsync(Guid phaseId, CancellationToken ct = default)
     {
         return await _context.RoadmapPhases
-
-
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == phaseId, ct);
+    }
+
+    public async Task<RoadmapPhase?> GetPhaseByRoadmapAsync(Guid phaseId, Guid roadmapId, CancellationToken ct = default)
+    {
+        return await _context.RoadmapPhases
+            .Include(p => p.Roadmap)
+            .FirstOrDefaultAsync(p => p.Id == phaseId && p.RoadmapId == roadmapId, ct);
     }
 
     public void Add(Roadmap roadmap)

@@ -2,9 +2,7 @@ using LetopiaPlatform.API.AppMetaData;
 using LetopiaPlatform.API.Common;
 using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.Core.DTOs.Agent;
-using LetopiaPlatform.Core.Enums;
 using LetopiaPlatform.Core.Interfaces;
-using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,15 +11,11 @@ namespace LetopiaPlatform.API.Controllers;
 [Authorize]
 public class RoadmapsController : BaseController
 {
-    private readonly IRoadmapRepository _roadmapRepository;
-    private readonly IUnitOfWork<ApplicationDbContext> _unitOfWork;
+    private readonly IRoadmapService _roadmapService;
 
-    public RoadmapsController(
-        IRoadmapRepository roadmapRepository,
-        IUnitOfWork<ApplicationDbContext> unitOfWork)
+    public RoadmapsController(IRoadmapService roadmapService)
     {
-        _roadmapRepository = roadmapRepository;
-        _unitOfWork = unitOfWork;
+        _roadmapService = roadmapService;
     }
 
     /// <summary>
@@ -36,19 +30,7 @@ public class RoadmapsController : BaseController
 
         HttpContext.AddBusinessContext("action", "list_roadmaps");
 
-        var roadmaps = await _roadmapRepository.GetByUserIdAsync(userId, ct);
-
-        var dtos = roadmaps
-            .OrderByDescending(r => r.CreatedAt)
-            .Select(r => new RoadmapSummaryDto(
-                r.Id,
-                r.Title,
-                r.Topic,
-                r.Status,
-                r.Phases.Count,
-                r.Phases.Count(p => p.Status == PhaseStatus.Completed),
-                r.CreatedAt))
-            .ToList();
+        var dtos = await _roadmapService.ListRoadmapsForUserAsync(userId, ct);
 
         return Ok(ApiResponse<List<RoadmapSummaryDto>>.SuccessResponse(dtos));
     }
@@ -68,41 +50,8 @@ public class RoadmapsController : BaseController
         HttpContext.AddBusinessContext("action", "get_roadmap");
         HttpContext.AddBusinessContext("roadmap_id", roadmapId);
 
-        var roadmap = await _roadmapRepository.GetByIdWithPhasesAsync(roadmapId, ct);
-
-        if (roadmap is null)
-            return NotFound(new ErrorResponse { Status = 404, Message = "Roadmap not found." });
-
-        if (roadmap.UserId != userId)
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ErrorResponse { Status = 403, Message = "You do not have access to this roadmap." });
-
-        var dto = new RoadmapDto(
-            roadmap.Id,
-            roadmap.UserId,
-            roadmap.ConversationId,
-            roadmap.Title,
-            roadmap.Topic,
-            roadmap.Description,
-            roadmap.Status,
-            roadmap.EstimatedDurationWeeks,
-            roadmap.CreatedAt,
-            roadmap.UpdatedAt,
-            roadmap.Phases
-                .OrderBy(p => p.Order)
-                .Select(p => new RoadmapPhaseDto(
-                    p.Id,
-                    p.Title,
-                    p.Description,
-                    p.Order,
-                    p.Status,
-                    p.DurationEstimateWeeks,
-                    p.Resources,
-                    p.Projects,
-                    p.Insights,
-                    p.CreatedAt,
-                    p.UpdatedAt))
-                .ToList());
+        // Throws NotFoundException / ForbiddenException — handled by ExceptionMiddleware
+        var dto = await _roadmapService.GetRoadmapAsync(roadmapId, userId, ct);
 
         return Ok(ApiResponse<RoadmapDto>.SuccessResponse(dto));
     }
@@ -128,42 +77,8 @@ public class RoadmapsController : BaseController
         HttpContext.AddBusinessContext("roadmap_id", roadmapId);
         HttpContext.AddBusinessContext("phase_id", phaseId);
 
-        // Validate roadmap exists and belongs to user
-        var roadmap = await _roadmapRepository.GetByIdWithPhasesAsync(roadmapId, ct);
-
-        if (roadmap is null)
-            return NotFound(new ErrorResponse { Status = 404, Message = "Roadmap not found." });
-
-        if (roadmap.UserId != userId)
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ErrorResponse { Status = 403, Message = "You do not have access to this roadmap." });
-
-        // Validate phase exists and belongs to this roadmap
-        var phase = roadmap.Phases.FirstOrDefault(p => p.Id == phaseId);
-
-        if (phase is null)
-            return NotFound(new ErrorResponse { Status = 404, Message = "Phase not found." });
-
-        // Update the phase status
-        phase.Status = request.Status;
-
-        // TODO: Gamification hook — award points when status transitions to Completed
-        // if (request.Status == PhaseStatus.Completed) { user.TotalPoints += X; }
-
-        await _unitOfWork.SaveChangesAsync(ct);
-
-        var dto = new RoadmapPhaseDto(
-            phase.Id,
-            phase.Title,
-            phase.Description,
-            phase.Order,
-            phase.Status,
-            phase.DurationEstimateWeeks,
-            phase.Resources,
-            phase.Projects,
-            phase.Insights,
-            phase.CreatedAt,
-            phase.UpdatedAt);
+        // Throws NotFoundException / ForbiddenException — handled by ExceptionMiddleware
+        var dto = await _roadmapService.UpdatePhaseStatusAsync(roadmapId, phaseId, userId, request.Status, ct);
 
         return Ok(ApiResponse<RoadmapPhaseDto>.SuccessResponse(dto));
     }
