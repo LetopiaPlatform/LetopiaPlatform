@@ -177,7 +177,6 @@ internal sealed class CommunityRepository : ICommunityRepository
                 uc.UserId,
                 uc.User.FullName ?? string.Empty,
                 uc.User.AvatarUrl,
-                uc.User.Bio ?? string.Empty,
                 uc.Role.ToString(),
                 uc.JoinedAt))
             .ToListAsync(ct);
