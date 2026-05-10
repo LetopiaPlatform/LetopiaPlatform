@@ -187,6 +187,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
+        services.AddScoped<IRoadmapService, RoadmapService>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<ICommunityTaskService, CommunityTaskService>();
 
