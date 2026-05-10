@@ -294,5 +294,43 @@ public class AgentControllerTests : IClassFixture<AgentControllerTests.AgentApiF
             yield return new AgentStreamEvent("delta", "Hello from stub");
             yield return new AgentStreamEvent("done", null);
         }
+
+        public async Task ValidateConversationOwnershipAsync(Guid conversationId, Guid userId, CancellationToken ct)
+        {
+            var conversation = await _repo.GetByIdAsync(conversationId, ct)
+                ?? throw new Core.Exceptions.NotFoundException(nameof(AgentConversation), conversationId);
+
+            if (conversation.UserId != userId)
+                throw new Core.Exceptions.ForbiddenException();
+        }
+
+        public async Task<List<ConversationSummaryDto>> GetUserConversationsAsync(Guid userId, CancellationToken ct)
+        {
+            var conversations = await _repo.GetByUserIdAsync(userId, ct);
+
+            return conversations
+                .OrderByDescending(c => c.UpdatedAt)
+                .Select(c => new ConversationSummaryDto(
+                    c.Id, c.Title, c.AgentType, c.Status, c.CreatedAt, c.UpdatedAt))
+                .ToList();
+        }
+
+        public async Task<ConversationDto> GetConversationAsync(Guid conversationId, Guid userId, CancellationToken ct)
+        {
+            var conversation = await _repo.GetByIdWithMessagesAsync(conversationId, ct)
+                ?? throw new Core.Exceptions.NotFoundException(nameof(AgentConversation), conversationId);
+
+            if (conversation.UserId != userId)
+                throw new Core.Exceptions.ForbiddenException();
+
+            return new ConversationDto(
+                conversation.Id, conversation.Title, conversation.AgentType,
+                conversation.Status, conversation.RoadmapId,
+                conversation.CreatedAt, conversation.UpdatedAt,
+                (conversation.Messages ?? [])
+                    .OrderBy(m => m.CreatedAt)
+                    .Select(m => new ConversationMessageDto(m.Id, m.Role, m.Content, m.CreatedAt))
+                    .ToList());
+        }
     }
 }

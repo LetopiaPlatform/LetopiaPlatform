@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Email;
 using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.Extensions.Hosting;
@@ -109,5 +110,21 @@ public sealed class EmailBackgroundQueue : BackgroundService, IEmailService
             }
         }
         return false;
+    }
+
+    public Task SendEmailChangeConfirmationAsync(
+    string toEmail, string userName, string confirmUrl, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        Enqueue(EmailMessages.EmailChangeConfirmation(toEmail, userName, confirmUrl));
+        return Task.CompletedTask;
+    }
+
+    public Task SendEmailChangeNotificationAsync(
+        string toEmail, string userName, string newEmail, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        Enqueue(EmailMessages.EmailChangeNotification(toEmail, userName, newEmail));
+        return Task.CompletedTask;
     }
 }
