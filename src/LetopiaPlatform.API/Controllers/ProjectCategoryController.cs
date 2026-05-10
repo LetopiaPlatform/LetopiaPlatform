@@ -55,9 +55,7 @@ public class ProjectCategoryController : BaseController
     }
 
     // ── Get Category By Slug ─────────────────────────────────────────────────
-    /// <summary>
-    /// Define if a category exists by slug and return its details along with non-full projects in that category
-    /// </summary>
+
     [HttpGet(Router.ProjectCategories.GetCategoryBySlug)]
     [AllowAnonymous]
     public async Task<IActionResult> GetCategoryBySlug([FromRoute] string slug)

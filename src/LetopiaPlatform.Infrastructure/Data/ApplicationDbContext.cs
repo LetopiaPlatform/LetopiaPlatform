@@ -5,7 +5,6 @@ using LetopiaPlatform.Core.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-
 namespace LetopiaPlatform.Infrastructure.Data;
 
 public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
@@ -23,7 +22,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<CommunityResource> CommunityResources => Set<CommunityResource>();
-    public DbSet<ResourceLike> ResourceLikes=> Set<ResourceLike>();
+    public DbSet<ResourceLike> ResourceLikes => Set<ResourceLike>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<ProjectCategory> ProjectCategorys => Set<ProjectCategory>();
     public DbSet<PendingEmailChange> PendingEmailChange => Set<PendingEmailChange>();
@@ -31,6 +30,8 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<RoadmapPhase> RoadmapPhases => Set<RoadmapPhase>();
     public DbSet<AgentConversation> AgentConversations => Set<AgentConversation>();
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
+    public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
+
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

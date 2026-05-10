@@ -1,58 +1,97 @@
+using System.Text.Json;
 using LetopiaPlatform.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LetopiaPlatform.Infrastructure.Data.Configurations;
+
 public class ProjectConfiguration : IEntityTypeConfiguration<Project>
 {
     public void Configure(EntityTypeBuilder<Project> builder)
     {
-        // 1. Table & Primary Key
+        // 1. Table Name & Primary Key
         builder.ToTable("projects");
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).HasColumnName("id");
 
-        // 2. Basic Properties (Snake Case Mapping)
-        builder.Property(p => p.Title).HasColumnName("title").IsRequired();
-        builder.Property(p => p.Description).HasColumnName("description").IsRequired();
-        builder.Property(p => p.DifficultyLevel).HasConversion<string>();
-        builder.Property(p => p.Deadline).HasColumnName("deadline").IsRequired();
-        builder.Property(p => p.IsFull).HasColumnName("is_full").HasDefaultValue(false);
+        // 2. Basic Properties
+        builder.Property(p => p.Title)
+            .HasColumnName("title")
+            .HasMaxLength(200)
+            .IsRequired();
 
-        builder.Property(p => p.Status)
-               .HasConversion<string>();
-
-        builder.Property(p => p.MaxMembers)
-            .HasColumnName("max_members")
-            .HasDefaultValue(5);
-
-        builder.Property(p => p.RequiredSkills)
-            .HasColumnName("required_skills"); // PostgreSQL text[]
+        builder.Property(p => p.Description)
+            .HasColumnName("description")
+            .IsRequired();
 
         builder.Property(p => p.CoverImageUrl)
             .HasColumnName("cover_image_url");
 
-        // 3. Audit Properties (From AuditableEntity)
-        builder.Property(p => p.CreatedAt).HasColumnName("created_at").IsRequired();
-        builder.Property(p => p.UpdatedAt).HasColumnName("updated_at").IsRequired();
+        // 3. Mapping Lists to Postgres Arrays (Specialized Types)
+        builder.Property(p => p.RequiredSkills)
+            .HasColumnName("required_skills")
+            .HasColumnType("text[]");
 
-        // 4. Relationships & Foreign Keys
+        builder.Property(p => p.Goals)
+            .HasColumnName("goals")
+            .HasColumnType("text[]");
+
+        builder.Property(p => p.TimelineEvents)
+            .HasColumnName("timeline_events")
+            .HasColumnType("text[]");
+
+        builder.Property(p => p.Milestones)
+     .HasColumnName("milestones")
+     .HasColumnType("jsonb")
+     .HasConversion(
+         v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
+         v => JsonSerializer.Deserialize<List<ProjectMilestoneDetails>>(v, (JsonSerializerOptions)null!) ?? new List<ProjectMilestoneDetails>()
+     );
+
+        // 4. Enums & Booleans
+        builder.Property(p => p.DifficultyLevel)
+            .HasColumnName("difficulty_level")
+            .HasConversion<string>()
+            .HasMaxLength(30);
+
+        builder.Property(p => p.Status)
+            .HasColumnName("status")
+            .HasConversion<string>()
+            .HasMaxLength(30);
+
+        builder.Property(p => p.IsPublic)
+            .HasColumnName("is_public")
+            .HasDefaultValue(true);
+
+        // 5. Dates
+        builder.Property(p => p.Deadline)
+            .HasColumnName("deadline")
+            .IsRequired();
+
+        builder.Property(p => p.CreatedAt)
+            .HasColumnName("created_at")
+            .IsRequired();
+
+        builder.Property(p => p.UpdatedAt)
+            .HasColumnName("updated_at")
+            .IsRequired();
+
         builder.Property(p => p.OwnerId).HasColumnName("owner_id");
         builder.Property(p => p.CategoryId).HasColumnName("category_id");
 
-        // Owner Relationship
+        // 7. Relationships
+
         builder.HasOne(p => p.Owner)
             .WithMany(u => u.OwnedProjects)
             .HasForeignKey(p => p.OwnerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Category Relationship
         builder.HasOne(p => p.Category)
             .WithMany(pc => pc.Projects)
             .HasForeignKey(p => p.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // 5. Indexes for Performance
+        // 8. Indexes
         builder.HasIndex(p => p.OwnerId).HasDatabaseName("ix_projects_owner_id");
         builder.HasIndex(p => p.CategoryId).HasDatabaseName("ix_projects_category_id");
     }

@@ -69,17 +69,19 @@ public class ProjectMemberService : IProjectMemberService
 
     // --- Helper Methods ---
     private static ProjectDiscoverResponseDto MapToProjectDto(Project p) => new(
-        p.Id,
-        p.Title,
-        p.Category?.Name ?? "General",
-        p.DifficultyLevel?.ToString(),
-        p.Status.ToString(),
-        p.RequiredSkills,
-        p.CoverImageUrl,
-        p.ProgressPercentage,
-        p.Members.Count,
-        CalculateTimeLeft(p.Deadline)
-    );
+     p.Id,
+     p.Title,
+     p.Category?.Name ?? "General",
+     p.DifficultyLevel?.ToString(),
+     p.Status.ToString(),
+     p.RequiredSkills,
+     p.CoverImageUrl,
+     p.Members.Count,               // MembersCount
+     CalculateTimeLeft(p.Deadline), // TimeLeft
+     p.OwnerId,                     // OwnerId
+     p.Owner?.FullName ?? "Unknown" // OwnerName
+     );
+
 
     private static string CalculateTimeLeft(DateTime deadline)
     {

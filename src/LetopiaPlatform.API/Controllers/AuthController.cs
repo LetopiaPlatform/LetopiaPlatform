@@ -3,6 +3,7 @@ using LetopiaPlatform.API.DTOs.Auth.Request;
 using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Auth.Request;
+using LetopiaPlatform.Core.DTOs.UserRefershToken.Request;
 using LetopiaPlatform.Core.Enums;
 using LetopiaPlatform.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -113,15 +114,29 @@ public class AuthController : BaseController
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
         HttpContext.AddBusinessContext("action", "google_login");
-        
+
         var result = await _authService.GoogleLoginAsync(request);
 
         if (result.IsSuccess)
         {
             HttpContext.AddBusinessContext("google_login_user_id", result.Value!.User.Id);
         }
-        
-        return HandleResult(result);
 
+        return HandleResult(result);
+    }
+
+    [HttpPost(Router.Authentication.RefreshToken)]
+    public async Task<IActionResult> GenerateAccessTokenFromRefreshToken([FromBody] RefreshTokenRequestDto request)
+    {
+        HttpContext.AddBusinessContext("action", "refresh_token");
+
+        var result = await _authService.RefreshTokenAsync(request);
+
+        if (result.IsSuccess)
+        {
+            HttpContext.AddBusinessContext("user_id", result.Value!.User.Id);
+        }
+
+        return HandleResult(result);
     }
 }
