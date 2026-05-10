@@ -53,16 +53,16 @@ public class AgentController : BaseController
             conversation = await _agentService.StartConversationAsync(
                 userId, request.InitialMessage, ct);
         }
-        catch (OperationCanceledException ex) when (ct.IsCancellationRequested)
+        catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Start conversation was canceled for user {UserId}", userId);
+            _logger.LogError(ex, "Failed to start conversation for user {UserId}", userId);
 
-            Response.StatusCode = 499;
+            Response.StatusCode = StatusCodes.Status500InternalServerError;
             Response.ContentType = "application/json";
             await Response.WriteAsJsonAsync(new ErrorResponse
             {
-                Status = 499,
-                Message = "Request was canceled."
+                Status = 500,
+                Message = "Failed to start conversation."
             }, ct);
             return;
         }
@@ -170,25 +170,9 @@ public class AgentController : BaseController
                 return;
             }
 
-            // Attempt to send an error event to the client before closing.
-            try
-            {
-                var errorData = JsonSerializer.Serialize(new { message = "An internal error occurred." }, JsonOptions);
-                await Response.WriteAsync($"event: error\ndata: {errorData}\n\n", ct);
-                await Response.Body.FlushAsync(ct);
-            }
-            catch (IOException)
-            {
-                // Connection dropped while writing error event — swallow.
-            }
-            catch (ObjectDisposedException)
-            {
-                // Response stream already disposed — swallow.
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                // Response cancelled during error write — swallow.
-            }
+            // Real IO problem — let it surface
+            _logger.LogError(ex, "Unexpected IO error for {ConversationId}", conversationId);
+            throw;
         }
     }
 }
