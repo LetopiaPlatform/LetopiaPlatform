@@ -53,16 +53,16 @@ public class AgentController : BaseController
             conversation = await _agentService.StartConversationAsync(
                 userId, request.InitialMessage, ct);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException ex) when (ct.IsCancellationRequested)
         {
-            _logger.LogError(ex, "Failed to start conversation for user {UserId}", userId);
+            _logger.LogWarning(ex, "Start conversation was canceled for user {UserId}", userId);
 
-            Response.StatusCode = StatusCodes.Status500InternalServerError;
+            Response.StatusCode = 499;
             Response.ContentType = "application/json";
             await Response.WriteAsJsonAsync(new ErrorResponse
             {
-                Status = 500,
-                Message = "Failed to start conversation."
+                Status = 499,
+                Message = "Request was canceled."
             }, ct);
             return;
         }
