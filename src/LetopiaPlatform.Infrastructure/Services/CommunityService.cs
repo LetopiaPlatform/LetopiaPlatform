@@ -325,7 +325,7 @@ public class CommunityService : ICommunityService
         if (targetMembership.Role == CommunityRole.Moderator && callerMembership.Role != CommunityRole.Owner)
             throw new ForbiddenException("Only the owner can remove a moderator.");
 
-        await _unitOfWork.beginTransactionAsync();
+        await _unitOfWork.BeginTransactionAsync();
         try
         {
             _communityRepository.RemoveMember(targetMembership);
