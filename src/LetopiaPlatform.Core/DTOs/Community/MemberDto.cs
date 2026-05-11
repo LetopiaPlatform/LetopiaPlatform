@@ -9,5 +9,6 @@ public sealed record MemberDto(
     string FullName,
     string? Bio,
     string? AvatarUrl,
+    string? Bio,
     string Role,
     DateTime JoinedAt);
