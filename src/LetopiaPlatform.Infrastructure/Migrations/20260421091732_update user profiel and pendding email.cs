@@ -44,16 +44,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 oldType: "text",
                 oldNullable: true);
 
-            migrationBuilder.AlterColumn<string>(
-                name: "AvatarUrl",
-                table: "AspNetUsers",
-                type: "character varying(500)",
-                maxLength: 500,
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "text",
-                oldNullable: true);
-
             migrationBuilder.AddColumn<string>(
                 name: "Location",
                 table: "AspNetUsers",
@@ -169,17 +159,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                 oldMaxLength: 1000,
                 oldNullable: true);
 
-            migrationBuilder.AlterColumn<string>(
-                name: "AvatarUrl",
-                table: "AspNetUsers",
-                type: "text",
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "character varying(500)",
-                oldMaxLength: 500,
-                oldNullable: true);
-
-           
         }
     }
 }

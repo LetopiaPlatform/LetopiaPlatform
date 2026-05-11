@@ -651,8 +651,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("AvatarUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasColumnType("text")
                         .HasColumnName("AvatarUrl");
 
                     b.Property<string>("Bio")

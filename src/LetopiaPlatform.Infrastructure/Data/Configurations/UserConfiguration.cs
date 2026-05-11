@@ -16,7 +16,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.AvatarUrl)
             .HasColumnName("AvatarUrl")
-            .HasMaxLength(500);
+            .HasColumnType("text");
 
         builder.Property(u => u.Bio)
             .HasColumnName("Bio")
