@@ -140,4 +140,14 @@ public interface ICommunityRepository
     Task<List<JoinedCommunitySummaryDto>> GetJoinedCommunitiesAsync(
         Guid userId,
         CancellationToken ct = default);
+    /// <summary>
+    /// Increments or decrements the post count for a specific community.
+    /// </summary>
+    /// <param name="communityId">The unique identifier of the community.</param>
+    /// <param name="value">
+    /// The value to add to the post count.  
+    /// Use <c>1</c> to increment, <c>-1</c> to decrement.
+    /// </param>
+    /// <param name="ct">Cancellation token for async operation.</param>
+    Task IncrementPostCountAsync(Guid communityId, int value, CancellationToken ct = default);
 }

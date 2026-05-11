@@ -32,7 +32,7 @@ public static class ServiceCollectionExtensions
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+                options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
     }
