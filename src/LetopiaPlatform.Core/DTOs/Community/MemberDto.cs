@@ -8,5 +8,6 @@ public sealed record MemberDto(
     Guid UserId,
     string FullName,
     string? AvatarUrl,
+    string? Bio,
     string Role,
     DateTime JoinedAt);

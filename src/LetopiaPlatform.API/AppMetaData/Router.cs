@@ -52,6 +52,7 @@ public static class Router
         public const string Leave = $"{Prefix}/{{id}}/leave";
         public const string Members = $"{Prefix}/{{id}}/members";
         public const string ChangeRole = $"{Prefix}/{{id}}/members/{{userId}}/role";
+        public const string RemoveMember = $"{Prefix}/{{id}}/members/{{userId}}";
     }
 
     public static class Categories
