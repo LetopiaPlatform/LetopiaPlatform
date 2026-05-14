@@ -69,7 +69,7 @@ public class AgentController : BaseController
 
         HttpContext.AddBusinessContext("conversation_id", conversation.Id);
 
-        await StreamSseAsync(conversation.Id, request.InitialMessage, userId, ct);
+        await StreamSseAsync(conversation.Id, request.InitialMessage, userId, saveUserMessage: false, ct);
     }
 
     /// <summary>
@@ -94,7 +94,7 @@ public class AgentController : BaseController
         // Throws NotFoundException / ForbiddenException — handled by ExceptionMiddleware
         await _agentService.ValidateConversationOwnershipAsync(conversationId, userId, ct);
 
-        await StreamSseAsync(conversationId, request.Content, userId, ct);
+        await StreamSseAsync(conversationId, request.Content, userId, saveUserMessage: true, ct);
     }
 
     /// <summary>
@@ -138,7 +138,7 @@ public class AgentController : BaseController
     /// <summary>
     /// Configures SSE headers and streams agent events to the client.
     /// </summary>
-    private async Task StreamSseAsync(Guid conversationId, string message, Guid userId, CancellationToken ct)
+    private async Task StreamSseAsync(Guid conversationId, string message, Guid userId, bool saveUserMessage = true, CancellationToken ct = default)
     {
         Response.ContentType = "text/event-stream";
         Response.Headers.CacheControl = "no-cache";
@@ -147,7 +147,7 @@ public class AgentController : BaseController
 
         try
         {
-            await foreach (var ev in _agentService.ProcessMessageAsync(conversationId, message, userId, ct))
+            await foreach (var ev in _agentService.ProcessMessageAsync(conversationId, message, userId, saveUserMessage, ct))
             {
                 var data = JsonSerializer.Serialize(ev.Data, JsonOptions);
                 await Response.WriteAsync($"event: {ev.Type}\ndata: {data}\n\n", ct);

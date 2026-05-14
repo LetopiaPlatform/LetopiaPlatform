@@ -29,6 +29,13 @@ internal sealed class ConversationRepository : IConversationRepository
             .FirstOrDefaultAsync(c => c.Id == id, ct);
     }
 
+    public async Task<AgentConversation?> GetByIdTrackedAsync(Guid id, CancellationToken ct = default)
+    {
+        return await _context.AgentConversations
+            .Include(c => c.Messages.OrderBy(m => m.CreatedAt))
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
+    }
+
     public async Task<List<AgentConversation>> GetByUserIdAsync(Guid userId, CancellationToken ct = default)
     {
         return await _context.AgentConversations

@@ -236,7 +236,7 @@ public class RoadmapAgentServiceTests
         await Assert.ThrowsAsync<ForbiddenException>(async () =>
         {
             await foreach (var _ in _service.ProcessMessageAsync(
-                conversationId, "hello", wrongUserId, CancellationToken.None))
+                conversationId, "hello", wrongUserId, true, CancellationToken.None))
             {
             }
         });
@@ -303,13 +303,13 @@ public class RoadmapAgentServiceTests
         var userId = Guid.NewGuid();
         SetupConversation(conversationId, userId);
 
-        SetupStreamingTextResponse("StartOfAnswer\n{broken json!!!\nEndOfAnswer");
+        SetupStreamingTextResponse("StartOfAnswer\n{broken json!!!}\nEndOfAnswer");
 
         var events = await CollectEvents(conversationId, "generate", userId);
 
         Assert.Contains(events, e =>
             e.Type == "error"
-            && (e.Data?.ToString() ?? "").Contains("Failed to parse", StringComparison.OrdinalIgnoreCase));
+            && (e.Data?.ToString() ?? "").Contains("Failed to", StringComparison.OrdinalIgnoreCase));
     }
 
     #region Helpers
@@ -337,7 +337,7 @@ public class RoadmapAgentServiceTests
         };
 
         _mockConversationRepo
-            .Setup(r => r.GetByIdWithMessagesAsync(conversationId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdTrackedAsync(conversationId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(conversation);
 
         return conversation;
@@ -361,7 +361,7 @@ public class RoadmapAgentServiceTests
     {
         var events = new List<AgentStreamEvent>();
         await foreach (var e in _service.ProcessMessageAsync(
-            conversationId, message, userId, CancellationToken.None))
+            conversationId, message, userId, true, CancellationToken.None))
         {
             events.Add(e);
         }

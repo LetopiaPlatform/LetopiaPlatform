@@ -16,6 +16,7 @@ public sealed class FallbackChatClient : DelegatingChatClient
 {
     private readonly IChatClient _fallback;
     private readonly ILogger<FallbackChatClient> _logger;
+    private DateTimeOffset _circuitBreakerUntil = DateTimeOffset.MinValue;
 
     public FallbackChatClient(
         IChatClient primary,
@@ -32,6 +33,12 @@ public sealed class FallbackChatClient : DelegatingChatClient
         ChatOptions? options = null,
         CancellationToken cancellationToken = default)
     {
+        if (DateTimeOffset.UtcNow < _circuitBreakerUntil)
+        {
+            _logger.LogWarning("Primary provider is on circuit breaker until {Time}. Routing directly to secondary provider.", _circuitBreakerUntil);
+            return await _fallback.CompleteAsync(chatMessages, options, cancellationToken);
+        }
+
         try
         {
             _logger.LogDebug("Attempting CompleteAsync with primary provider.");
@@ -41,8 +48,9 @@ public sealed class FallbackChatClient : DelegatingChatClient
         }
         catch (Exception ex) when (IsRetriable(ex))
         {
+            _circuitBreakerUntil = DateTimeOffset.UtcNow.AddMinutes(5);
             _logger.LogWarning(ex,
-                "Primary provider CompleteAsync failed with retriable error. Falling back to secondary provider.");
+                "Primary provider CompleteAsync failed. Circuit breaker opened for 5 minutes. Falling back to secondary.");
             return await _fallback.CompleteAsync(chatMessages, options, cancellationToken);
         }
     }
@@ -52,15 +60,29 @@ public sealed class FallbackChatClient : DelegatingChatClient
         ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        if (DateTimeOffset.UtcNow < _circuitBreakerUntil)
+        {
+            _logger.LogWarning("Primary provider is on circuit breaker. Routing directly to secondary provider.");
+            await foreach (var update in _fallback.CompleteStreamingAsync(chatMessages, options, cancellationToken))
+            {
+                yield return update;
+            }
+            yield break;
+        }
+
         // Buffer primary deltas internally to avoid partial-content duplication
         // when the primary provider fails mid-stream.
         var primaryBuffer = new List<StreamingChatCompletionUpdate>();
         bool useFallback = false;
 
-        var enumerator = base.CompleteStreamingAsync(chatMessages, options, cancellationToken)
-            .GetAsyncEnumerator(cancellationToken);
+        // Apply a strict 30-second timeout for the primary provider
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(30));
 
-        _logger.LogDebug("Attempting CompleteStreamingAsync with primary provider.");
+        var enumerator = base.CompleteStreamingAsync(chatMessages, options, timeoutCts.Token)
+            .GetAsyncEnumerator(timeoutCts.Token);
+
+        _logger.LogDebug("Attempting CompleteStreamingAsync with primary provider (30s timeout).");
 
         try
         {
@@ -71,11 +93,12 @@ public sealed class FallbackChatClient : DelegatingChatClient
                 {
                     moved = await enumerator.MoveNextAsync();
                 }
-                catch (Exception ex) when (IsRetriable(ex))
+                catch (Exception ex) when (IsRetriable(ex) || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
                 {
+                    _circuitBreakerUntil = DateTimeOffset.UtcNow.AddMinutes(5);
                     _logger.LogWarning(ex,
-                        "Primary provider failed mid-stream after {BufferedChunks} chunk(s). "
-                        + "Discarding buffered deltas and falling back to secondary provider.",
+                        "Primary provider failed mid-stream after {BufferedChunks} chunk(s) or timed out. "
+                        + "Circuit breaker opened for 5 minutes. Discarding buffered deltas and falling back to secondary provider.",
                         primaryBuffer.Count);
                     useFallback = true;
                     break;
@@ -128,6 +151,13 @@ public sealed class FallbackChatClient : DelegatingChatClient
             if (httpEx.StatusCode is null) return true;
             var status = (int)httpEx.StatusCode;
             return status == 429 || status >= 500;
+        }
+
+        // Catch OpenAI SDK exceptions (ClientResultException)
+        if (ex.GetType().Name == "ClientResultException")
+        {
+            var status = (int?)ex.GetType().GetProperty("Status")?.GetValue(ex) ?? 0;
+            return status == 429 || status >= 500 || ex.Message.Contains("429") || ex.Message.Contains("rate_limit_exceeded");
         }
 
         // Timeouts (TaskCanceledException wraps OperationCanceledException for HttpClient timeouts)

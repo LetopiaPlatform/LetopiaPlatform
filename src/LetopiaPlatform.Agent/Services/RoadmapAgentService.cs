@@ -18,11 +18,21 @@ namespace LetopiaPlatform.Agent.Services;
 
 public class RoadmapAgentService : IRoadmapAgentService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
+
+    private static JsonSerializerOptions CreateJsonOptions()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true
-    };
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
+        };
+        options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        return options;
+    }
 
     private readonly IChatClient _chatClient;
     private readonly IWebSearchService _webSearchService;
@@ -138,23 +148,27 @@ public class RoadmapAgentService : IRoadmapAgentService
         Guid conversationId,
         string userMessage,
         Guid userId,
-        [EnumeratorCancellation] CancellationToken ct)
+        bool saveUserMessage = true,
+        [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var conversation = await _conversationRepository.GetByIdWithMessagesAsync(conversationId, ct)
+        var conversation = await _conversationRepository.GetByIdTrackedAsync(conversationId, ct)
             ?? throw new NotFoundException(nameof(AgentConversation), conversationId);
 
         if (conversation.UserId != userId)
             throw new ForbiddenException();
 
-        // Persist user message to DB first
-        _conversationRepository.AddMessage(new ConversationMessage
+        if (saveUserMessage)
         {
-            ConversationId = conversationId,
-            Role = MessageRole.User,
-            Content = userMessage,
-            CreatedAt = DateTime.UtcNow
-        });
-        await _unitOfWork.SaveChangesAsync(ct);
+            // Persist user message to DB first
+            _conversationRepository.AddMessage(new ConversationMessage
+            {
+                ConversationId = conversationId,
+                Role = MessageRole.User,
+                Content = userMessage,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _unitOfWork.SaveChangesAsync(ct);
+        }
 
         // Build the chat history from the persisted messages which now include
         // the user message we just saved — no need to add it again manually.
@@ -232,12 +246,24 @@ public class RoadmapAgentService : IRoadmapAgentService
                     assistantContents.AddRange(toolCalls);
                     messages.Add(new ChatMessage(ChatRole.Assistant, assistantContents));
 
+                    var serializedCalls = new SerializedAssistantToolCalls
+                    {
+                        Text = textBuffer.Length > 0 ? textBuffer.ToString() : null,
+                        Calls = toolCalls.Select(tc => new SerializedToolCall
+                        {
+                            CallId = tc.CallId,
+                            Name = tc.Name,
+                            Arguments = tc.Arguments
+                        }).ToList()
+                    };
+                    string contentToSave = "@@TOOL_CALLS@@" + JsonSerializer.Serialize(serializedCalls, JsonOptions);
+
                     // Persist assistant tool-call message to DB
                     _conversationRepository.AddMessage(new ConversationMessage
                     {
                         ConversationId = conversationId,
                         Role = MessageRole.Assistant,
-                        Content = textBuffer.Length > 0 ? textBuffer.ToString() : "[tool_calls]",
+                        Content = contentToSave,
                         CreatedAt = DateTime.UtcNow
                     });
 
@@ -247,12 +273,20 @@ public class RoadmapAgentService : IRoadmapAgentService
                         messages.Add(new ChatMessage(ChatRole.Tool,
                             [new FunctionResultContent(tc.CallId, tc.Name, result)]));
 
+                        var serializedResult = new SerializedToolResult
+                        {
+                            CallId = tc.CallId,
+                            Name = tc.Name,
+                            Result = result
+                        };
+                        string resultToSave = "@@TOOL_RESULT@@" + JsonSerializer.Serialize(serializedResult, JsonOptions);
+
                         // Persist tool result message to DB
                         _conversationRepository.AddMessage(new ConversationMessage
                         {
                             ConversationId = conversationId,
                             Role = MessageRole.Tool,
-                            Content = result?.ToString() ?? string.Empty,
+                            Content = resultToSave,
                             CreatedAt = DateTime.UtcNow
                         });
                     }
@@ -322,7 +356,13 @@ public class RoadmapAgentService : IRoadmapAgentService
         CancellationToken ct)
     {
         var json = ExtractJsonFromMarkers(fullText);
-        if (json is null) return null;
+        if (json is null)
+        {
+            _logger.LogInformation("LLM produced conversational response (no JSON found).");
+            return null;
+        }
+
+        json = NormalizeLlmOutput(json);
 
         if (conversation.RoadmapId is null)
         {
@@ -330,6 +370,8 @@ public class RoadmapAgentService : IRoadmapAgentService
             {
                 if (JsonSerializer.Deserialize<RoadmapJson>(json, JsonOptions) is not { } roadmapData)
                     return new AgentStreamEvent("error", "Failed to parse roadmap data.");
+
+                roadmapData.EstimatedDurationWeeks = roadmapData.Phases.Sum(p => p.DurationEstimateWeeks);
 
                 var roadmap = CreateRoadmapEntity(roadmapData, conversation);
                 _roadmapRepository.Add(roadmap);
@@ -339,9 +381,8 @@ public class RoadmapAgentService : IRoadmapAgentService
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex,
-                    "LLM produced malformed roadmap JSON for conversation {ConversationId}",
-                    conversation.Id);
+                _logger.LogWarning("LLM produced malformed roadmap JSON for conversation {ConversationId}. Error: {Error}. JSON: {Json}",
+                    conversation.Id, ex.Message, json);
                 return new AgentStreamEvent("error", "Failed to parse roadmap data.");
             }
         }
@@ -363,38 +404,112 @@ public class RoadmapAgentService : IRoadmapAgentService
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex,
-                    "LLM produced malformed phase JSON for conversation {ConversationId}",
-                    conversation.Id);
+                _logger.LogWarning("LLM produced malformed phase JSON for conversation {ConversationId}. Error: {Error}. JSON: {Json}",
+                    conversation.Id, ex.Message, json);
                 return new AgentStreamEvent("error", "Failed to parse phase data.");
             }
         }
     }
 
-    private static ChatMessage ToChatMessage(ConversationMessage msg) => new(
-        msg.Role switch
+    private static ChatMessage ToChatMessage(ConversationMessage msg)
+    {
+        if (msg.Role == MessageRole.Assistant && msg.Content.StartsWith("@@TOOL_CALLS@@", StringComparison.Ordinal))
         {
-            MessageRole.System => ChatRole.System,
-            MessageRole.User => ChatRole.User,
-            MessageRole.Assistant => ChatRole.Assistant,
-            MessageRole.Tool => ChatRole.Tool,
-            _ => throw new ArgumentOutOfRangeException(nameof(msg))
-        },
-        msg.Content);
+            var json = msg.Content["@@TOOL_CALLS@@".Length..];
+            var data = JsonSerializer.Deserialize<SerializedAssistantToolCalls>(json, JsonOptions);
+            var contents = new List<AIContent>();
+            if (!string.IsNullOrEmpty(data?.Text))
+                contents.Add(new TextContent(data.Text));
+            
+            if (data?.Calls != null)
+            {
+                foreach (var call in data.Calls)
+                {
+                    contents.Add(new FunctionCallContent(call.CallId, call.Name, call.Arguments));
+                }
+            }
+            return new ChatMessage(ChatRole.Assistant, contents);
+        }
+
+        if (msg.Role == MessageRole.Tool && msg.Content.StartsWith("@@TOOL_RESULT@@", StringComparison.Ordinal))
+        {
+            var json = msg.Content["@@TOOL_RESULT@@".Length..];
+            var data = JsonSerializer.Deserialize<SerializedToolResult>(json, JsonOptions);
+            if (data != null)
+            {
+                return new ChatMessage(ChatRole.Tool, [new FunctionResultContent(data.CallId, data.Name, data.Result)]);
+            }
+        }
+
+        if (msg.Role == MessageRole.Tool)
+        {
+            return new ChatMessage(ChatRole.Tool, [new FunctionResultContent("unknown", "unknown", msg.Content)]);
+        }
+
+        return new ChatMessage(
+            msg.Role switch
+            {
+                MessageRole.System => ChatRole.System,
+                MessageRole.User => ChatRole.User,
+                MessageRole.Assistant => ChatRole.Assistant,
+                _ => throw new ArgumentOutOfRangeException(nameof(msg))
+            },
+            msg.Content);
+    }
 
     private static string? ExtractJsonFromMarkers(string text)
     {
         const string startMarker = "StartOfAnswer";
         const string endMarker = "EndOfAnswer";
 
-        var startIdx = text.IndexOf(startMarker, StringComparison.Ordinal);
-        if (startIdx < 0) return null;
+        var startIdx = text.IndexOf(startMarker, StringComparison.OrdinalIgnoreCase);
 
-        startIdx += startMarker.Length;
-        var endIdx = text.IndexOf(endMarker, startIdx, StringComparison.Ordinal);
-        if (endIdx < 0) return null;
+        string possibleJson;
+        if (startIdx >= 0)
+        {
+            startIdx += startMarker.Length;
+            var endIdx = text.IndexOf(endMarker, startIdx, StringComparison.OrdinalIgnoreCase);
+            if (endIdx > startIdx)
+            {
+                possibleJson = text[startIdx..endIdx].Trim();
+            }
+            else
+            {
+                possibleJson = text[startIdx..].Trim();
+            }
+        }
+        else
+        {
+            possibleJson = text.Trim();
+        }
 
-        return text[startIdx..endIdx].Trim();
+        // Clean up markdown code blocks if LLM added them
+        if (possibleJson.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+            possibleJson = possibleJson[7..].TrimStart();
+        else if (possibleJson.StartsWith("```", StringComparison.OrdinalIgnoreCase))
+            possibleJson = possibleJson[3..].TrimStart();
+
+        if (possibleJson.EndsWith("```", StringComparison.OrdinalIgnoreCase))
+            possibleJson = possibleJson[..^3].TrimEnd();
+
+        // Fallback: strictly grab from the first { to the last }
+        var firstBrace = possibleJson.IndexOf('{');
+        var lastBrace = possibleJson.LastIndexOf('}');
+        if (firstBrace >= 0 && lastBrace > firstBrace)
+        {
+            return possibleJson[firstBrace..(lastBrace + 1)];
+        }
+
+        return null;
+    }
+
+    private static string NormalizeLlmOutput(string json)
+    {
+        return json
+            .Replace("\"Guide\"", "\"Article\"")
+            .Replace("\"Tutorial\"", "\"Course\"")
+            .Replace("\"Workshop\"", "\"Course\"")
+            .Replace("\"Reference\"", "\"Documentation\"");
     }
 
     private static Roadmap CreateRoadmapEntity(RoadmapJson data, AgentConversation conversation)
@@ -460,6 +575,26 @@ public class RoadmapAgentService : IRoadmapAgentService
         public List<PhaseResource> Resources { get; set; } = [];
         public List<PhaseProject> Projects { get; set; } = [];
         public List<string> Insights { get; set; } = [];
+    }
+
+    private sealed class SerializedAssistantToolCalls
+    {
+        public string? Text { get; set; }
+        public List<SerializedToolCall> Calls { get; set; } = [];
+    }
+
+    private sealed class SerializedToolCall
+    {
+        public string CallId { get; set; } = "";
+        public string Name { get; set; } = "";
+        public IDictionary<string, object?>? Arguments { get; set; }
+    }
+
+    private sealed class SerializedToolResult
+    {
+        public string CallId { get; set; } = "";
+        public string Name { get; set; } = "";
+        public object? Result { get; set; }
     }
 
     #endregion

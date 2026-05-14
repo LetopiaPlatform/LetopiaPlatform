@@ -24,12 +24,9 @@ public static class WebSearchTool
                 [Description("The web search query string.")]
                 string query,
 
-                [Description("Maximum number of results to return.")]
-                int max_results = 5,
-
                 CancellationToken ct = default) =>
             {
-                var results = await searchService.SearchAsync(query, max_results, ct);
+                var results = await searchService.SearchAsync(query, 0, ct);
                 return results.Select(r => new { r.Title, r.Url, r.Snippet });
             },
             name: "search_web",
