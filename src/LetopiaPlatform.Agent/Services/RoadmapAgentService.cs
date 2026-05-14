@@ -469,14 +469,9 @@ public class RoadmapAgentService : IRoadmapAgentService
         {
             startIdx += startMarker.Length;
             var endIdx = text.IndexOf(endMarker, startIdx, StringComparison.OrdinalIgnoreCase);
-            if (endIdx > startIdx)
-            {
-                possibleJson = text[startIdx..endIdx].Trim();
-            }
-            else
-            {
-                possibleJson = text[startIdx..].Trim();
-            }
+            possibleJson = endIdx > startIdx
+                ? text[startIdx..endIdx].Trim()
+                : text[startIdx..].Trim();
         }
         else
         {
