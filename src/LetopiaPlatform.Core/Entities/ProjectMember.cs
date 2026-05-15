@@ -10,7 +10,6 @@ public class ProjectMember
     public Guid MemberId { get; set; }
     public virtual User Member { get; set; } = null!;
 
-    // تم التغيير من string إلى Enum
     public ProjectMemberRole Role { get; set; } = ProjectMemberRole.Contributor;
 
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;

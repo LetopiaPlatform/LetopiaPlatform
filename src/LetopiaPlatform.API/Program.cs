@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+using LetopiaPlatform.Agent;
 using LetopiaPlatform.API.Extensions;
 using LetopiaPlatform.API.Middleware;
 using LetopiaPlatform.Core.Entities.Identity;
@@ -6,7 +8,6 @@ using LetopiaPlatform.Infrastructure.Data;
 using LetopiaPlatform.Infrastructure.Seeder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using LetopiaPlatform.Agent;
 using Serilog;
 
 namespace LetopiaPlatform.API;
@@ -28,6 +29,12 @@ public class Program
             builder.Host.UseSerilog((context, services, configuration) => configuration
                 .ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services));
+
+            builder.Services.AddControllers()
+              .AddJsonOptions(options =>
+             {
+                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+             });
 
             // ── Application Insights ──────────────────────────────────────
             builder.Services.AddApplicationInsightsTelemetry();

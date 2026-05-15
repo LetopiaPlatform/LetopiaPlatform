@@ -30,7 +30,7 @@ public class ProjectRepository : GenericRepository<Project>, IProjectRepository
         if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
         {
             query = query.Where(p => p.Title.Contains(filter.SearchTerm)
-                                  || p.Description.Contains(filter.SearchTerm));
+                                  || p.Description!.Contains(filter.SearchTerm));
         }
 
         if (filter.CategoryId.HasValue)
@@ -53,8 +53,11 @@ public class ProjectRepository : GenericRepository<Project>, IProjectRepository
         return await _projects
             .Include(p => p.Category)
             .Include(p => p.Owner)
+            .Include(p => p.Milestones)
+            .Include(p => p.Resources)
             .Include(p => p.Members)
                 .ThenInclude(m => m.Member)
+                .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id, ct);
     }
 
