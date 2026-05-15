@@ -18,7 +18,6 @@ public class ProjectCategoryController : BaseController
     }
 
 
-    // ── Create ──────────────────────────────────────────────────────────────
     [HttpPost(Router.ProjectCategories.Create)]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromForm] CreateCategoryRequest request)
@@ -26,6 +25,12 @@ public class ProjectCategoryController : BaseController
         HttpContext.AddBusinessContext("action", "create_category");
 
         var result = await _projectCategoryService.CreateCategoryAsync(request, HttpContext.RequestAborted);
+
+        if (result.IsSuccess)
+        {
+            return StatusCode(201, new { CategoryId = result.Value });
+        }
+
         return HandleResult(result);
     }
 

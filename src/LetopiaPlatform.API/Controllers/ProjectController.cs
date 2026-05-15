@@ -51,17 +51,20 @@ public class ProjectController : BaseController
     [Authorize]
     public async Task<IActionResult> CreateProject([FromForm] CreateProjectRequestDto request)
     {
-
         var ownerId = GetUserId();
         HttpContext.AddBusinessContext("action", "create_project");
         HttpContext.AddBusinessContext("owner_id", ownerId.ToString());
-
 
         var result = await _projectService.CreateAsync(ownerId, request, HttpContext.RequestAborted);
 
         if (result.IsSuccess)
         {
-            return CreatedAtAction(nameof(GetDetails), new { id = result.Value }, result);
+
+            return CreatedAtAction(
+                nameof(GetDetails),
+                new { id = result.Value },
+                new { ProjectId = result.Value }
+            );
         }
 
         return HandleResult(result);
@@ -93,5 +96,62 @@ public class ProjectController : BaseController
         var result = await _projectService.DeleteAsync(id, ownerId, HttpContext.RequestAborted);
         return HandleResult(result);
     }
+
+
+    // POST: api/projects/{projectId}/milestones
+    [HttpPost(Router.Projects.AddMilestone)]
+    [Authorize]
+    public async Task<IActionResult> AddMilestone([FromRoute] Guid projectId, [FromBody] MilestoneRequestDto request)
+    {
+        var userId = GetUserId();
+        HttpContext.AddBusinessContext("action", "add_milestone");
+        HttpContext.AddBusinessContext("project_id", projectId.ToString());
+
+        var result = await _projectService.AddMilestoneAsync(userId, projectId, request, HttpContext.RequestAborted);
+        return HandleResult(result);
+    }
+
+    // PUT: api/projects/milestones/{id}
+    [HttpPut(Router.Projects.EditMilestone)]
+    [Authorize]
+    public async Task<IActionResult> UpdateMilestone([FromRoute] Guid id, [FromBody] MilestoneRequestDto request)
+    {
+        var userId = GetUserId();
+        HttpContext.AddBusinessContext("action", "update_milestone");
+        HttpContext.AddBusinessContext("milestone_id", id.ToString());
+
+        var result = await _projectService.UpdateMilestoneAsync(userId, id, request, HttpContext.RequestAborted);
+        return HandleResult(result);
+    }
+
+    // 1. Delete Milestone
+    [HttpDelete(Router.Projects.DeleteMilestone)]
+    [Authorize]
+    public async Task<IActionResult> DeleteMilestone([FromRoute] Guid id)
+    {
+        var userId = GetUserId();
+
+        HttpContext.AddBusinessContext("action", "delete_milestone");
+
+        var result = await _projectService.DeleteMilestoneAsync(userId, id, HttpContext.RequestAborted);
+
+        return HandleResult(result);
+    }
+
+    // 2. Toggle Milestone Status
+    [HttpPatch(Router.Projects.ToggleMilestone)]
+    [Authorize]
+    public async Task<IActionResult> ToggleMilestone([FromRoute] Guid id)
+    {
+        var userId = GetUserId();
+
+        HttpContext.AddBusinessContext("action", "toggle_milestone_status");
+
+        var result = await _projectService.ToggleMilestoneStatusAsync(userId, id, HttpContext.RequestAborted);
+
+        return HandleResult(result);
+    }
+
+
 
 }

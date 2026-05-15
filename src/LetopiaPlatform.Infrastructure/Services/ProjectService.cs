@@ -1,4 +1,3 @@
-using System.Text.Json;
 using LetopiaPlatform.Core.Common;
 using LetopiaPlatform.Core.DTOs.Project.Request;
 using LetopiaPlatform.Core.DTOs.Project.Response;
@@ -17,15 +16,16 @@ public class ProjectService : IProjectService
     private readonly IFileStorageService _fileService;
     private readonly ILogger<ProjectService> _logger;
     private IUnitOfWork<ApplicationDbContext> _unitOfWork;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private readonly IGenericRepository<ProjectMilestoneDetails> _milestoneRepo;
 
     public ProjectService(IProjectRepository projectRepo, IFileStorageService fileService, ILogger<ProjectService> logger,
-                  IUnitOfWork<ApplicationDbContext> unitOfWork)
+                  IUnitOfWork<ApplicationDbContext> unitOfWork, IGenericRepository<ProjectMilestoneDetails> milestoneRepo)
     {
         _projectRepo = projectRepo;
         _fileService = fileService;
         _logger = logger;
         _unitOfWork = unitOfWork;
+        _milestoneRepo = milestoneRepo;
     }
 
     public async Task<Result<PaginatedResult<ProjectDiscoverResponseDto>>> GetDiscoverAsync(ProjectFilterDto filter, CancellationToken ct = default)
@@ -64,60 +64,7 @@ public class ProjectService : IProjectService
             return Result<Guid>.Failure("A project with this title already exists in this category.", 400);
         }
 
-        // 1. Handling Cover Image Upload
-        string? coverUrl = null;
-        if (request.CoverImage != null)
-        {
-            var upload = await _fileService.UploadAsync(request.CoverImage, "projects", ct);
-            if (!upload.IsSuccess)
-                return Result<Guid>.Failure("Image upload failed", 400);
 
-            coverUrl = upload.Value;
-        }
-
-
-
-        _logger.LogInformation("RAW MILESTONES DATA: ---> {Data} <---", request.Milestones);
-        List<ProjectMilestoneDetails> milestonesList = [];
-
-        if (!string.IsNullOrWhiteSpace(request.Milestones) && request.Milestones != "string")
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var rawJson = request.Milestones.Trim();
-
-                using var doc = JsonDocument.Parse(rawJson);
-                var root = doc.RootElement;
-
-                if (root.ValueKind == JsonValueKind.String)
-                {
-                    var content = root.GetString();
-                    if (!string.IsNullOrEmpty(content))
-                    {
-                        milestonesList = JsonSerializer.Deserialize<List<ProjectMilestoneDetails>>(content, options) ?? [];
-                    }
-                }
-                else if (root.ValueKind == JsonValueKind.Array)
-                {
-                    milestonesList = JsonSerializer.Deserialize<List<ProjectMilestoneDetails>>(rawJson, options) ?? [];
-                }
-                else if (root.ValueKind == JsonValueKind.Object)
-                {
-                    var singleMilestone = JsonSerializer.Deserialize<ProjectMilestoneDetails>(rawJson, options);
-                    if (singleMilestone != null)
-                    {
-                        milestonesList.Add(singleMilestone);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Milestone Parsing failed. Input: {Input}", request.Milestones);
-            }
-        }
-
-        _logger.LogInformation("MILESTONES COUNT TO SAVE: {Count}", milestonesList.Count);
 
         var project = new Project
         {
@@ -125,39 +72,61 @@ public class ProjectService : IProjectService
             Description = request.Description,
             CategoryId = request.CategoryId,
             OwnerId = ownerId,
-            CoverImageUrl = coverUrl,
 
-            // Fix: Force UTC for PostgreSQL (timestamp with time zone)
-            StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc),
-            Deadline = DateTime.SpecifyKind(request.EndDate, DateTimeKind.Utc),
 
-            // New UI Fields
             IsPublic = request.IsPublic,
             RequiredSkills = request.RequiredSkills ?? [],
-            Goals = request.Goals ?? [],
-            TimelineEvents = request.TimelineEvents ?? [],
 
-            // Parsing Enum safely
             DifficultyLevel = Enum.TryParse<DifficultyLevel>(request.DifficultyLevel, true, out var diff) ? diff : null,
+            Status = ProjectStatus.Available,
 
-            Status = ProjectStatus.Recruiting,
-
-
-            Milestones = milestonesList
         };
+
+        if (request.Links != null && request.Links.Count > 0)
+        {
+            foreach (var linkUrl in request.Links)
+            {
+                project.Resources.Add(new ProjectResource
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Project Link",
+                    Url = linkUrl,
+                    IsFile = false
+                });
+            }
+        }
+
+        if (request.Files != null && request.Files.Count > 0)
+        {
+            foreach (var file in request.Files)
+            {
+                var uploadResult = await _fileService.UploadAsync(file, "project-resources", ct);
+                if (uploadResult.IsSuccess)
+                {
+                    project.Resources.Add(new ProjectResource
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = file.FileName,
+                        Url = uploadResult.Value ?? string.Empty,
+                        IsFile = true
+                    });
+                }
+            }
+        }
 
         try
         {
             await _projectRepo.AddAsync(project);
-
             await _unitOfWork.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Project {ProjectId} created successfully", project.Id);
+            _logger.LogInformation("Project {ProjectId} created successfully with {ResourcesCount} resources",
+                project.Id, project.Resources.Count);
+
             return Result<Guid>.Success(project.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while creating project");
+            _logger.LogError(ex, "Error while creating project: {Title}", request.Title);
             return Result<Guid>.Failure($"Database Error: {ex.Message}", 500);
         }
     }
@@ -167,45 +136,246 @@ public class ProjectService : IProjectService
     {
         var project = await _projectRepo.GetByIdAsync(id);
 
-        if (project is null) return Result<string>.Failure("Project not found", 404);
+        if (project is null)
+            return Result<string>.Failure("Project not found", 404);
 
         if (project.OwnerId != userId)
             return Result<string>.Failure("You are not authorized to update this project", 403);
 
 
-        if (request.CoverImage != null)
-        {
-            var upload = await _fileService.UploadAsync(request.CoverImage, "projects", ct);
-            if (upload.IsSuccess) project.CoverImageUrl = upload.Value;
-        }
 
         project.Title = request.Title;
         project.Description = request.Description;
         project.CategoryId = request.CategoryId;
-        project.StartDate = request.StartDate;
-        project.Deadline = request.EndDate;
-        project.RequiredSkills = request.RequiredSkills;
-        project.Goals = request.Goals;
+        project.RequiredSkills = request.RequiredSkills ?? [];
 
-        project.DifficultyLevel = Enum.TryParse<DifficultyLevel>(request.DifficultyLevel, out var diff)
-            ? diff : project.DifficultyLevel;
+        if (Enum.TryParse<DifficultyLevel>(request.DifficultyLevel, true, out var diff))
+        {
+            project.DifficultyLevel = diff;
+        }
 
-        await _projectRepo.UpdateAsync(project);
-        return Result<string>.Success("UpdateOperationIsSuccessfully");
+        if (request.Links != null && request.Links.Count > 0)
+        {
+            foreach (var url in request.Links)
+            {
+                project.Resources.Add(new ProjectResource
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Project Link",
+                    Url = url,
+                    IsFile = false
+                });
+            }
+        }
+
+        if (request.Files != null && request.Files.Count > 0)
+        {
+            foreach (var file in request.Files)
+            {
+                var uploadResult = await _fileService.UploadAsync(file, "project-resources", ct);
+                if (uploadResult.IsSuccess)
+                {
+                    project.Resources.Add(new ProjectResource
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = file.FileName,
+                        Url = uploadResult.Value!,
+                        IsFile = true
+                    });
+                }
+            }
+        }
+
+        try
+        {
+            await _projectRepo.UpdateAsync(project);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Project {ProjectId} updated successfully by user {UserId}", id, userId);
+            return Result<string>.Success("Project updated successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while updating project {ProjectId}", id);
+            return Result<string>.Failure($"Database Error: {ex.Message}", 500);
+        }
     }
     //-----DeleteProject-----------------------------------------------------
     public async Task<Result<string>> DeleteAsync(Guid id, Guid userId, CancellationToken ct = default)
     {
         var project = await _projectRepo.GetByIdAsync(id);
-        if (project is null) return Result<string>.Failure("Project not found", 404);
+
+        if (project is null)
+            return Result<string>.Failure("Project not found", 404);
 
         if (project.OwnerId != userId)
+        {
+            _logger.LogWarning("Unauthorized delete attempt for project {ProjectId} by user {UserId}", id, userId);
             return Result<string>.Failure("You are not authorized to delete this project", 403);
+        }
 
-        await _projectRepo.DeleteAsync(project);
-        return Result<string>.Success("DeleteOperationIsSuccessfully");
+        try
+        {
+
+            if (project.Resources != null && project.Resources.Count > 0)
+            {
+                foreach (var resource in project.Resources.Where(r => r.IsFile))
+                {
+                    await _fileService.DeleteAsync(resource.Url, ct);
+                }
+            }
+
+            await _projectRepo.DeleteAsync(project);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Project {ProjectId} and its related files deleted successfully", id);
+            return Result<string>.Success("Project deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while deleting project {ProjectId}", id);
+            return Result<string>.Failure($"Database Error: {ex.Message}", 500);
+        }
+    }
+    //--------------------------AddMilestoneToProject-----------------------------------------------------
+
+    public async Task<Result<MilestoneResponseDto>> AddMilestoneAsync(Guid userId, Guid projectId, MilestoneRequestDto dto, CancellationToken ct = default)
+    {
+        var project = await _projectRepo.GetProjectWithDetailsAsync(projectId, ct);
+        if (project is null) return Result<MilestoneResponseDto>.Failure("Project not found", 404);
+
+        if (project.OwnerId != userId)
+            return Result<MilestoneResponseDto>.Failure("Unauthorized", 403);
+
+        var milestone = new ProjectMilestoneDetails
+        {
+            Id = Guid.NewGuid(),
+            Title = dto.Title,
+            Description = dto.Description,
+            DurationText = dto.DurationText,
+            Status = dto.Status,
+            ProjectId = projectId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        try
+        {
+            await _milestoneRepo.AddAsync(milestone);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            return Result<MilestoneResponseDto>.Success(new MilestoneResponseDto(
+                milestone.Id, milestone.Title, milestone.Description, milestone.DurationText,
+                milestone.Status.ToString(), project.CalculatedProgress));
+        }
+        catch (Exception ex)
+        {
+            return Result<MilestoneResponseDto>.Failure($"Error: {ex.Message}", 500);
+        }
     }
 
+    public async Task<Result<MilestoneResponseDto>> UpdateMilestoneAsync(Guid userId, Guid milestoneId, MilestoneRequestDto dto, CancellationToken ct = default)
+    {
+
+        var milestone = await _milestoneRepo
+            .GetByIdAsync(milestoneId);
+
+        if (milestone is null)
+            return Result<MilestoneResponseDto>.Failure("Milestone not found", 404);
+
+
+        var project = await _projectRepo.GetProjectWithDetailsAsync(milestone.ProjectId, ct);
+
+        if (project is null || project.OwnerId != userId)
+        {
+            _logger.LogWarning("Unauthorized update attempt for milestone {MilestoneId} by user {UserId}", milestoneId, userId);
+            return Result<MilestoneResponseDto>.Failure("You are not authorized to update this milestone", 403);
+        }
+
+
+        milestone.Title = dto.Title;
+        milestone.Description = dto.Description;
+        milestone.DurationText = dto.DurationText;
+        milestone.Status = dto.Status;
+        milestone.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+
+            await _milestoneRepo.UpdateAsync(milestone);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Milestone {MilestoneId} updated successfully", milestoneId);
+
+            return Result<MilestoneResponseDto>.Success(new MilestoneResponseDto(
+                milestone.Id,
+                milestone.Title,
+                milestone.Description,
+                milestone.DurationText,
+                milestone.Status.ToString(),
+                project.CalculatedProgress
+
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while updating milestone {MilestoneId}", milestoneId);
+            return Result<MilestoneResponseDto>.Failure($"Database Error: {ex.Message}", 500);
+        }
+    }
+
+
+
+    public async Task<Result<int>> DeleteMilestoneAsync(Guid userId, Guid milestoneId, CancellationToken ct = default)
+    {
+        var milestone = await _milestoneRepo.GetByIdAsync(milestoneId);
+        if (milestone is null) return Result<int>.Failure("Milestone not found", 404);
+
+        var project = await _projectRepo.GetProjectWithDetailsAsync(milestone.ProjectId, ct);
+        if (project is null || project.OwnerId != userId)
+            return Result<int>.Failure("Unauthorized", 403);
+
+        try
+        {
+            await _milestoneRepo.DeleteAsync(milestone);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            return Result<int>.Success(project.CalculatedProgress);
+        }
+        catch (Exception ex)
+        {
+            return Result<int>.Failure($"Error: {ex.Message}", 500);
+        }
+    }
+
+    public async Task<Result<MilestoneResponseDto>> ToggleMilestoneStatusAsync(Guid userId, Guid milestoneId, CancellationToken ct = default)
+    {
+        var milestone = await _milestoneRepo.GetByIdAsync(milestoneId);
+        if (milestone is null) return Result<MilestoneResponseDto>.Failure("Milestone not found", 404);
+
+        var project = await _projectRepo.GetProjectWithDetailsAsync(milestone.ProjectId, ct);
+        if (project is null || project.OwnerId != userId)
+            return Result<MilestoneResponseDto>.Failure("Unauthorized", 403);
+
+        milestone.Status = milestone.Status == MilestoneStatus.Completed
+                           ? MilestoneStatus.InProgress
+                           : MilestoneStatus.Completed;
+
+        milestone.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            await _milestoneRepo.UpdateAsync(milestone);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            return Result<MilestoneResponseDto>.Success(new MilestoneResponseDto(
+                milestone.Id, milestone.Title, milestone.Description, milestone.DurationText,
+                milestone.Status.ToString(), project.CalculatedProgress));
+        }
+        catch (Exception ex)
+        {
+            return Result<MilestoneResponseDto>.Failure($"Error: {ex.Message}", 500);
+        }
+    }
 
     // ── Mapping Helpers ────────────────────────────────────────────────────
     private static ProjectDiscoverResponseDto MapToProjectDto(Project p) => new(
@@ -215,38 +385,37 @@ public class ProjectService : IProjectService
     p.DifficultyLevel?.ToString(),
     p.Status.ToString(),
     p.RequiredSkills,
-    p.CoverImageUrl,
     p.Members.Count,               // MembersCount
-    CalculateTimeLeft(p.Deadline), // TimeLeft
     p.OwnerId,                     // OwnerId
+    p.Owner.AvatarUrl ?? "Unknown",           // OwnerAvatarUrl
     p.Owner?.FullName ?? "Unknown" // OwnerName
     );
 
     private static ProjectDetailsResponseDto MapToDetails(Project p) => new(
-     p.Id,
-     p.Title,
-     p.Description,
-     p.Category?.Name ?? "General",
-     CalculateTimeLeft(p.Deadline), // TimeLeftText
-     p.RequiredSkills,
-     p.Goals,                       // ProjectGoals
-     p.TimelineEvents ?? [],        // TimelineEvents
-     p.StartDate,
-     p.Deadline,
-     p.CoverImageUrl,
-     p.Status.ToString(),
-     p.Owner?.FullName ?? "Unknown", // OwnerName
-     p.Milestones.Select(m => new MilestoneResponseDto(
-         m.Title,
-         m.Description
-     )).ToList()                     // Milestones
- );
-    private static string CalculateTimeLeft(DateTime deadline)
-    {
-        var diff = deadline - DateTime.UtcNow;
-        if (diff.TotalDays <= 0) return "Expired";
-        if (diff.TotalDays >= 7) return $"{(int)(diff.TotalDays / 7)} weeks left";
-        return $"{(int)diff.TotalDays} days left";
-    }
+    p.Id,
+    p.Title,
+    p.Description ?? "",
+    p.Category?.Name ?? "General",
+    p.RequiredSkills,
+    p.Status.ToString(),
+    p.Owner?.FullName ?? "Unknown",
+    p.Owner?.AvatarUrl ?? "Unknown",
+    p.CalculatedProgress,
+    p.Milestones.Select(m => new MilestoneResponseDto(
+        m.Id,
+        m.Title,
+        m.Description,
+        m.DurationText,
+        m.Status.ToString(),
+        m.Project.CalculatedProgress
+    )).ToList(),
+
+    p.Resources.Select(r => new ResourceResponseDto(
+        r.Id,
+        r.Name,
+        r.Url,
+        r.IsFile
+    )).ToList()
+);
 
 }

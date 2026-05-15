@@ -62,7 +62,7 @@ public class ProjectCategoryService : IProjectCategoryService
             return Result<bool>.Failure("Cannot delete category containing projects", 400);
         }
 
-        await _projectCategoryRepository.DeleteAsync(category); // تأكد أن GenericRepo يدعم ct لو أردت
+        await _projectCategoryRepository.DeleteAsync(category);
         return Result<bool>.Success(true);
     }
 
@@ -70,7 +70,6 @@ public class ProjectCategoryService : IProjectCategoryService
         Id: category.Id,
         Name: category.Name,
         Slug: category.Slug,
-        IconUrl: category.IconUrl,
         DisplayOrder: category.DisplayOrder,
         Projects: category.Projects?.Select(p => new ProjectSummaryResponse(p.Id, p.Title)).ToList()
                   ?? new List<ProjectSummaryResponse>()
@@ -84,26 +83,11 @@ public class ProjectCategoryService : IProjectCategoryService
         {
             return Result<Guid>.Failure("This slug is already in use", 400);
         }
-        //IConUrl
-        string? iconUrl = null;
-        if (request.IconUrl is not null)
-        {
-            var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories", ct);
-
-            if (!uploadResult.IsSuccess)
-            {
-                return Result<Guid>.Failure("Failed to upload icon", uploadResult.StatusCode);
-            }
-
-            iconUrl = uploadResult.Value;
-        }
-
 
         var category = new ProjectCategory
         {
             Name = request.Name,
             Slug = request.Slug,
-            IconUrl = iconUrl,
             DisplayOrder = request.DisplayOrder
         };
 
@@ -122,25 +106,6 @@ public class ProjectCategoryService : IProjectCategoryService
         if (await _projectCategoryRepository.SlugExistsAsync(request.Slug, id, ct))
         {
             return Result<bool>.Failure("This slug is already in use by another category", 400);
-        }
-
-
-
-        if (request.IconUrl is not null)
-        {
-            var uploadResult = await _fileService.UploadAsync(request.IconUrl, "categories", ct);
-
-            if (!uploadResult.IsSuccess)
-            {
-                return Result<bool>.Failure("Failed to upload icon", uploadResult.StatusCode);
-            }
-
-            if (!string.IsNullOrEmpty(category.IconUrl))
-            {
-                await _fileService.DeleteAsync(category.IconUrl, ct);
-            }
-
-            category.IconUrl = uploadResult.Value;
         }
 
         category.Name = request.Name;

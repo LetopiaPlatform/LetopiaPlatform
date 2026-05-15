@@ -66,14 +66,13 @@ public class SearchService : ISearchService
                 .AsNoTracking()
                 .Where(p =>
                     EF.Functions.ILike(p.Title, pattern) ||
-                    EF.Functions.ILike(p.Description, pattern))
+                    EF.Functions.ILike(p.Description!, pattern))
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(limit)
                 .Select(p => new ProjectSearchResultDto(
                     p.Id,
                     p.Title,
-                    p.Description,
-                    p.CoverImageUrl,
+                    p.Description!,
                     p.Category.Name,
                     p.DifficultyLevel.ToString(),
                     p.Status.ToString()))

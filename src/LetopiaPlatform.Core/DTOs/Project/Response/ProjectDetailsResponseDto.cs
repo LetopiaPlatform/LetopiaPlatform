@@ -1,17 +1,31 @@
 namespace LetopiaPlatform.Core.DTOs.Project.Response;
+
 public record ProjectDetailsResponseDto(
     Guid Id,
     string Title,
     string Description,
     string CategoryName,
-    string TimeLeftText,
     List<string> Skills,
-    List<string> ProjectGoals,
-    List<string> TimelineEvents,
-    DateTime StartDate,
-    DateTime Deadline,
-    string? CoverImageUrl,
     string Status,
     string OwnerName,
-    List<MilestoneResponseDto> Milestones
+    string OwnerPictureUrl,
+    int Progress,
+    List<MilestoneResponseDto> Milestones,
+    List<ResourceResponseDto> Resources
+);
+
+public record MilestoneResponseDto(
+    Guid Id,
+    string Title,
+    string? Description,
+    string? DurationText,
+    string Status,
+    int CalculatedProgress
+);
+
+public record ResourceResponseDto(
+    Guid Id,
+    string Name,
+    string Url,
+    bool IsFile
 );
