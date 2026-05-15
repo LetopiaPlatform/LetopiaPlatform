@@ -53,7 +53,7 @@ public class ProjectMemberService : IProjectMemberService
             m.MemberId,
             m.Member?.FullName ?? "Unknown",
             m.Member?.AvatarUrl ?? "Unknown",
-            m.Role.ToString(),
+            m.Role,
             m.JoinedAt
         )).ToList();
 
@@ -75,20 +75,12 @@ public class ProjectMemberService : IProjectMemberService
      p.DifficultyLevel?.ToString(),
      p.Status.ToString(),
      p.RequiredSkills,
-     p.CoverImageUrl,
      p.Members.Count,               // MembersCount
-     CalculateTimeLeft(p.Deadline), // TimeLeft
-     p.OwnerId,                     // OwnerId
+     p.OwnerId,
+     p.Owner.AvatarUrl ?? "Unknown",
      p.Owner?.FullName ?? "Unknown" // OwnerName
      );
 
 
-    private static string CalculateTimeLeft(DateTime deadline)
-    {
-        var diff = deadline - DateTime.UtcNow;
-        if (diff.TotalDays <= 0) return "Expired";
-        if (diff.TotalDays >= 30) return $"{(int)(diff.TotalDays / 30)} months left";
-        if (diff.TotalDays >= 7) return $"{(int)(diff.TotalDays / 7)} weeks left";
-        return $"{(int)diff.TotalDays} days left";
-    }
+
 }

@@ -3,7 +3,7 @@ using LetopiaPlatform.Core.DTOs.Project.Request;
 
 namespace LetopiaPlatform.API.Validators;
 
-public class CreateMilestoneDtoValidator : AbstractValidator<CreateMilestoneDto>
+public class CreateMilestoneDtoValidator : AbstractValidator<MilestoneRequestDto>
 {
     public CreateMilestoneDtoValidator()
     {

@@ -3,7 +3,6 @@ public record CategoryResponse(
     Guid Id,
     string Name,
     string Slug,
-    string? IconUrl,
     int DisplayOrder,
     List<ProjectSummaryResponse> Projects
 );

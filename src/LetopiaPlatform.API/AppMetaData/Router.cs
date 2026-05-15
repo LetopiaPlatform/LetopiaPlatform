@@ -95,6 +95,15 @@ public static class Router
         public const string GetDetailsById = $"{Prefix}/{{id}}";
         public const string Update = $"{Prefix}/Update/{{id}}";
         public const string Delete = $"{Prefix}/Delete/{{id}}";
+
+        // Milestone Operations
+        public const string AddMilestone = $"{Prefix}/{{projectId}}/AddMilestone";
+
+        public const string EditMilestone = $"{Prefix}/EditMilestone/{{id}}";
+
+        public const string DeleteMilestone = $"{Prefix}/DeleteMilestone/{{id}}";
+
+        public const string ToggleMilestone = $"{Prefix}/ToggleMilestone/{{id}}";
     }
 
     public static class ProjectMembers

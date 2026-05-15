@@ -1,31 +1,21 @@
 using Microsoft.AspNetCore.Http;
 
 namespace LetopiaPlatform.Core.DTOs.Project.Request;
+
 public record CreateProjectRequestDto(
-     string Title,
-     string Description,
-     Guid CategoryId,
+    string Title,
+    string Description,
+    Guid CategoryId,
 
     // (Public / Private)
     bool IsPublic,
 
     string? DifficultyLevel,
 
-    DateTime StartDate,
-    DateTime EndDate,
-
-
     List<string> RequiredSkills,
-    List<string> Goals,
 
-    List<string> TimelineEvents,
+    List<string>? Links,
 
-    //List<CreateMilestoneDto> Milestones,
+    List<IFormFile>? Files
 
-    string? Milestones,
-
-    IFormFile? CoverImage
 );
-
-
-

@@ -3,34 +3,31 @@ using LetopiaPlatform.Core.DTOs.Project.Request;
 
 namespace LetopiaPlatform.API.Validators;
 
-public class CreateProjectRequestDtoValidator : AbstractValidator<CreateProjectRequestDto>
+public class UpdateProjectRequestValidator : AbstractValidator<UpdateProjectRequestDto>
 {
-    public CreateProjectRequestDtoValidator()
+    public UpdateProjectRequestValidator()
     {
-        // 1. Basic Information
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Project title is required.")
             .MaximumLength(100).WithMessage("Title cannot exceed 100 characters.");
 
         RuleFor(x => x.Description)
-            .NotEmpty().WithMessage("Project description is Optional.");
+            .NotEmpty().WithMessage("Project description is required.")
+            .MinimumLength(15).WithMessage("Description must be at least 20 characters long.");
 
         RuleFor(x => x.CategoryId)
-            .NotEmpty().WithMessage("Please select a project category.");
+            .NotEmpty().WithMessage("Category is required.");
 
 
-
-        // 3. Resources Validation (Links)
         RuleForEach(x => x.Links)
             .Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _))
             .When(x => x.Links != null)
-            .WithMessage("One or more links are not valid URLs (e.g., https://github.com).");
+            .WithMessage("One or more links are not valid URLs.");
 
-        // 4. Resources Validation (Files)
         RuleForEach(x => x.Files)
             .Must(file => file.Length <= 5 * 1024 * 1024)
             .When(x => x.Files != null)
-            .WithMessage("Each file size must not exceed 5MB.");
+            .WithMessage("Each resource file size must not exceed 5MB.");
 
 
     }

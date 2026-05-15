@@ -44,20 +44,12 @@ public static class DependencyInjection
     // -----------------------------------------------------------
     // Database
     // -----------------------------------------------------------
-    //private static IServiceCollection AddDatabase(
-    //    this IServiceCollection services,
-    //    IConfiguration configuration)
-    //{
-    //    services.AddDbContext<ApplicationDbContext>(options =>
-    //        options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
-
-    //    return services;
-    //}
     private static IServiceCollection AddDatabase(
         this IServiceCollection services,
         IConfiguration configuration,
         IHostEnvironment environment)
     {
+<<<<<<< HEAD
         if (environment.IsEnvironment("Testing"))
         {
             // Testing environment overrides DbContext, skip PostgreSQL setup
@@ -72,11 +64,14 @@ public static class DependencyInjection
         var dataSource = dataSourceBuilder.Build();
 
         // 2. تسجيل الـ DbContext باستخدام الـ dataSource الجديد
+=======
+>>>>>>> a64cc15 (AddModificationInSessionProject)
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(dataSource));
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
         return services;
     }
+
     // -----------------------------------------------------------
     // Identity
     // -----------------------------------------------------------

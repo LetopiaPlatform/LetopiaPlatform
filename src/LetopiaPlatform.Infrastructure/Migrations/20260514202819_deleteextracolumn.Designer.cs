@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LetopiaPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260514202819_deleteextracolumn")]
+    partial class deleteextracolumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -573,46 +576,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.ToTable("conversation_messages", (string)null);
                 });
 
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.PendingEmailChange", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsUsed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<string>("NewEmail")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Token")
-                        .IsUnique();
-
-                    b.HasIndex("UserId", "IsUsed");
-
-                    b.ToTable("PendingEmailChanges", (string)null);
-                });
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -654,8 +617,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnName("AvatarUrl");
 
                     b.Property<string>("Bio")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
+                        .HasColumnType("text")
                         .HasColumnName("Bio");
 
                     b.Property<string>("ConcurrencyStamp")
@@ -686,25 +648,12 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnName("EmailVerified");
 
                     b.Property<string>("FullName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
+                        .HasColumnType("text")
                         .HasColumnName("FullName");
-
-                    b.Property<List<string>>("Interests")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text[]")
-                        .HasColumnName("interests")
-                        .HasDefaultValueSql("'{}'::text[]");
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("LastLoginAt");
-
-                    b.Property<string>("Location")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("Location");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -732,20 +681,12 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Property<string>("Role")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("text")
                         .HasDefaultValue("Learner")
                         .HasColumnName("Role");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
-
-                    b.Property<List<string>>("Skills")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text[]")
-                        .HasColumnName("skills")
-                        .HasDefaultValueSql("'{}'::text[]");
 
                     b.Property<int>("TotalPoints")
                         .ValueGeneratedOnAdd()
@@ -773,12 +714,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
-                    b.ToTable("AspNetUsers", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_Users_Interests_Unique", "NOT array_has_duplicates(interests)");
-
-                            t.HasCheckConstraint("CK_Users_Skills_Unique", "NOT array_has_duplicates(skills)");
-                        });
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.UserRefreshToken", b =>
@@ -960,6 +896,7 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("description");
 
@@ -1022,6 +959,10 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("display_order");
+
+                    b.Property<string>("IconUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("icon_url");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1697,17 +1638,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                     b.Navigation("Conversation");
                 });
 
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.PendingEmailChange", b =>
-                {
-                    b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.UserRefreshToken", b =>
                 {
                     b.HasOne("LetopiaPlatform.Core.Entities.Identity.User", "User")
@@ -1717,104 +1647,6 @@ namespace LetopiaPlatform.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LetopiaPlatform.Core.Entities.Identity.User", b =>
-                {
-                    b.OwnsOne("LetopiaPlatform.Core.Common.NotificationPreferences", "NotificationPreferences", b1 =>
-                        {
-                            b1.Property<Guid>("UserId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<bool>("AchievementAlerts")
-                                .HasColumnType("boolean");
-
-                            b1.Property<bool>("CommunityUpdates")
-                                .HasColumnType("boolean");
-
-                            b1.Property<bool>("EmailNotifications")
-                                .HasColumnType("boolean");
-
-                            b1.Property<bool>("PushNotifications")
-                                .HasColumnType("boolean");
-
-                            b1.Property<bool>("TaskReminders")
-                                .HasColumnType("boolean");
-
-                            b1.Property<bool>("WeeklyDigest")
-                                .HasColumnType("boolean");
-
-                            b1.HasKey("UserId");
-
-                            b1.ToTable("AspNetUsers");
-
-                            b1.ToJson("NotificationPreferences");
-
-                            b1.WithOwner()
-                                .HasForeignKey("UserId");
-                        });
-
-                    b.OwnsOne("LetopiaPlatform.Core.Common.PrivacySettings", "PrivacySettings", b1 =>
-                        {
-                            b1.Property<Guid>("UserId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<int>("ProfileVisibility")
-                                .HasColumnType("integer");
-
-                            b1.Property<bool>("ShowEmailAddress")
-                                .HasColumnType("boolean");
-
-                            b1.Property<bool>("ShowPhoneNumber")
-                                .HasColumnType("boolean");
-
-                            b1.Property<bool>("ShowProjects")
-                                .HasColumnType("boolean");
-
-                            b1.HasKey("UserId");
-
-                            b1.ToTable("AspNetUsers");
-
-                            b1.ToJson("PrivacySettings");
-
-                            b1.WithOwner()
-                                .HasForeignKey("UserId");
-                        });
-
-                    b.OwnsMany("LetopiaPlatform.Core.Common.SocialLink", "SocialLinks", b1 =>
-                        {
-                            b1.Property<Guid>("UserId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<int>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("integer");
-
-                            b1.Property<string>("Provider")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("Url")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.HasKey("UserId", "Id");
-
-                            b1.ToTable("AspNetUsers");
-
-                            b1.ToJson("SocialLinks");
-
-                            b1.WithOwner()
-                                .HasForeignKey("UserId");
-                        });
-
-                    b.Navigation("NotificationPreferences")
-                        .IsRequired();
-
-                    b.Navigation("PrivacySettings")
-                        .IsRequired();
-
-                    b.Navigation("SocialLinks");
                 });
 
             modelBuilder.Entity("LetopiaPlatform.Core.Entities.Post", b =>

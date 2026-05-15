@@ -4,8 +4,7 @@ namespace LetopiaPlatform.Core.Enums;
 /// </summary>
 public enum ProjectStatus
 {
-    Recruiting = 1,
-    InProgress = 2,
-    Completed = 3,
-    OnHold = 4
+
+    Available = 1,      // Open for members to join and contribute
+    UnAvailable = 2,    // Not open for new members, but work is ongoing
 }
