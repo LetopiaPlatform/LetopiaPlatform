@@ -123,4 +123,19 @@ public interface ICommunityService
     Task<List<JoinedCommunitySummaryDto>> GetJoinedCommunitiesAsync(
         Guid userId,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Removes a member from the community. Only Owner or Moderator can do this. Cannot remove Owner.
+    /// Callers cannot remove themselves - use <see cref="LeaveAsync"/> to leave voluntarily.
+    /// </summary>
+    /// <param name="communityId">The ID of the community.</param>
+    /// <param name="targetUserId">The ID of the user to be removed.</param>
+    /// <param name="callerUserId">The ID of the user performing the removal.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task RemoveMemberAsync(
+        Guid communityId,
+        Guid targetUserId,
+        Guid callerUserId,
+        CancellationToken ct = default);
 }

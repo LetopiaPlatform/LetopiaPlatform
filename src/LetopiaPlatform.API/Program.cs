@@ -41,14 +41,17 @@ public class Program
             var app = builder.Build();
 
             // ── Apply pending migrations ────────────────────────────────
-            using (var scope = app.Services.CreateScope())
+            if (app.Environment.EnvironmentName != "Testing")
             {
-                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                await db.Database.MigrateAsync();
-            }
+                using (var scope = app.Services.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    await db.Database.MigrateAsync();
+                }
 
-            // ── Seed data ─────────────────────────────────────────────────
-            await SeedDataAsync(app);
+                // ── Seed data ─────────────────────────────────────────────────
+                await SeedDataAsync(app);
+            }
 
             // ── Middleware pipeline — order matters ───────────────────────
             if (app.Environment.IsDevelopment())

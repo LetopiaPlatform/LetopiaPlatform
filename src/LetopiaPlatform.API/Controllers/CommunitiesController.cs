@@ -190,6 +190,29 @@ public class CommunitiesController : BaseController
         return NoContent();
     }
 
+    /// <summary>
+    /// Remove a member from a community. Owner or Moderator only.
+    /// Owner cannot be removed. a moderator can only removed by the Owner.
+    /// </summary>
+    [HttpDelete(Router.Communities.RemoveMember)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RemoveMember(
+        Guid id,
+        Guid userId,
+        CancellationToken ct)
+    {
+        HttpContext.AddBusinessContext("action", "remove_member");
+        HttpContext.AddBusinessContext("community_id", id);
+        HttpContext.AddBusinessContext("target_user_id", userId);
+
+        await _communityService.RemoveMemberAsync(id, userId, GetUserId(User), ct);
+
+        return NoContent();
+    }
+
     private static Guid GetUserId(ClaimsPrincipal claimsPrincipal)
     {
         return Guid.Parse(claimsPrincipal.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);

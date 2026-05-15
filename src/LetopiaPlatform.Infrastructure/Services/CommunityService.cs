@@ -300,6 +300,51 @@ public class CommunityService : ICommunityService
         return await _communityRepository.GetJoinedCommunitiesAsync(userId, ct);
     }
 
+    public async Task RemoveMemberAsync(
+        Guid communityId,
+        Guid targetUserId,
+        Guid callerUserId,
+        CancellationToken ct = default)
+    {
+        if (callerUserId == targetUserId)
+            throw new AppException("You cannot remove yourself. Use the leave endpoint to leave voluntarily.", 400);
+        
+        var callerMembership = await _communityRepository.GetMembershipAsync(communityId, callerUserId, ct)
+            ?? throw new ForbiddenException("You are not a member of this community.");
+        
+        if (callerMembership.Role is not (CommunityRole.Owner or CommunityRole.Moderator))
+            throw new ForbiddenException("Only the owner or a moderator can remove members.");
+        
+        var targetMembership = await _communityRepository.GetMembershipAsync(communityId, targetUserId, ct)
+            ?? throw new NotFoundException("Member not found in this community.");
+        
+        if (targetMembership.Role == CommunityRole.Owner)
+            throw new AppException("The owner cannot be removed. Transfer ownership first.", 400);
+        
+        // Only the owner can remove moderators, but both owner and moderators can remove members
+        if (targetMembership.Role == CommunityRole.Moderator && callerMembership.Role != CommunityRole.Owner)
+            throw new ForbiddenException("Only the owner can remove a moderator.");
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            _communityRepository.RemoveMember(targetMembership);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _communityRepository.DecrementMemberCountAsync(communityId, ct);
+            await _unitOfWork.CommitAsync();
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+
+
+        _logger.LogInformation(
+            "Community Service - User {TargetUserId} removed from community {CommunityId} by {CallerId}",
+            targetUserId, communityId, callerUserId);
+    }
+
     // Private helpers
     private static List<Channel> CreateDefaultChannels(Guid communityId)
     {

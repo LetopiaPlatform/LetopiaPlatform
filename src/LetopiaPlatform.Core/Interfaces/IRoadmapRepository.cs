@@ -34,6 +34,16 @@ public interface IRoadmapRepository
     Task<RoadmapPhase?> GetPhaseByIdAsync(Guid phaseId, CancellationToken ct = default);
 
     /// <summary>
+    /// Retrieves a tracked phase by its ID and parent roadmap ID.
+    /// Includes the parent Roadmap navigation for ownership checks.
+    /// </summary>
+    /// <param name="phaseId">The phase ID.</param>
+    /// <param name="roadmapId">The parent roadmap ID.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The tracked phase with its Roadmap if found; otherwise null.</returns>
+    Task<RoadmapPhase?> GetPhaseByRoadmapAsync(Guid phaseId, Guid roadmapId, CancellationToken ct = default);
+
+    /// <summary>
     /// Adds a new roadmap to the repository.
     /// </summary>
     /// <param name="roadmap">The roadmap to add.</param>

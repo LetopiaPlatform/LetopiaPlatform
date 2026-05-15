@@ -93,8 +93,9 @@ public class PostService : IPostService
 
             if (request.Tags.Count > 0)
                 await _tagRepo.ReplaceTagsAsync(TagTarget.Post, post.Id, request.Tags, ct);
-
+            await _communityRepo.IncrementPostCountAsync(communityId, 1, ct);
             await _unitOfWork.SaveChangesAsync(ct);
+           
             await _unitOfWork.CommitAsync();
         }
         catch
@@ -282,17 +283,37 @@ public class PostService : IPostService
         var post = await GetPostOrThrowAsync(postId);
 
         var membership = await _communityRepo.GetMembershipAsync(post.CommunityId, userId, ct);
+
         if (membership is null || post.AuthorId != membership.Id)
             throw new ForbiddenException("You are not allowed to delete this post.");
 
-        post.IsDeleted = true;
-        post.UpdatedAt = DateTime.UtcNow;
+        if (post.IsDeleted)
+            return Result.Success();
 
-        await _unitOfWork.SaveChangesAsync(ct);
+        var community = await _communityRepo.GetByIdAsync(post.CommunityId, ct)
+            ?? throw new NotFoundException($"Community {post.CommunityId} not found.");
 
-        return Result.Success();
+        await _unitOfWork.BeginTransactionAsync();
+
+        try
+        {
+            post.IsDeleted = true;
+            post.UpdatedAt = DateTime.UtcNow;
+
+            community.PostCount--;
+
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            await _unitOfWork.CommitAsync();
+
+            return Result.Success();
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
     }
-
     // ─────────────────────────────
     // PRIVATE HELPERS
     // ─────────────────────────────

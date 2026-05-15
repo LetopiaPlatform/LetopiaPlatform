@@ -33,11 +33,21 @@ public static class Router
     public static class Users
     {
         public const string Prefix = $"{Rule}/users";
+
         public const string Me = $"{Prefix}/me";
         public const string Update = $"{Prefix}/me";
         public const string Avatar = $"{Prefix}/me/avatar";
-    }
 
+        // Public profile
+        public const string GetById = $"{Prefix}/{{id:guid}}";
+
+        // Email change
+        public const string EmailChangeRequest = $"{Prefix}/me/email/change-request";
+        public const string EmailChangeConfirm = $"{Prefix}/me/email/confirm";
+
+        // Preferences
+        public const string Preferences = $"{Prefix}/me/preferences";
+    }
 
 
     public static class Communities
@@ -52,6 +62,7 @@ public static class Router
         public const string Leave = $"{Prefix}/{{id}}/leave";
         public const string Members = $"{Prefix}/{{id}}/members";
         public const string ChangeRole = $"{Prefix}/{{id}}/members/{{userId}}/role";
+        public const string RemoveMember = $"{Prefix}/{{id}}/members/{{userId}}";
     }
 
     public static class Categories
@@ -164,6 +175,25 @@ public static class Router
         public const string Prefix = $"{Rule}/search";
         public const string Query = Prefix;
     }
+
+    public static class Agent
+    {
+        public const string Prefix = $"{Rule}/agent";
+        public const string Conversations = $"{Prefix}/conversations";
+        public const string ConversationById = $"{Prefix}/conversations/{{conversationId}}";
+        public const string Messages = $"{Prefix}/conversations/{{conversationId}}/messages";
+    }
+
+    public static class Roadmaps
+    {
+        public const string Prefix = $"{Rule}/roadmaps";
+        public const string List = Prefix;
+        public const string GetById = $"{Prefix}/{{roadmapId}}";
+        public const string UpdatePhaseStatus = $"{Prefix}/{{roadmapId}}/phases/{{phaseId}}/status";
+    }
 }
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 93831c379b655d029e0cd58a052e64c6a4e3d699

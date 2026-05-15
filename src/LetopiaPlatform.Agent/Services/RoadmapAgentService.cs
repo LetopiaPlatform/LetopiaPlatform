@@ -52,6 +52,53 @@ public class RoadmapAgentService : IRoadmapAgentService
 
     public AgentType AgentType => AgentType.RoadmapGenerator;
 
+    public async Task ValidateConversationOwnershipAsync(Guid conversationId, Guid userId, CancellationToken ct)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, ct)
+            ?? throw new NotFoundException(nameof(AgentConversation), conversationId);
+
+        if (conversation.UserId != userId)
+            throw new ForbiddenException();
+    }
+
+    public async Task<List<ConversationSummaryDto>> GetUserConversationsAsync(Guid userId, CancellationToken ct)
+    {
+        var conversations = await _conversationRepository.GetByUserIdAsync(userId, ct);
+
+        return conversations
+            .OrderByDescending(c => c.UpdatedAt)
+            .Select(c => new ConversationSummaryDto(
+                c.Id,
+                c.Title,
+                c.AgentType,
+                c.Status,
+                c.CreatedAt,
+                c.UpdatedAt))
+            .ToList();
+    }
+
+    public async Task<ConversationDto> GetConversationAsync(Guid conversationId, Guid userId, CancellationToken ct)
+    {
+        var conversation = await _conversationRepository.GetByIdWithMessagesAsync(conversationId, ct)
+            ?? throw new NotFoundException(nameof(AgentConversation), conversationId);
+
+        if (conversation.UserId != userId)
+            throw new ForbiddenException();
+
+        return new ConversationDto(
+            conversation.Id,
+            conversation.Title,
+            conversation.AgentType,
+            conversation.Status,
+            conversation.RoadmapId,
+            conversation.CreatedAt,
+            conversation.UpdatedAt,
+            conversation.Messages
+                .OrderBy(m => m.CreatedAt)
+                .Select(m => new ConversationMessageDto(m.Id, m.Role, m.Content, m.CreatedAt))
+                .ToList());
+    }
+
     public async Task<AgentConversation> StartConversationAsync(
         Guid userId,
         string initialMessage,

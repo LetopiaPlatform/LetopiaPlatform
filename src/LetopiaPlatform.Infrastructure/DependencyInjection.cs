@@ -27,7 +27,7 @@ public static class DependencyInjection
         IConfiguration configuration,
         IHostEnvironment environment)
     {
-        services.AddDatabase(configuration);
+        services.AddDatabase(configuration, environment);
         services.AddIdentitySystem();
         services.AddJwtAuthentication(configuration, environment);
         services.AddAppServices(configuration);
@@ -55,8 +55,15 @@ public static class DependencyInjection
     //}
     private static IServiceCollection AddDatabase(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
+        if (environment.IsEnvironment("Testing"))
+        {
+            // Testing environment overrides DbContext, skip PostgreSQL setup
+            return services;
+        }
+
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         // 1. إعداد الـ DataSourceBuilder لتفعيل الـ JSON الديناميكي
@@ -180,6 +187,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
         services.AddScoped<ICommunityTaskCategoryService, CommunityTaskCategoryService>();
         services.AddScoped<IRoadmapRepository, RoadmapRepository>();
+        services.AddScoped<IRoadmapService, RoadmapService>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<ICommunityTaskService, CommunityTaskService>();
 
