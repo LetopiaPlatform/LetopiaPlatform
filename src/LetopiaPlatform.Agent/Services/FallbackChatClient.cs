@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +17,9 @@ public sealed class FallbackChatClient : DelegatingChatClient
 {
     private readonly IChatClient _fallback;
     private readonly ILogger<FallbackChatClient> _logger;
-    private DateTimeOffset _circuitBreakerUntil = DateTimeOffset.MinValue;
+    private long _circuitBreakerUntilTicks = DateTimeOffset.MinValue.UtcTicks;
+
+    private DateTimeOffset CircuitBreakerUntil => new DateTimeOffset(Interlocked.Read(ref _circuitBreakerUntilTicks), TimeSpan.Zero);
 
     public FallbackChatClient(
         IChatClient primary,
@@ -33,9 +36,10 @@ public sealed class FallbackChatClient : DelegatingChatClient
         ChatOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        if (DateTimeOffset.UtcNow < _circuitBreakerUntil)
+        var circuitBreakerUntil = CircuitBreakerUntil;
+        if (DateTimeOffset.UtcNow < circuitBreakerUntil)
         {
-            _logger.LogWarning("Primary provider is on circuit breaker until {Time}. Routing directly to secondary provider.", _circuitBreakerUntil);
+            _logger.LogWarning("Primary provider is on circuit breaker until {Time}. Routing directly to secondary provider.", circuitBreakerUntil);
             return await _fallback.CompleteAsync(chatMessages, options, cancellationToken);
         }
 
@@ -46,9 +50,13 @@ public sealed class FallbackChatClient : DelegatingChatClient
             _logger.LogDebug("Primary provider CompleteAsync succeeded.");
             return result;
         }
+        catch (Exception ex) when (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex) when (IsRetriable(ex))
         {
-            _circuitBreakerUntil = DateTimeOffset.UtcNow.AddMinutes(5);
+            Interlocked.Exchange(ref _circuitBreakerUntilTicks, DateTimeOffset.UtcNow.AddMinutes(5).UtcTicks);
             _logger.LogWarning(ex,
                 "Primary provider CompleteAsync failed. Circuit breaker opened for 5 minutes. Falling back to secondary.");
             return await _fallback.CompleteAsync(chatMessages, options, cancellationToken);
@@ -60,7 +68,7 @@ public sealed class FallbackChatClient : DelegatingChatClient
         ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (DateTimeOffset.UtcNow < _circuitBreakerUntil)
+        if (DateTimeOffset.UtcNow < CircuitBreakerUntil)
         {
             _logger.LogWarning("Primary provider is on circuit breaker. Routing directly to secondary provider.");
             await foreach (var update in _fallback.CompleteStreamingAsync(chatMessages, options, cancellationToken))
@@ -93,9 +101,13 @@ public sealed class FallbackChatClient : DelegatingChatClient
                 {
                     moved = await enumerator.MoveNextAsync();
                 }
-                catch (Exception ex) when (IsRetriable(ex) || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+                catch (Exception ex) when (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
                 {
-                    _circuitBreakerUntil = DateTimeOffset.UtcNow.AddMinutes(5);
+                    throw;
+                }
+                catch (Exception ex) when (IsRetriable(ex) || ex is OperationCanceledException)
+                {
+                    Interlocked.Exchange(ref _circuitBreakerUntilTicks, DateTimeOffset.UtcNow.AddMinutes(5).UtcTicks);
                     _logger.LogWarning(ex,
                         "Primary provider failed mid-stream after {BufferedChunks} chunk(s) or timed out. "
                         + "Circuit breaker opened for 5 minutes. Discarding buffered deltas and falling back to secondary provider.",
