@@ -6,24 +6,19 @@ namespace LetopiaPlatform.Core.Entities;
 public class Project : AuditableEntity
 {
     public required string Title { get; set; }
-    public required string Description { get; set; }
-    public string? CoverImageUrl { get; set; }
+    public string? Description { get; set; }
     public DifficultyLevel? DifficultyLevel { get; set; }
     public ProjectStatus Status { get; set; }
 
     public bool IsPublic { get; set; } = true;
 
-    public DateTime StartDate { get; set; }
-    public DateTime Deadline { get; set; }
 
 
     public List<string> RequiredSkills { get; set; } = [];
-    public List<string> Goals { get; set; } = [];
-
-    public List<string> TimelineEvents { get; set; } = [];
 
 
-    //------------------------------------------------
+
+    //------------------NavigationProperty------------------------------
     public Guid CategoryId { get; set; }
 
     public virtual ProjectCategory Category { get; set; } = null!;
@@ -33,13 +28,24 @@ public class Project : AuditableEntity
 
     public virtual ICollection<ProjectMember> Members { get; set; } = new HashSet<ProjectMember>();
 
-    public List<ProjectMilestoneDetails> Milestones { get; set; } = [];
+    public virtual ICollection<ProjectMilestoneDetails> Milestones { get; set; } = new HashSet<ProjectMilestoneDetails>();
+
+
+    public virtual ICollection<ProjectResource> Resources { get; set; } = new HashSet<ProjectResource>();
+
+
+    public int CalculatedProgress => Milestones.Count > 0
+    ? (int)((double)Milestones.Count(m => m.Status == MilestoneStatus.Completed) / Milestones.Count * 100)
+    : 0;
 
 }
-
-public class ProjectMilestoneDetails
+public class ProjectResource : AuditableEntity
 {
-    public string Title { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public bool IsFile { get; set; }
 
+    public Guid ProjectId { get; set; }
+    public virtual Project Project { get; set; } = null!;
 }
+

@@ -19,6 +19,15 @@ public static class Router
         public const string ResetPassword = $"{Prefix}/reset-password";
         public const string ForgotPassword = $"{Prefix}/forgot-password";
 
+
+        public static class Users
+        {
+            public const string Prefix = $"{Rule}/users";
+            public const string Me = $"{Prefix}/me";
+            public const string Update = $"{Prefix}/me";
+            public const string Avatar = $"{Prefix}/me/avatar";
+        }
+
     }
 
     public static class Users
@@ -39,6 +48,7 @@ public static class Router
         // Preferences
         public const string Preferences = $"{Prefix}/me/preferences";
     }
+
 
     public static class Communities
     {
@@ -85,6 +95,15 @@ public static class Router
         public const string GetDetailsById = $"{Prefix}/{{id}}";
         public const string Update = $"{Prefix}/Update/{{id}}";
         public const string Delete = $"{Prefix}/Delete/{{id}}";
+
+        // Milestone Operations
+        public const string AddMilestone = $"{Prefix}/{{projectId}}/AddMilestone";
+
+        public const string EditMilestone = $"{Prefix}/EditMilestone/{{id}}";
+
+        public const string DeleteMilestone = $"{Prefix}/DeleteMilestone/{{id}}";
+
+        public const string ToggleMilestone = $"{Prefix}/ToggleMilestone/{{id}}";
     }
 
     public static class ProjectMembers
@@ -182,3 +201,8 @@ public static class Router
         public const string UpdatePhaseStatus = $"{Prefix}/{{roadmapId}}/phases/{{phaseId}}/status";
     }
 }
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> 93831c379b655d029e0cd58a052e64c6a4e3d699

@@ -21,6 +21,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Channel> Channels => Set<Channel>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectMilestoneDetails> ProjectMilestoneDetails => Set<ProjectMilestoneDetails>();
     public DbSet<CommunityResource> CommunityResources => Set<CommunityResource>();
     public DbSet<ResourceLike> ResourceLikes => Set<ResourceLike>();
     public DbSet<Tag> Tags => Set<Tag>();

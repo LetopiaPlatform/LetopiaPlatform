@@ -1,4 +1,3 @@
-using System.Text.Json;
 using LetopiaPlatform.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -21,32 +20,16 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .IsRequired();
 
         builder.Property(p => p.Description)
-            .HasColumnName("description")
-            .IsRequired();
+            .HasColumnName("description");
 
-        builder.Property(p => p.CoverImageUrl)
-            .HasColumnName("cover_image_url");
 
-        // 3. Mapping Lists to Postgres Arrays (Specialized Types)
+
+        // 3. Mapping Lists to Postgres Arrays (Skills & Goals)
         builder.Property(p => p.RequiredSkills)
             .HasColumnName("required_skills")
             .HasColumnType("text[]");
 
-        builder.Property(p => p.Goals)
-            .HasColumnName("goals")
-            .HasColumnType("text[]");
 
-        builder.Property(p => p.TimelineEvents)
-            .HasColumnName("timeline_events")
-            .HasColumnType("text[]");
-
-        builder.Property(p => p.Milestones)
-     .HasColumnName("milestones")
-     .HasColumnType("jsonb")
-     .HasConversion(
-         v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
-         v => JsonSerializer.Deserialize<List<ProjectMilestoneDetails>>(v, (JsonSerializerOptions)null!) ?? new List<ProjectMilestoneDetails>()
-     );
 
         // 4. Enums & Booleans
         builder.Property(p => p.DifficultyLevel)
@@ -63,10 +46,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .HasColumnName("is_public")
             .HasDefaultValue(true);
 
-        // 5. Dates
-        builder.Property(p => p.Deadline)
-            .HasColumnName("deadline")
-            .IsRequired();
+
 
         builder.Property(p => p.CreatedAt)
             .HasColumnName("created_at")
@@ -90,6 +70,17 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .WithMany(pc => pc.Projects)
             .HasForeignKey(p => p.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
+
+
+        builder.HasMany(p => p.Milestones)
+            .WithOne(m => m.Project)
+            .HasForeignKey(m => m.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(p => p.Resources)
+            .WithOne(r => r.Project)
+            .HasForeignKey(r => r.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // 8. Indexes
         builder.HasIndex(p => p.OwnerId).HasDatabaseName("ix_projects_owner_id");

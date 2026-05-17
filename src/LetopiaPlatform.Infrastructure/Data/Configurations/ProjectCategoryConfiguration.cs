@@ -25,9 +25,6 @@ public class ProjectCategoryConfiguration : IEntityTypeConfiguration<ProjectCate
             .HasMaxLength(100)
             .IsRequired();
 
-        builder.Property(pc => pc.IconUrl)
-            .HasColumnName("icon_url");
-
         builder.Property(pc => pc.DisplayOrder)
             .HasColumnName("display_order")
             .HasDefaultValue(0);
