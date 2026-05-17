@@ -201,8 +201,3 @@ public static class Router
         public const string UpdatePhaseStatus = $"{Prefix}/{{roadmapId}}/phases/{{phaseId}}/status";
     }
 }
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 93831c379b655d029e0cd58a052e64c6a4e3d699
