@@ -186,7 +186,11 @@ public class RoadmapAgentService : IRoadmapAgentService
         }
 
         var searchTool = WebSearchTool.Create(_webSearchService);
-        var options = new ChatOptions { Tools = [searchTool] };
+        var options = new ChatOptions
+        {
+            Tools = [searchTool],
+            MaxOutputTokens = _settings.MaxOutputTokens
+        };
 
         // Producer-consumer: the agent loop writes events to a Channel,
         // and we yield them here in real-time as they arrive.
@@ -219,8 +223,13 @@ public class RoadmapAgentService : IRoadmapAgentService
     {
         try
         {
-            for (int i = 0; i < _settings.MaxAgentIterations; i++)
+            for (int i = 0; i < 10; i++)
             {
+                if (i >= 4)
+                {
+                    options.Tools = null;
+                }
+
                 var textBuffer = new StringBuilder();
                 var toolCalls = new List<FunctionCallContent>();
 
@@ -363,6 +372,7 @@ public class RoadmapAgentService : IRoadmapAgentService
         }
 
         json = NormalizeLlmOutput(json);
+        json = RepairJsonBrackets(json);
 
         if (conversation.RoadmapId is null)
         {
@@ -487,12 +497,33 @@ public class RoadmapAgentService : IRoadmapAgentService
         if (possibleJson.EndsWith("```", StringComparison.OrdinalIgnoreCase))
             possibleJson = possibleJson[..^3].TrimEnd();
 
-        // Fallback: strictly grab from the first { to the last }
+        // Fallback: string-aware bracket-depth scan.
+        // Ignores { } characters inside string literals to avoid false depth counts.
+        // Correctly stops at the real root closing brace, ignoring any garbage after it.
         var firstBrace = possibleJson.IndexOf('{');
-        var lastBrace = possibleJson.LastIndexOf('}');
-        if (firstBrace >= 0 && lastBrace > firstBrace)
+        if (firstBrace >= 0)
         {
-            return possibleJson[firstBrace..(lastBrace + 1)];
+            var depth = 0;
+            var inString = false;
+            var escape = false;
+
+            for (var i = firstBrace; i < possibleJson.Length; i++)
+            {
+                var c = possibleJson[i];
+
+                if (escape) { escape = false; continue; }
+                if (c == '\\' && inString) { escape = true; continue; }
+                if (c == '"') { inString = !inString; continue; }
+                if (inString) continue;
+
+                if (c == '{') depth++;
+                else if (c == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                        return possibleJson[firstBrace..(i + 1)];
+                }
+            }
         }
 
         return null;
@@ -505,6 +536,78 @@ public class RoadmapAgentService : IRoadmapAgentService
             .Replace("\"Tutorial\"", "\"Course\"")
             .Replace("\"Workshop\"", "\"Course\"")
             .Replace("\"Reference\"", "\"Documentation\"");
+    }
+
+    /// <summary>
+    /// Best-effort repair of malformed JSON brackets from LLM output.
+    /// Handles: extra closing brackets, mismatched bracket types,
+    /// and truncated responses missing closing brackets.
+    /// </summary>
+    private static string RepairJsonBrackets(string json)
+    {
+        var stack = new Stack<char>();
+        var sb = new StringBuilder();
+        var inString = false;
+        var escape = false;
+
+        foreach (var c in json)
+        {
+            if (escape) { escape = false; sb.Append(c); continue; }
+            if (c == '\\' && inString) { escape = true; sb.Append(c); continue; }
+            if (c == '"') { inString = !inString; sb.Append(c); continue; }
+            if (inString) { sb.Append(c); continue; }
+
+            switch (c)
+            {
+                case '{':
+                    stack.Push('{');
+                    sb.Append(c);
+                    break;
+                case '[':
+                    stack.Push('[');
+                    sb.Append(c);
+                    break;
+                case '}':
+                    if (stack.Count > 0 && stack.Peek() == '{')
+                    {
+                        stack.Pop();
+                        sb.Append(c);
+                    }
+                    else if (stack.Count > 0 && stack.Peek() == '[')
+                    {
+                        // Mismatched: expected ] but got } — close the array first
+                        stack.Pop();
+                        sb.Append(']');
+                        // Now handle the } if there's a matching {
+                        if (stack.Count > 0 && stack.Peek() == '{')
+                        {
+                            stack.Pop();
+                            sb.Append(c);
+                        }
+                    }
+                    // else: extra } with nothing on stack — drop it (garbage token)
+                    break;
+                case ']':
+                    if (stack.Count > 0 && stack.Peek() == '[')
+                    {
+                        stack.Pop();
+                        sb.Append(c);
+                    }
+                    // else: extra ] with nothing matching — drop it
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
+
+        // Append any missing closing brackets for truncated responses
+        while (stack.Count > 0)
+        {
+            sb.Append(stack.Pop() == '{' ? '}' : ']');
+        }
+
+        return sb.ToString();
     }
 
     private static Roadmap CreateRoadmapEntity(RoadmapJson data, AgentConversation conversation)

@@ -30,7 +30,7 @@ public class RoadmapAgentServiceTests
 
     public RoadmapAgentServiceTests()
     {
-        var settings = Options.Create(new AgentSettings { MaxAgentIterations = 10 });
+        var settings = Options.Create(new AgentSettings());
 
         _service = new RoadmapAgentService(
             _mockChatClient.Object,
