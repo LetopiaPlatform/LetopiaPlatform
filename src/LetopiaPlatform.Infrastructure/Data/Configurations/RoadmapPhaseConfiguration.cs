@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using LetopiaPlatform.Core.DTOs.Agent;
 using LetopiaPlatform.Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LetopiaPlatform.Infrastructure.Data.Configurations;
@@ -53,13 +54,18 @@ public class RoadmapPhaseConfiguration : IEntityTypeConfiguration<RoadmapPhase>
         builder.Property(p => p.DurationEstimateWeeks)
             .HasColumnName("duration_estimate_weeks");
 
-        // JSONB columns
+        // JSONB columns with ValueComparers so EF Core detects in-place mutations
         builder.Property(p => p.Resources)
             .HasColumnName("resources")
             .HasColumnType("jsonb")
             .HasConversion(
                 v => JsonSerializer.Serialize(v, JsonOptions),
                 v => JsonSerializer.Deserialize<List<PhaseResource>>(v, JsonOptions) ?? new List<PhaseResource>());
+        builder.Property(p => p.Resources).Metadata.SetValueComparer(
+            new ValueComparer<List<PhaseResource>>(
+                (a, b) => JsonSerializer.Serialize(a, JsonOptions) == JsonSerializer.Serialize(b, JsonOptions),
+                v => JsonSerializer.Serialize(v, JsonOptions).GetHashCode(),
+                v => JsonSerializer.Deserialize<List<PhaseResource>>(JsonSerializer.Serialize(v, JsonOptions), JsonOptions)!));
 
         builder.Property(p => p.Projects)
             .HasColumnName("projects")
@@ -67,6 +73,11 @@ public class RoadmapPhaseConfiguration : IEntityTypeConfiguration<RoadmapPhase>
             .HasConversion(
                 v => JsonSerializer.Serialize(v, JsonOptions),
                 v => JsonSerializer.Deserialize<List<PhaseProject>>(v, JsonOptions) ?? new List<PhaseProject>());
+        builder.Property(p => p.Projects).Metadata.SetValueComparer(
+            new ValueComparer<List<PhaseProject>>(
+                (a, b) => JsonSerializer.Serialize(a, JsonOptions) == JsonSerializer.Serialize(b, JsonOptions),
+                v => JsonSerializer.Serialize(v, JsonOptions).GetHashCode(),
+                v => JsonSerializer.Deserialize<List<PhaseProject>>(JsonSerializer.Serialize(v, JsonOptions), JsonOptions)!));
 
         builder.Property(p => p.Insights)
             .HasColumnName("insights")
@@ -74,6 +85,11 @@ public class RoadmapPhaseConfiguration : IEntityTypeConfiguration<RoadmapPhase>
             .HasConversion(
                 v => JsonSerializer.Serialize(v, JsonOptions),
                 v => JsonSerializer.Deserialize<List<string>>(v, JsonOptions) ?? new List<string>());
+        builder.Property(p => p.Insights).Metadata.SetValueComparer(
+            new ValueComparer<List<string>>(
+                (a, b) => JsonSerializer.Serialize(a, JsonOptions) == JsonSerializer.Serialize(b, JsonOptions),
+                v => JsonSerializer.Serialize(v, JsonOptions).GetHashCode(),
+                v => JsonSerializer.Deserialize<List<string>>(JsonSerializer.Serialize(v, JsonOptions), JsonOptions)!));
 
         // Index
         builder.HasIndex(p => p.RoadmapId)
@@ -86,3 +102,4 @@ public class RoadmapPhaseConfiguration : IEntityTypeConfiguration<RoadmapPhase>
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
+

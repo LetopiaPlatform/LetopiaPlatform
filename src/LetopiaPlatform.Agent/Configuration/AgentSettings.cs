@@ -55,4 +55,10 @@ public class AgentSettings
     /// Timeout in seconds for the primary LLM provider's streaming response.
     /// </summary>
     public int PrimaryProviderTimeoutSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Maximum number of tool-call iterations the agent loop can perform
+    /// before forcing a final text response.
+    /// </summary>
+    public int MaxIterations { get; set; } = 10;
 }

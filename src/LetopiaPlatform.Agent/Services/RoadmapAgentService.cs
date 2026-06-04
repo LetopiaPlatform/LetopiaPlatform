@@ -185,6 +185,13 @@ public class RoadmapAgentService : IRoadmapAgentService
             messages.Add(new ChatMessage(ChatRole.User, userMessage));
         }
 
+        // Enforce MaxConversationTokens: trim oldest non-system messages to stay under the limit.
+        // Rough estimate: 1 token ≈ 4 characters. Always keep the system prompt + latest user message.
+        if (_settings.MaxConversationTokens > 0)
+        {
+            messages = TrimMessagesToTokenLimit(messages, _settings.MaxConversationTokens);
+        }
+
         var searchTool = WebSearchTool.Create(_webSearchService);
         var options = new ChatOptions
         {
@@ -223,8 +230,14 @@ public class RoadmapAgentService : IRoadmapAgentService
     {
         try
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < _settings.MaxIterations; i++)
             {
+                // Re-apply trimming before each LLM call — tool results may have inflated the history
+                if (_settings.MaxConversationTokens > 0)
+                {
+                    messages = TrimMessagesToTokenLimit(messages, _settings.MaxConversationTokens);
+                }
+
                 if (i >= 4)
                 {
                     options.Tools = null;
@@ -232,6 +245,10 @@ public class RoadmapAgentService : IRoadmapAgentService
 
                 var textBuffer = new StringBuilder();
                 var toolCalls = new List<FunctionCallContent>();
+
+                _logger.LogInformation(
+                    "LLM call #{Iteration}: {MessageCount} messages, ~{EstTokens} estimated tokens",
+                    i + 1, messages.Count, messages.Sum(EstimateTokens));
 
                 await foreach (var update in _chatClient.CompleteStreamingAsync(messages, options, ct))
                 {
@@ -465,6 +482,60 @@ public class RoadmapAgentService : IRoadmapAgentService
                 _ => throw new ArgumentOutOfRangeException(nameof(msg))
             },
             msg.Content);
+    }
+
+    /// <summary>
+    /// Estimates the token count of a chat message using a rough 1 token ≈ 4 characters heuristic.
+    /// Accounts for text content, function call arguments, and function result payloads.
+    /// </summary>
+    private static int EstimateTokens(ChatMessage m)
+    {
+        const int charsPerToken = 4;
+        int chars = m.Text?.Length ?? 0;
+        foreach (var content in m.Contents)
+        {
+            if (content is FunctionResultContent frc)
+                chars += frc.Result?.ToString()?.Length ?? 0;
+            else if (content is FunctionCallContent fcc)
+                chars += fcc.Arguments?.ToString()?.Length ?? 0;
+        }
+        return chars / charsPerToken;
+    }
+
+    /// <summary>
+    /// Trims the message list to stay within the approximate token limit.
+    /// Always keeps the system prompt (index 0) and the current turn
+    /// (last user message + all subsequent tool-call/result pairs).
+    /// Drops the oldest non-system messages first.
+    /// </summary>
+    private static List<ChatMessage> TrimMessagesToTokenLimit(List<ChatMessage> messages, int maxTokens)
+    {
+        int totalTokens = messages.Sum(EstimateTokens);
+        if (totalTokens <= maxTokens)
+            return messages;
+
+        // Find the last user message — protect it and everything after it
+        // (tool calls, tool results) to avoid orphaned pairs.
+        int lastUserIdx = messages.Count - 1;
+        for (int i = messages.Count - 1; i >= 1; i--)
+        {
+            if (messages[i].Role == ChatRole.User)
+            {
+                lastUserIdx = i;
+                break;
+            }
+        }
+
+        // Only trim between index 1 and lastUserIdx (exclusive)
+        var trimmed = new List<ChatMessage>(messages);
+        while (trimmed.Count > 2 && totalTokens > maxTokens && lastUserIdx > 1)
+        {
+            totalTokens -= EstimateTokens(trimmed[1]);
+            trimmed.RemoveAt(1);
+            lastUserIdx--;
+        }
+
+        return trimmed;
     }
 
     private static string? ExtractJsonFromMarkers(string text)
