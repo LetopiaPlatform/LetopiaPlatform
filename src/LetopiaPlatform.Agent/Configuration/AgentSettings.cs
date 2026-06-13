@@ -43,7 +43,7 @@ public class AgentSettings
     /// <summary>
     /// Maximum number of tokens allowed for a single conversation context.
     /// </summary>
-    public int MaxConversationTokens { get; set; } = 4000;
+    public int MaxConversationTokens { get; set; } = 10000;
 
     /// <summary>
     /// Maximum number of tokens the LLM can generate in a single response.

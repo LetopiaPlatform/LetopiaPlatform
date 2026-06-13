@@ -87,13 +87,11 @@ public sealed class FallbackChatClient : DelegatingChatClient
         // when the primary provider fails mid-stream.
         var primaryBuffer = new List<StreamingChatCompletionUpdate>();
         bool useFallback = false;
+        bool retriedPrimary = false;
 
         // Apply a strict timeout for the primary provider
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(TimeSpan.FromSeconds(_primaryTimeoutSeconds));
-
-        var enumerator = base.CompleteStreamingAsync(chatMessages, options, timeoutCts.Token)
-            .GetAsyncEnumerator(timeoutCts.Token);
 
         _logger.LogDebug("Attempting CompleteStreamingAsync with primary provider ({Timeout}s timeout).", _primaryTimeoutSeconds);
 
@@ -101,34 +99,69 @@ public sealed class FallbackChatClient : DelegatingChatClient
         {
             while (true)
             {
-                bool moved;
+                var enumerator = base.CompleteStreamingAsync(chatMessages, options, timeoutCts.Token)
+                    .GetAsyncEnumerator(timeoutCts.Token);
+
                 try
                 {
-                    moved = await enumerator.MoveNextAsync();
+                    while (true)
+                    {
+                        bool moved;
+                        try
+                        {
+                            moved = await enumerator.MoveNextAsync();
+                        }
+                        catch (Exception ex) when (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex) when (IsProviderFailure(ex) && !retriedPrimary)
+                        {
+                            _logger.LogWarning(ex,
+                                "Primary provider failed mid-stream after {BufferedChunks} chunk(s) "
+                                + "({ExceptionType}). Retrying once before opening circuit breaker.",
+                                primaryBuffer.Count, ex.GetType().Name);
+                            retriedPrimary = true;
+                            primaryBuffer.Clear();
+                            break; // break inner loop to retry with new enumerator
+                        }
+                        catch (Exception ex) when (IsProviderFailure(ex) && retriedPrimary)
+                        {
+                            Interlocked.Exchange(ref _circuitBreakerUntilTicks, DateTimeOffset.UtcNow.AddMinutes(5).UtcTicks);
+                            _logger.LogWarning(ex,
+                                "Primary provider failed again after retry, {BufferedChunks} chunk(s) "
+                                + "({ExceptionType}). Circuit breaker opened for 5 minutes. "
+                                + "Discarding buffered deltas and falling back to secondary provider.",
+                                primaryBuffer.Count, ex.GetType().Name);
+                            useFallback = true;
+                            break; // break inner loop
+                        }
+
+                        if (!moved)
+                        {
+                            // Primary completed successfully
+                            goto primaryDone;
+                        }
+                        primaryBuffer.Add(enumerator.Current);
+                    }
                 }
-                catch (Exception ex) when (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
+                finally
                 {
-                    throw;
-                }
-                catch (Exception ex) when (IsProviderFailure(ex))
-                {
-                    Interlocked.Exchange(ref _circuitBreakerUntilTicks, DateTimeOffset.UtcNow.AddMinutes(5).UtcTicks);
-                    _logger.LogWarning(ex,
-                        "Primary provider failed mid-stream after {BufferedChunks} chunk(s) ({ExceptionType}). "
-                        + "Circuit breaker opened for 5 minutes. Discarding buffered deltas and falling back to secondary provider.",
-                        primaryBuffer.Count, ex.GetType().Name);
-                    useFallback = true;
-                    break;
+                    await enumerator.DisposeAsync();
                 }
 
-                if (!moved) break;
-                primaryBuffer.Add(enumerator.Current);
+                if (useFallback)
+                    break;
+
+                // If we reach here, retriedPrimary was set — continue outer loop to retry
             }
         }
-        finally
+        catch (Exception ex) when (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
         {
-            await enumerator.DisposeAsync();
+            throw;
         }
+
+        primaryDone:
 
         if (useFallback)
         {

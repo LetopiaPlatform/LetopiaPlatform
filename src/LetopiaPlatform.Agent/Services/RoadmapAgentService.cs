@@ -230,6 +230,9 @@ public class RoadmapAgentService : IRoadmapAgentService
     {
         try
         {
+            const int maxToolCallRounds = 2;
+            int toolCallRounds = 0;
+
             for (int i = 0; i < _settings.MaxIterations; i++)
             {
                 // Re-apply trimming before each LLM call — tool results may have inflated the history
@@ -238,9 +241,21 @@ public class RoadmapAgentService : IRoadmapAgentService
                     messages = TrimMessagesToTokenLimit(messages, _settings.MaxConversationTokens);
                 }
 
-                if (i >= 4)
+                if (toolCallRounds >= maxToolCallRounds)
                 {
                     options.Tools = null;
+
+                    // Inject a guidance message only once, when tools are first disabled,
+                    // to nudge the LLM from SEARCH → GENERATE state.
+                    if (toolCallRounds == maxToolCallRounds)
+                    {
+                        messages.Add(new ChatMessage(ChatRole.User,
+                            "You have gathered enough resources from your searches. " +
+                            "Please proceed to STATE 3 (GENERATE) now. " +
+                            "Output the complete roadmap JSON wrapped between StartOfAnswer and EndOfAnswer markers. " +
+                            "Do NOT search again. Use only the resources you have already found."));
+                        toolCallRounds++; // Prevent re-injection on next iteration
+                    }
                 }
 
                 var textBuffer = new StringBuilder();
@@ -250,19 +265,131 @@ public class RoadmapAgentService : IRoadmapAgentService
                     "LLM call #{Iteration}: {MessageCount} messages, ~{EstTokens} estimated tokens",
                     i + 1, messages.Count, messages.Sum(EstimateTokens));
 
+                // Collect all streaming updates so we can coalesce them into a
+                // complete ChatCompletion.  This is necessary because some providers
+                // (notably Gemini via the OpenAI-compatible endpoint) split
+                // FunctionCallContent arguments across multiple chunks, leaving
+                // individual chunks with null Arguments.  Coalescing merges them.
+                var streamingUpdates = new List<StreamingChatCompletionUpdate>();
+
+                var payload = System.Text.Json.JsonSerializer.Serialize(messages);
+                _logger.LogInformation(
+                    "Final payload size before GENERATE: {Length} chars, Estimated Tokens: {Tokens}",
+                    payload.Length, messages.Sum(EstimateTokens));
+
                 await foreach (var update in _chatClient.CompleteStreamingAsync(messages, options, ct))
                 {
+                    streamingUpdates.Add(update);
+
                     if (update.Text is not null)
                     {
                         textBuffer.Append(update.Text);
                         await writer.WriteAsync(new AgentStreamEvent("delta", update.Text), ct);
                     }
+                }
 
-                    toolCalls.AddRange(update.Contents.OfType<FunctionCallContent>());
+                // Coalesce streaming chunks into a single ChatCompletion so that
+                // tool-call arguments are fully assembled regardless of provider.
+                var coalesced = streamingUpdates.ToChatCompletion();
+
+                // Guard: some providers (e.g. Gemini) may return empty streaming
+                // responses when the context is malformed. ToChatCompletion() will
+                // have zero Choices, and accessing .Message throws InvalidOperationException.
+                if (coalesced.Choices is null || coalesced.Choices.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "LLM returned an empty streaming response (0 choices). "
+                        + "This may indicate the provider cannot handle the current message format.");
+
+                    // Treat as a conversational response with empty text — the agent
+                    // loop will persist and emit a done event, ending the turn.
+                    var emptyResultEvent = await ProcessCompletedResponseAsync(conversation, textBuffer.ToString(), ct);
+                    if (emptyResultEvent is not null)
+                        await writer.WriteAsync(emptyResultEvent, ct);
+
+                    _conversationRepository.AddMessage(new ConversationMessage
+                    {
+                        ConversationId = conversationId,
+                        Role = MessageRole.Assistant,
+                        Content = textBuffer.Length > 0
+                            ? textBuffer.ToString()
+                            : "I'm sorry, I encountered an issue processing your request. Please try again.",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    await _unitOfWork.SaveChangesAsync(ct);
+
+                    if (textBuffer.Length == 0)
+                    {
+                        await writer.WriteAsync(
+                            new AgentStreamEvent("delta",
+                                "I'm sorry, I encountered an issue processing your request. Please try again."), ct);
+                    }
+
+                    await writer.WriteAsync(new AgentStreamEvent("done", null), ct);
+                    return;
+                }
+
+                toolCalls.AddRange(
+                    coalesced.Message.Contents.OfType<FunctionCallContent>());
+
+                // Workaround: Gemini's OpenAI-compat streaming endpoint sometimes
+                // returns tool calls with null/empty arguments because the SDK
+                // cannot coalesce them correctly from streamed chunks.
+                // Retry with non-streaming CompleteAsync which returns fully-formed
+                // function call arguments in a single response.
+                bool hasNullArgs = toolCalls.Count > 0
+                    && toolCalls.Any(tc => tc.Arguments is null || tc.Arguments.Count == 0);
+                if (hasNullArgs)
+                {
+                    _logger.LogWarning(
+                        "Streaming produced {Count} tool call(s) with null arguments. "
+                        + "Retrying with non-streaming CompleteAsync.",
+                        toolCalls.Count(tc => tc.Arguments is null || tc.Arguments.Count == 0));
+
+                    try
+                    {
+                        var nonStreamingResult = await _chatClient.CompleteAsync(messages, options, ct);
+                        var repairedCalls = nonStreamingResult.Message.Contents
+                            .OfType<FunctionCallContent>().ToList();
+
+                        if (repairedCalls.Count > 0
+                            && repairedCalls.Any(tc => tc.Arguments is not null && tc.Arguments.Count > 0))
+                        {
+                            toolCalls.Clear();
+                            toolCalls.AddRange(repairedCalls);
+
+                            // Emit any text the non-streaming response included
+                            if (!string.IsNullOrEmpty(nonStreamingResult.Message.Text))
+                            {
+                                textBuffer.Clear();
+                                textBuffer.Append(nonStreamingResult.Message.Text);
+                                await writer.WriteAsync(
+                                    new AgentStreamEvent("delta", nonStreamingResult.Message.Text), ct);
+                            }
+
+                            _logger.LogInformation(
+                                "Non-streaming retry succeeded with {Count} valid tool call(s).",
+                                repairedCalls.Count);
+                        }
+                        else
+                        {
+                            _logger.LogWarning(
+                                "Non-streaming retry also produced null arguments. "
+                                + "Falling through to existing error handling.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "Non-streaming retry failed ({ExceptionType}). "
+                            + "Falling through to existing error handling.",
+                            ex.GetType().Name);
+                    }
                 }
 
                 if (toolCalls.Count > 0)
                 {
+                    toolCallRounds++;
                     await writer.WriteAsync(
                         new AgentStreamEvent("status", "Searching for resources..."), ct);
 
@@ -295,7 +422,28 @@ public class RoadmapAgentService : IRoadmapAgentService
 
                     foreach (var tc in toolCalls)
                     {
-                        var result = await searchTool.InvokeAsync(tc.Arguments, ct);
+                        object? result;
+                        if (tc.Arguments is null || tc.Arguments.Count == 0)
+                        {
+                            _logger.LogWarning(
+                                "Tool call '{ToolName}' (callId={CallId}) had null/empty arguments. " +
+                                "This typically means the provider did not populate function call arguments correctly.",
+                                tc.Name, tc.CallId);
+                            result = "Error: The search query was empty. You must provide a specific search query string " +
+                                     "in the 'query' argument. Example: search_web(query='best beginner Node.js backend course'). " +
+                                     "Please call search_web again with a proper query argument.";
+                        }
+                        else
+                        {
+                            result = await searchTool.InvokeAsync(tc.Arguments, ct);
+                            
+                            var resultJson = System.Text.Json.JsonSerializer.Serialize(result);
+                            _logger.LogInformation(
+                                "Tool '{ToolName}' returned {Chars} chars (~{Tokens} estimated tokens)",
+                                tc.Name,
+                                resultJson.Length,
+                                resultJson.Length / 2);
+                        }
                         messages.Add(new ChatMessage(ChatRole.Tool,
                             [new FunctionResultContent(tc.CallId, tc.Name, result)]));
 
@@ -490,7 +638,9 @@ public class RoadmapAgentService : IRoadmapAgentService
     /// </summary>
     private static int EstimateTokens(ChatMessage m)
     {
-        const int charsPerToken = 4;
+        // LLaMA-style tokenizers average ~2 chars per token. Using 4
+        // severely underestimates token count, causing Groq rate-limit (413) errors.
+        const int charsPerToken = 2;
         int chars = m.Text?.Length ?? 0;
         foreach (var content in m.Contents)
         {
@@ -602,11 +752,25 @@ public class RoadmapAgentService : IRoadmapAgentService
 
     private static string NormalizeLlmOutput(string json)
     {
-        return json
+        // Fix resource type names the LLM sometimes invents
+        json = json
             .Replace("\"Guide\"", "\"Article\"")
             .Replace("\"Tutorial\"", "\"Course\"")
             .Replace("\"Workshop\"", "\"Course\"")
             .Replace("\"Reference\"", "\"Documentation\"");
+
+        // Fix common LLM structural bug: "insights" placed as an element inside the
+        // "projects" array instead of as a sibling field of the phase object.
+        // Malformed: "projects": [{...}, {...}, "insights": [...]]
+        // Fixed:     "projects": [{...}, {...}], "insights": [...]
+        // The extra ']' that was originally closing the (broken) projects array
+        // will be dropped by RepairJsonBrackets.
+        json = System.Text.RegularExpressions.Regex.Replace(
+            json,
+            @"}\s*,\s*""insights""\s*:",
+            @"}], ""insights"":");
+
+        return json;
     }
 
     /// <summary>
