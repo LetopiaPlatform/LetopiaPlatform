@@ -99,8 +99,8 @@ public class AuthService : IAuthService
         if (!signInResult.Succeeded)
             return Result<AuthResponse>.Failure("Invalid email or password.", 401);
 
-        // if (!user.EmailVerified)
-        //     return Result<AuthResponse>.Failure("Email not verified. Please verify your email before logging in.", 403);
+        if (!user.EmailVerified)
+            return Result<AuthResponse>.Failure("Email not verified. Please verify your email before logging in.", 403);
 
         var authResponse = await CreateFullAuthResponseAsync(user, cancellationToken);
         return Result<AuthResponse>.Success(authResponse);
