@@ -52,6 +52,7 @@ public static class DependencyInjection
             new FallbackChatClient(
                 primaryClient,
                 fallbackClient,
+                settings.PrimaryProviderTimeoutSeconds,
                 sp.GetRequiredService<ILogger<FallbackChatClient>>()));
         services.AddScoped<IRoadmapAgentService, RoadmapAgentService>();
 

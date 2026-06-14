@@ -30,5 +30,6 @@ public interface IAgentService
         Guid conversationId,
         string userMessage,
         Guid userId,
-        CancellationToken ct);
+        bool saveUserMessage = true,
+        CancellationToken ct = default);
 }

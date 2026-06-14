@@ -22,19 +22,7 @@ internal sealed class RoadmapService : IRoadmapService
 
     public async Task<List<RoadmapSummaryDto>> ListRoadmapsForUserAsync(Guid userId, CancellationToken ct)
     {
-        var roadmaps = await _roadmapRepository.GetByUserIdAsync(userId, ct);
-
-        return roadmaps
-            .OrderByDescending(r => r.CreatedAt)
-            .Select(r => new RoadmapSummaryDto(
-                r.Id,
-                r.Title,
-                r.Topic,
-                r.Status,
-                r.Phases.Count,
-                r.Phases.Count(p => p.Status == PhaseStatus.Completed),
-                r.CreatedAt))
-            .ToList();
+        return await _roadmapRepository.GetRoadmapSummariesAsync(userId, ct);
     }
 
     public async Task<RoadmapDto> GetRoadmapAsync(Guid roadmapId, Guid userId, CancellationToken ct)
