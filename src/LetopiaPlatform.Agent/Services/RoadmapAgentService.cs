@@ -249,6 +249,10 @@ public class RoadmapAgentService : IRoadmapAgentService
                     // to nudge the LLM from SEARCH → GENERATE state.
                     if (toolCallRounds == maxToolCallRounds)
                     {
+                        // Strip bulky search result snippets from tool results,
+                        // keeping only title + URL to save ~3,000-4,000 tokens.
+                        messages = CompactToolResults(messages);
+
                         messages.Add(new ChatMessage(ChatRole.User,
                             "You have gathered enough resources from your searches. " +
                             "Please proceed to STATE 3 (GENERATE) now. " +
@@ -352,6 +356,21 @@ public class RoadmapAgentService : IRoadmapAgentService
                         var repairedCalls = nonStreamingResult.Message.Contents
                             .OfType<FunctionCallContent>().ToList();
 
+                            foreach (var repaired in repairedCalls)
+                                {
+                                    _logger.LogInformation(
+                                        """
+                                        REPAIRED TOOL CALL:
+                                        Name: {Name}
+                                        Arguments:
+                                        {Args}
+                                        """,
+                                        repaired.Name,
+                                        repaired.Arguments is null
+                                            ? "NULL"
+                                            : JsonSerializer.Serialize(repaired.Arguments));
+                                }
+
                         if (repairedCalls.Count > 0
                             && repairedCalls.Any(tc => tc.Arguments is not null && tc.Arguments.Count > 0))
                         {
@@ -435,12 +454,64 @@ public class RoadmapAgentService : IRoadmapAgentService
                         }
                         else
                         {
-                            result = await searchTool.InvokeAsync(tc.Arguments, ct);
-                            
+                            _logger.LogInformation(
+                                """
+                                ===== TOOL CALL =====
+                                Name: {ToolName}
+                                CallId: {CallId}
+                                Arguments:
+                                {Arguments}
+                                =====================
+                                """,
+                                tc.Name,
+                                tc.CallId,
+                                tc.Arguments is null
+                                    ? "NULL"
+                                    : JsonSerializer.Serialize(tc.Arguments));
+
+                            try
+                                {
+                                    result = await searchTool.InvokeAsync(tc.Arguments!, ct);
+
+                                    _logger.LogInformation(
+                                        """
+                                        ===== TOOL SUCCESS =====
+                                        CallId: {CallId}
+                                        Result Size: {Length}
+                                        ========================
+                                        """,
+                                        tc.CallId,
+                                        JsonSerializer.Serialize(result).Length);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(
+                                        ex,
+                                        """
+                                        ===== TOOL FAILED =====
+                                        CallId: {CallId}
+                                        Arguments:
+                                        {Arguments}
+                                        =======================
+                                        """,
+                                        tc.CallId,
+                                        tc.Arguments is null
+                                            ? "NULL"
+                                            : JsonSerializer.Serialize(tc.Arguments));
+
+                                    throw;
+                                }
+
                             var resultJson = System.Text.Json.JsonSerializer.Serialize(result);
                             _logger.LogInformation(
-                                "Tool '{ToolName}' returned {Chars} chars (~{Tokens} estimated tokens)",
-                                tc.Name,
+                                """
+                                ===== TOOL RESULT =====
+                                CallId: {CallId}
+                                Size: {Chars} chars
+                                EstimatedTokens: {Tokens}
+                                =======================
+                                """,
+                                tc.CallId,
                                 resultJson.Length,
                                 resultJson.Length / 2);
                         }
@@ -470,6 +541,11 @@ public class RoadmapAgentService : IRoadmapAgentService
                 }
 
                 var fullText = textBuffer.ToString();
+
+                _logger.LogInformation(
+                    "FULL LLM RESPONSE:\n{Response}",
+                    fullText);
+
                 var resultEvent = await ProcessCompletedResponseAsync(conversation, fullText, ct);
 
                 if (resultEvent is not null)
@@ -595,7 +671,7 @@ public class RoadmapAgentService : IRoadmapAgentService
             var contents = new List<AIContent>();
             if (!string.IsNullOrEmpty(data?.Text))
                 contents.Add(new TextContent(data.Text));
-            
+
             if (data?.Calls != null)
             {
                 foreach (var call in data.Calls)
@@ -630,6 +706,75 @@ public class RoadmapAgentService : IRoadmapAgentService
                 _ => throw new ArgumentOutOfRangeException(nameof(msg))
             },
             msg.Content);
+    }
+
+    /// <summary>
+    /// Compacts tool result messages by stripping search result snippets,
+    /// keeping only title + URL. Reduces token usage by ~3,000-4,000 tokens
+    /// before the GENERATE LLM call.
+    /// </summary>
+    private static List<ChatMessage> CompactToolResults(List<ChatMessage> messages)
+    {
+        var compacted = new List<ChatMessage>(messages.Count);
+        foreach (var msg in messages)
+        {
+            // Only compact tool result messages
+            var frc = msg.Contents.OfType<FunctionResultContent>().FirstOrDefault();
+            if (msg.Role == ChatRole.Tool && frc is not null)
+            {
+                // Try to extract title+url pairs from the result JSON
+                var compactResult = CompactSearchResult(frc.Result);
+                compacted.Add(new ChatMessage(ChatRole.Tool,
+                    [new FunctionResultContent(frc.CallId, frc.Name, compactResult)]));
+            }
+            else
+            {
+                compacted.Add(msg);
+            }
+        }
+        return compacted;
+    }
+
+    /// <summary>
+    /// Extracts only title + url from search result JSON, dropping snippets.
+    /// Falls back to the original result if parsing fails.
+    /// </summary>
+    private static object CompactSearchResult(object? result)
+    {
+        if (result is null) return "No results";
+
+        try
+        {
+            var json = result is string s ? s : JsonSerializer.Serialize(result);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Handle array of search results
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                var compact = new List<object>();
+                foreach (var item in root.EnumerateArray())
+                {
+                    var title = item.TryGetProperty("title", out var t)
+                        ? t.GetString() ?? ""
+                        : item.TryGetProperty("Title", out var t2)
+                            ? t2.GetString() ?? "" : "";
+                    var url = item.TryGetProperty("url", out var u)
+                        ? u.GetString() ?? ""
+                        : item.TryGetProperty("Url", out var u2)
+                            ? u2.GetString() ?? "" : "";
+                    compact.Add(new { title, url });
+                }
+                return compact;
+            }
+
+            return result;
+        }
+        catch
+        {
+            // If parsing fails, return as-is (don't break the flow)
+            return result;
+        }
     }
 
     /// <summary>
@@ -769,6 +914,78 @@ public class RoadmapAgentService : IRoadmapAgentService
             json,
             @"}\s*,\s*""insights""\s*:",
             @"}], ""insights"":");
+
+        // Fix insights format: LLM sometimes outputs insights as objects
+        // {"title":"...", "description":"..."} instead of plain strings.
+        // Convert them to "title: description" strings.
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("phases", out var phases) && phases.ValueKind == JsonValueKind.Array)
+            {
+                bool needsFix = false;
+                foreach (var phase in phases.EnumerateArray())
+                {
+                    if (phase.TryGetProperty("insights", out var insights)
+                        && insights.ValueKind == JsonValueKind.Array
+                        && insights.GetArrayLength() > 0
+                        && insights[0].ValueKind == JsonValueKind.Object)
+                    {
+                        needsFix = true;
+                        break;
+                    }
+                }
+
+                if (needsFix)
+                {
+                    // Regex-based fix: replace insight objects with their text content
+                    json = System.Text.RegularExpressions.Regex.Replace(
+                        json,
+                        @"""insights""\s*:\s*\[([^\]]*)\]",
+                        match =>
+                        {
+                            var insightsContent = match.Groups[1].Value;
+                            try
+                            {
+                                var insightsArray = JsonSerializer.Deserialize<List<JsonElement>>(
+                                    $"[{insightsContent}]");
+                                if (insightsArray is null) return match.Value;
+
+                                var strings = new List<string>();
+                                foreach (var item in insightsArray)
+                                {
+                                    if (item.ValueKind == JsonValueKind.String)
+                                    {
+                                        strings.Add(item.GetString() ?? "");
+                                    }
+                                    else if (item.ValueKind == JsonValueKind.Object)
+                                    {
+                                        var title = item.TryGetProperty("title", out var t)
+                                            ? t.GetString() ?? "" : "";
+                                        var desc = item.TryGetProperty("description", out var d)
+                                            ? d.GetString() ?? "" : "";
+                                        strings.Add(string.IsNullOrEmpty(title)
+                                            ? desc
+                                            : string.IsNullOrEmpty(desc) ? title : $"{title}: {desc}");
+                                    }
+                                }
+
+                                var serialized = JsonSerializer.Serialize(strings);
+                                return $"\"insights\": {serialized}";
+                            }
+                            catch
+                            {
+                                return match.Value;
+                            }
+                        });
+                }
+            }
+        }
+        catch
+        {
+            // If JSON can't be parsed yet (it goes through RepairJsonBrackets next), skip
+        }
 
         return json;
     }
