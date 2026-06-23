@@ -63,7 +63,7 @@ public static class DependencyInjection
         dataSourceBuilder.EnableDynamicJson(); // السطر ده هو "كلمة السر" لحل مشكلة الـ Milestones
         var dataSource = dataSourceBuilder.Build();
 
-        // 2. تسجيل الـ DbContext باستخدام الـ dataSource الج
+
 
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
