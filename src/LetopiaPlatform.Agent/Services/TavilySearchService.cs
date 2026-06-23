@@ -44,6 +44,12 @@ public class TavilySearchService : IWebSearchService
         int maxResults = 5,
         CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            _logger.LogWarning("Tavily search skipped because query was null or empty.");
+            return [];
+        }
+
         try
         {
             var resultsLimit = maxResults <= 0 ? _settings.MaxResults : maxResults;
@@ -88,7 +94,9 @@ public class TavilySearchService : IWebSearchService
                 .Select(r => new SearchResult(
                     Title: r.Title ?? string.Empty,
                     Url: r.Url ?? string.Empty,
-                    Snippet: r.Content ?? string.Empty))
+                    Snippet: r.Content != null && r.Content.Length > 300 
+                        ? string.Concat(r.Content.AsSpan(0, 300), "...") 
+                        : r.Content ?? string.Empty))
                 .ToList();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

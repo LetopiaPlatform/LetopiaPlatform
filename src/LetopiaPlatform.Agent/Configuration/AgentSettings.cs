@@ -43,11 +43,22 @@ public class AgentSettings
     /// <summary>
     /// Maximum number of tokens allowed for a single conversation context.
     /// </summary>
-    public int MaxConversationTokens { get; set; } = 4000;
+    public int MaxConversationTokens { get; set; } = 10000;
 
     /// <summary>
-    /// Maximum number of agent loop iterations (LLM calls) before the agent gives up.
-    /// Prevents runaway tool-call loops.
+    /// Maximum number of tokens the LLM can generate in a single response.
+    /// Separate from MaxConversationTokens (context window) to avoid conflation.
     /// </summary>
-    public int MaxAgentIterations { get; set; } = 10;
+    public int MaxOutputTokens { get; set; } = 8192;
+
+    /// <summary>
+    /// Timeout in seconds for the primary LLM provider's streaming response.
+    /// </summary>
+    public int PrimaryProviderTimeoutSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Maximum number of tool-call iterations the agent loop can perform
+    /// before forcing a final text response.
+    /// </summary>
+    public int MaxIterations { get; set; } = 10;
 }

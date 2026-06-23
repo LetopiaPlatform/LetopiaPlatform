@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
@@ -8,22 +9,28 @@ namespace LetopiaPlatform.Agent.Services;
 
 /// <summary>
 /// A delegating <see cref="IChatClient"/> that tries the primary provider first
-/// and falls back to a secondary on retriable errors (429, 5xx, network failures,
-/// timeouts, and broken pipes).
-/// Does not fall back on 400 (Bad Request) errors.
+/// and falls back to a secondary provider on known provider failures
+/// (transport errors, timeouts, rate-limits, and SDK bugs).
+/// App-level bugs propagate up for proper debugging — they are NOT silently swallowed.
 /// </summary>
 public sealed class FallbackChatClient : DelegatingChatClient
 {
     private readonly IChatClient _fallback;
     private readonly ILogger<FallbackChatClient> _logger;
+    private readonly int _primaryTimeoutSeconds;
+    private long _circuitBreakerUntilTicks = DateTimeOffset.MinValue.UtcTicks;
+
+    private DateTimeOffset CircuitBreakerUntil => new DateTimeOffset(Interlocked.Read(ref _circuitBreakerUntilTicks), TimeSpan.Zero);
 
     public FallbackChatClient(
         IChatClient primary,
         IChatClient fallback,
+        int primaryTimeoutSeconds,
         ILogger<FallbackChatClient> logger)
         : base(primary)
     {
         _fallback = fallback;
+        _primaryTimeoutSeconds = primaryTimeoutSeconds;
         _logger = logger;
     }
 
@@ -32,6 +39,13 @@ public sealed class FallbackChatClient : DelegatingChatClient
         ChatOptions? options = null,
         CancellationToken cancellationToken = default)
     {
+        var circuitBreakerUntil = CircuitBreakerUntil;
+        if (DateTimeOffset.UtcNow < circuitBreakerUntil)
+        {
+            _logger.LogWarning("Primary provider is on circuit breaker until {Time}. Routing directly to secondary provider.", circuitBreakerUntil);
+            return await _fallback.CompleteAsync(chatMessages, options, cancellationToken);
+        }
+
         try
         {
             _logger.LogDebug("Attempting CompleteAsync with primary provider.");
@@ -39,10 +53,17 @@ public sealed class FallbackChatClient : DelegatingChatClient
             _logger.LogDebug("Primary provider CompleteAsync succeeded.");
             return result;
         }
-        catch (Exception ex) when (IsRetriable(ex))
+        catch (Exception ex) when (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
         {
+            throw;
+        }
+        catch (Exception ex) when (IsProviderFailure(ex))
+        {
+            Interlocked.Exchange(ref _circuitBreakerUntilTicks, DateTimeOffset.UtcNow.AddMinutes(5).UtcTicks);
             _logger.LogWarning(ex,
-                "Primary provider CompleteAsync failed with retriable error. Falling back to secondary provider.");
+                "Primary provider CompleteAsync failed ({ExceptionType}). "
+                + "Circuit breaker opened for 5 minutes. Falling back to secondary.",
+                ex.GetType().Name);
             return await _fallback.CompleteAsync(chatMessages, options, cancellationToken);
         }
     }
@@ -52,43 +73,95 @@ public sealed class FallbackChatClient : DelegatingChatClient
         ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        if (DateTimeOffset.UtcNow < CircuitBreakerUntil)
+        {
+            _logger.LogWarning("Primary provider is on circuit breaker. Routing directly to secondary provider.");
+            await foreach (var update in _fallback.CompleteStreamingAsync(chatMessages, options, cancellationToken))
+            {
+                yield return update;
+            }
+            yield break;
+        }
+
         // Buffer primary deltas internally to avoid partial-content duplication
         // when the primary provider fails mid-stream.
         var primaryBuffer = new List<StreamingChatCompletionUpdate>();
         bool useFallback = false;
+        bool retriedPrimary = false;
 
-        var enumerator = base.CompleteStreamingAsync(chatMessages, options, cancellationToken)
-            .GetAsyncEnumerator(cancellationToken);
+        // Apply a strict timeout for the primary provider
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(_primaryTimeoutSeconds));
 
-        _logger.LogDebug("Attempting CompleteStreamingAsync with primary provider.");
+        _logger.LogDebug("Attempting CompleteStreamingAsync with primary provider ({Timeout}s timeout).", _primaryTimeoutSeconds);
 
         try
         {
             while (true)
             {
-                bool moved;
+                var enumerator = base.CompleteStreamingAsync(chatMessages, options, timeoutCts.Token)
+                    .GetAsyncEnumerator(timeoutCts.Token);
+
                 try
                 {
-                    moved = await enumerator.MoveNextAsync();
+                    while (true)
+                    {
+                        bool moved;
+                        try
+                        {
+                            moved = await enumerator.MoveNextAsync();
+                        }
+                        catch (Exception ex) when (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex) when (IsProviderFailure(ex) && !retriedPrimary)
+                        {
+                            _logger.LogWarning(ex,
+                                "Primary provider failed mid-stream after {BufferedChunks} chunk(s) "
+                                + "({ExceptionType}). Retrying once before opening circuit breaker.",
+                                primaryBuffer.Count, ex.GetType().Name);
+                            retriedPrimary = true;
+                            primaryBuffer.Clear();
+                            break; // break inner loop to retry with new enumerator
+                        }
+                        catch (Exception ex) when (IsProviderFailure(ex) && retriedPrimary)
+                        {
+                            Interlocked.Exchange(ref _circuitBreakerUntilTicks, DateTimeOffset.UtcNow.AddMinutes(5).UtcTicks);
+                            _logger.LogWarning(ex,
+                                "Primary provider failed again after retry, {BufferedChunks} chunk(s) "
+                                + "({ExceptionType}). Circuit breaker opened for 5 minutes. "
+                                + "Discarding buffered deltas and falling back to secondary provider.",
+                                primaryBuffer.Count, ex.GetType().Name);
+                            useFallback = true;
+                            break; // break inner loop
+                        }
+
+                        if (!moved)
+                        {
+                            // Primary completed successfully
+                            goto primaryDone;
+                        }
+                        primaryBuffer.Add(enumerator.Current);
+                    }
                 }
-                catch (Exception ex) when (IsRetriable(ex))
+                finally
                 {
-                    _logger.LogWarning(ex,
-                        "Primary provider failed mid-stream after {BufferedChunks} chunk(s). "
-                        + "Discarding buffered deltas and falling back to secondary provider.",
-                        primaryBuffer.Count);
-                    useFallback = true;
-                    break;
+                    await enumerator.DisposeAsync();
                 }
 
-                if (!moved) break;
-                primaryBuffer.Add(enumerator.Current);
+                if (useFallback)
+                    break;
+
+                // If we reach here, retriedPrimary was set — continue outer loop to retry
             }
         }
-        finally
+        catch (Exception ex) when (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
         {
-            await enumerator.DisposeAsync();
+            throw;
         }
+
+        primaryDone:
 
         if (useFallback)
         {
@@ -120,28 +193,37 @@ public sealed class FallbackChatClient : DelegatingChatClient
         base.Dispose(disposing);
     }
 
-    private static bool IsRetriable(Exception ex)
+    /// <summary>
+    /// Classifies whether an exception is a provider-level failure that should trigger fallback.
+    /// App-level bugs (JsonException, ArgumentNullException, InvalidOperationException, etc.)
+    /// are NOT classified as provider failures — they propagate up for proper debugging.
+    /// </summary>
+    private static bool IsProviderFailure(Exception ex)
     {
-        // HTTP errors: 429 (rate-limit) and 5xx (server errors)
-        if (ex is HttpRequestException httpEx)
+        return ex switch
         {
-            if (httpEx.StatusCode is null) return true;
-            var status = (int)httpEx.StatusCode;
-            return status == 429 || status >= 500;
-        }
+            // Timeouts: internal CTS timeout or HttpClient timeout
+            OperationCanceledException => true,
 
-        // Timeouts (TaskCanceledException wraps OperationCanceledException for HttpClient timeouts)
-        if (ex is TaskCanceledException)
-            return true;
+            // HTTP transport errors: 429 rate-limit, 5xx server errors, connection drops
+            HttpRequestException => true,
 
-        // Connection failures
-        if (ex is SocketException)
-            return true;
+            // TCP connection failures
+            SocketException => true,
 
-        // Broken pipe / stream read failures
-        if (ex is IOException)
-            return true;
+            // Broken pipe / stream read failures mid-transfer
+            IOException => true,
 
-        return false;
+            // Known OpenAI SDK bug: NullRef when Gemini returns empty streaming chunks.
+            // We match on the stack trace to avoid catching our own NullRef bugs.
+            NullReferenceException
+                when ex.StackTrace?.Contains("StreamingChatCompletionUpdate") == true
+                => true,
+
+            // OpenAI SDK's ClientResultException for API-level errors (rate limits, server errors)
+            _ when ex.GetType().Name == "ClientResultException" => true,
+
+            _ => false
+        };
     }
 }

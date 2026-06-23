@@ -18,11 +18,21 @@ namespace LetopiaPlatform.Agent.Services;
 
 public class RoadmapAgentService : IRoadmapAgentService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
+
+    private static JsonSerializerOptions CreateJsonOptions()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true
-    };
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
+        };
+        options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        return options;
+    }
 
     private readonly IChatClient _chatClient;
     private readonly IWebSearchService _webSearchService;
@@ -138,23 +148,27 @@ public class RoadmapAgentService : IRoadmapAgentService
         Guid conversationId,
         string userMessage,
         Guid userId,
-        [EnumeratorCancellation] CancellationToken ct)
+        bool saveUserMessage = true,
+        [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var conversation = await _conversationRepository.GetByIdWithMessagesAsync(conversationId, ct)
+        var conversation = await _conversationRepository.GetByIdTrackedAsync(conversationId, ct)
             ?? throw new NotFoundException(nameof(AgentConversation), conversationId);
 
         if (conversation.UserId != userId)
             throw new ForbiddenException();
 
-        // Persist user message to DB first
-        _conversationRepository.AddMessage(new ConversationMessage
+        if (saveUserMessage)
         {
-            ConversationId = conversationId,
-            Role = MessageRole.User,
-            Content = userMessage,
-            CreatedAt = DateTime.UtcNow
-        });
-        await _unitOfWork.SaveChangesAsync(ct);
+            // Persist user message to DB first
+            _conversationRepository.AddMessage(new ConversationMessage
+            {
+                ConversationId = conversationId,
+                Role = MessageRole.User,
+                Content = userMessage,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _unitOfWork.SaveChangesAsync(ct);
+        }
 
         // Build the chat history from the persisted messages which now include
         // the user message we just saved — no need to add it again manually.
@@ -171,8 +185,19 @@ public class RoadmapAgentService : IRoadmapAgentService
             messages.Add(new ChatMessage(ChatRole.User, userMessage));
         }
 
+        // Enforce MaxConversationTokens: trim oldest non-system messages to stay under the limit.
+        // Rough estimate: 1 token ≈ 4 characters. Always keep the system prompt + latest user message.
+        if (_settings.MaxConversationTokens > 0)
+        {
+            messages = TrimMessagesToTokenLimit(messages, _settings.MaxConversationTokens);
+        }
+
         var searchTool = WebSearchTool.Create(_webSearchService);
-        var options = new ChatOptions { Tools = [searchTool] };
+        var options = new ChatOptions
+        {
+            Tools = [searchTool],
+            MaxOutputTokens = _settings.MaxOutputTokens
+        };
 
         // Producer-consumer: the agent loop writes events to a Channel,
         // and we yield them here in real-time as they arrive.
@@ -205,24 +230,185 @@ public class RoadmapAgentService : IRoadmapAgentService
     {
         try
         {
-            for (int i = 0; i < _settings.MaxAgentIterations; i++)
+            const int maxToolCallRounds = 2;
+            int toolCallRounds = 0;
+
+            for (int i = 0; i < _settings.MaxIterations; i++)
             {
+                // Re-apply trimming before each LLM call — tool results may have inflated the history
+                if (_settings.MaxConversationTokens > 0)
+                {
+                    messages = TrimMessagesToTokenLimit(messages, _settings.MaxConversationTokens);
+                }
+
+                if (toolCallRounds >= maxToolCallRounds)
+                {
+                    options.Tools = null;
+
+                    // Inject a guidance message only once, when tools are first disabled,
+                    // to nudge the LLM from SEARCH → GENERATE state.
+                    if (toolCallRounds == maxToolCallRounds)
+                    {
+                        // Strip bulky search result snippets from tool results,
+                        // keeping only title + URL to save ~3,000-4,000 tokens.
+                        messages = CompactToolResults(messages);
+
+                        messages.Add(new ChatMessage(ChatRole.User,
+                            "You have gathered enough resources from your searches. " +
+                            "Please proceed to STATE 3 (GENERATE) now. " +
+                            "Output the complete roadmap JSON wrapped between StartOfAnswer and EndOfAnswer markers. " +
+                            "Do NOT search again. Use only the resources you have already found."));
+                        toolCallRounds++; // Prevent re-injection on next iteration
+                    }
+                }
+
                 var textBuffer = new StringBuilder();
                 var toolCalls = new List<FunctionCallContent>();
 
+                _logger.LogInformation(
+                    "LLM call #{Iteration}: {MessageCount} messages, ~{EstTokens} estimated tokens",
+                    i + 1, messages.Count, messages.Sum(EstimateTokens));
+
+                // Collect all streaming updates so we can coalesce them into a
+                // complete ChatCompletion.  This is necessary because some providers
+                // (notably Gemini via the OpenAI-compatible endpoint) split
+                // FunctionCallContent arguments across multiple chunks, leaving
+                // individual chunks with null Arguments.  Coalescing merges them.
+                var streamingUpdates = new List<StreamingChatCompletionUpdate>();
+
+                var payload = System.Text.Json.JsonSerializer.Serialize(messages);
+                _logger.LogInformation(
+                    "Final payload size before GENERATE: {Length} chars, Estimated Tokens: {Tokens}",
+                    payload.Length, messages.Sum(EstimateTokens));
+
                 await foreach (var update in _chatClient.CompleteStreamingAsync(messages, options, ct))
                 {
+                    streamingUpdates.Add(update);
+
                     if (update.Text is not null)
                     {
                         textBuffer.Append(update.Text);
                         await writer.WriteAsync(new AgentStreamEvent("delta", update.Text), ct);
                     }
+                }
 
-                    toolCalls.AddRange(update.Contents.OfType<FunctionCallContent>());
+                // Coalesce streaming chunks into a single ChatCompletion so that
+                // tool-call arguments are fully assembled regardless of provider.
+                var coalesced = streamingUpdates.ToChatCompletion();
+
+                // Guard: some providers (e.g. Gemini) may return empty streaming
+                // responses when the context is malformed. ToChatCompletion() will
+                // have zero Choices, and accessing .Message throws InvalidOperationException.
+                if (coalesced.Choices is null || coalesced.Choices.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "LLM returned an empty streaming response (0 choices). "
+                        + "This may indicate the provider cannot handle the current message format.");
+
+                    // Treat as a conversational response with empty text — the agent
+                    // loop will persist and emit a done event, ending the turn.
+                    var emptyResultEvent = await ProcessCompletedResponseAsync(conversation, textBuffer.ToString(), ct);
+                    if (emptyResultEvent is not null)
+                        await writer.WriteAsync(emptyResultEvent, ct);
+
+                    _conversationRepository.AddMessage(new ConversationMessage
+                    {
+                        ConversationId = conversationId,
+                        Role = MessageRole.Assistant,
+                        Content = textBuffer.Length > 0
+                            ? textBuffer.ToString()
+                            : "I'm sorry, I encountered an issue processing your request. Please try again.",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    await _unitOfWork.SaveChangesAsync(ct);
+
+                    if (textBuffer.Length == 0)
+                    {
+                        await writer.WriteAsync(
+                            new AgentStreamEvent("delta",
+                                "I'm sorry, I encountered an issue processing your request. Please try again."), ct);
+                    }
+
+                    await writer.WriteAsync(new AgentStreamEvent("done", null), ct);
+                    return;
+                }
+
+                toolCalls.AddRange(
+                    coalesced.Message.Contents.OfType<FunctionCallContent>());
+
+                // Workaround: Gemini's OpenAI-compat streaming endpoint sometimes
+                // returns tool calls with null/empty arguments because the SDK
+                // cannot coalesce them correctly from streamed chunks.
+                // Retry with non-streaming CompleteAsync which returns fully-formed
+                // function call arguments in a single response.
+                bool hasNullArgs = toolCalls.Count > 0
+                    && toolCalls.Any(tc => tc.Arguments is null || tc.Arguments.Count == 0);
+                if (hasNullArgs)
+                {
+                    _logger.LogWarning(
+                        "Streaming produced {Count} tool call(s) with null arguments. "
+                        + "Retrying with non-streaming CompleteAsync.",
+                        toolCalls.Count(tc => tc.Arguments is null || tc.Arguments.Count == 0));
+
+                    try
+                    {
+                        var nonStreamingResult = await _chatClient.CompleteAsync(messages, options, ct);
+                        var repairedCalls = nonStreamingResult.Message.Contents
+                            .OfType<FunctionCallContent>().ToList();
+
+                            foreach (var repaired in repairedCalls)
+                                {
+                                    _logger.LogInformation(
+                                        """
+                                        REPAIRED TOOL CALL:
+                                        Name: {Name}
+                                        Arguments:
+                                        {Args}
+                                        """,
+                                        repaired.Name,
+                                        repaired.Arguments is null
+                                            ? "NULL"
+                                            : JsonSerializer.Serialize(repaired.Arguments));
+                                }
+
+                        if (repairedCalls.Count > 0
+                            && repairedCalls.Any(tc => tc.Arguments is not null && tc.Arguments.Count > 0))
+                        {
+                            toolCalls.Clear();
+                            toolCalls.AddRange(repairedCalls);
+
+                            // Emit any text the non-streaming response included
+                            if (!string.IsNullOrEmpty(nonStreamingResult.Message.Text))
+                            {
+                                textBuffer.Clear();
+                                textBuffer.Append(nonStreamingResult.Message.Text);
+                                await writer.WriteAsync(
+                                    new AgentStreamEvent("delta", nonStreamingResult.Message.Text), ct);
+                            }
+
+                            _logger.LogInformation(
+                                "Non-streaming retry succeeded with {Count} valid tool call(s).",
+                                repairedCalls.Count);
+                        }
+                        else
+                        {
+                            _logger.LogWarning(
+                                "Non-streaming retry also produced null arguments. "
+                                + "Falling through to existing error handling.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "Non-streaming retry failed ({ExceptionType}). "
+                            + "Falling through to existing error handling.",
+                            ex.GetType().Name);
+                    }
                 }
 
                 if (toolCalls.Count > 0)
                 {
+                    toolCallRounds++;
                     await writer.WriteAsync(
                         new AgentStreamEvent("status", "Searching for resources..."), ct);
 
@@ -232,27 +418,120 @@ public class RoadmapAgentService : IRoadmapAgentService
                     assistantContents.AddRange(toolCalls);
                     messages.Add(new ChatMessage(ChatRole.Assistant, assistantContents));
 
+                    var serializedCalls = new SerializedAssistantToolCalls
+                    {
+                        Text = textBuffer.Length > 0 ? textBuffer.ToString() : null,
+                        Calls = toolCalls.Select(tc => new SerializedToolCall
+                        {
+                            CallId = tc.CallId,
+                            Name = tc.Name,
+                            Arguments = tc.Arguments
+                        }).ToList()
+                    };
+                    string contentToSave = "@@TOOL_CALLS@@" + JsonSerializer.Serialize(serializedCalls, JsonOptions);
+
                     // Persist assistant tool-call message to DB
                     _conversationRepository.AddMessage(new ConversationMessage
                     {
                         ConversationId = conversationId,
                         Role = MessageRole.Assistant,
-                        Content = textBuffer.Length > 0 ? textBuffer.ToString() : "[tool_calls]",
+                        Content = contentToSave,
                         CreatedAt = DateTime.UtcNow
                     });
 
                     foreach (var tc in toolCalls)
                     {
-                        var result = await searchTool.InvokeAsync(tc.Arguments, ct);
+                        object? result;
+                        if (tc.Arguments is null || tc.Arguments.Count == 0)
+                        {
+                            _logger.LogWarning(
+                                "Tool call '{ToolName}' (callId={CallId}) had null/empty arguments. " +
+                                "This typically means the provider did not populate function call arguments correctly.",
+                                tc.Name, tc.CallId);
+                            result = "Error: The search query was empty. You must provide a specific search query string " +
+                                     "in the 'query' argument. Example: search_web(query='best beginner Node.js backend course'). " +
+                                     "Please call search_web again with a proper query argument.";
+                        }
+                        else
+                        {
+                            _logger.LogInformation(
+                                """
+                                ===== TOOL CALL =====
+                                Name: {ToolName}
+                                CallId: {CallId}
+                                Arguments:
+                                {Arguments}
+                                =====================
+                                """,
+                                tc.Name,
+                                tc.CallId,
+                                tc.Arguments is null
+                                    ? "NULL"
+                                    : JsonSerializer.Serialize(tc.Arguments));
+
+                            try
+                                {
+                                    result = await searchTool.InvokeAsync(tc.Arguments!, ct);
+
+                                    _logger.LogInformation(
+                                        """
+                                        ===== TOOL SUCCESS =====
+                                        CallId: {CallId}
+                                        Result Size: {Length}
+                                        ========================
+                                        """,
+                                        tc.CallId,
+                                        JsonSerializer.Serialize(result).Length);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(
+                                        ex,
+                                        """
+                                        ===== TOOL FAILED =====
+                                        CallId: {CallId}
+                                        Arguments:
+                                        {Arguments}
+                                        =======================
+                                        """,
+                                        tc.CallId,
+                                        tc.Arguments is null
+                                            ? "NULL"
+                                            : JsonSerializer.Serialize(tc.Arguments));
+
+                                    throw;
+                                }
+
+                            var resultJson = System.Text.Json.JsonSerializer.Serialize(result);
+                            _logger.LogInformation(
+                                """
+                                ===== TOOL RESULT =====
+                                CallId: {CallId}
+                                Size: {Chars} chars
+                                EstimatedTokens: {Tokens}
+                                =======================
+                                """,
+                                tc.CallId,
+                                resultJson.Length,
+                                resultJson.Length / 2);
+                        }
                         messages.Add(new ChatMessage(ChatRole.Tool,
                             [new FunctionResultContent(tc.CallId, tc.Name, result)]));
+
+                        var serializedResult = new SerializedToolResult
+                        {
+                            CallId = tc.CallId,
+                            Name = tc.Name,
+                            Result = result
+                        };
+                        string resultToSave = "@@TOOL_RESULT@@" + JsonSerializer.Serialize(serializedResult, JsonOptions);
 
                         // Persist tool result message to DB
                         _conversationRepository.AddMessage(new ConversationMessage
                         {
                             ConversationId = conversationId,
                             Role = MessageRole.Tool,
-                            Content = result?.ToString() ?? string.Empty,
+                            Content = resultToSave,
                             CreatedAt = DateTime.UtcNow
                         });
                     }
@@ -262,6 +541,11 @@ public class RoadmapAgentService : IRoadmapAgentService
                 }
 
                 var fullText = textBuffer.ToString();
+
+                _logger.LogInformation(
+                    "FULL LLM RESPONSE:\n{Response}",
+                    fullText);
+
                 var resultEvent = await ProcessCompletedResponseAsync(conversation, fullText, ct);
 
                 if (resultEvent is not null)
@@ -322,7 +606,14 @@ public class RoadmapAgentService : IRoadmapAgentService
         CancellationToken ct)
     {
         var json = ExtractJsonFromMarkers(fullText);
-        if (json is null) return null;
+        if (json is null)
+        {
+            _logger.LogInformation("LLM produced conversational response (no JSON found).");
+            return null;
+        }
+
+        json = NormalizeLlmOutput(json);
+        json = RepairJsonBrackets(json);
 
         if (conversation.RoadmapId is null)
         {
@@ -330,6 +621,8 @@ public class RoadmapAgentService : IRoadmapAgentService
             {
                 if (JsonSerializer.Deserialize<RoadmapJson>(json, JsonOptions) is not { } roadmapData)
                     return new AgentStreamEvent("error", "Failed to parse roadmap data.");
+
+                roadmapData.EstimatedDurationWeeks = roadmapData.Phases.Sum(p => p.DurationEstimateWeeks);
 
                 var roadmap = CreateRoadmapEntity(roadmapData, conversation);
                 _roadmapRepository.Add(roadmap);
@@ -339,9 +632,8 @@ public class RoadmapAgentService : IRoadmapAgentService
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex,
-                    "LLM produced malformed roadmap JSON for conversation {ConversationId}",
-                    conversation.Id);
+                _logger.LogWarning("LLM produced malformed roadmap JSON for conversation {ConversationId}. Error: {Error}. JSON: {Json}",
+                    conversation.Id, ex.Message, json);
                 return new AgentStreamEvent("error", "Failed to parse roadmap data.");
             }
         }
@@ -363,38 +655,411 @@ public class RoadmapAgentService : IRoadmapAgentService
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex,
-                    "LLM produced malformed phase JSON for conversation {ConversationId}",
-                    conversation.Id);
+                _logger.LogWarning("LLM produced malformed phase JSON for conversation {ConversationId}. Error: {Error}. JSON: {Json}",
+                    conversation.Id, ex.Message, json);
                 return new AgentStreamEvent("error", "Failed to parse phase data.");
             }
         }
     }
 
-    private static ChatMessage ToChatMessage(ConversationMessage msg) => new(
-        msg.Role switch
+    private static ChatMessage ToChatMessage(ConversationMessage msg)
+    {
+        if (msg.Role == MessageRole.Assistant && msg.Content.StartsWith("@@TOOL_CALLS@@", StringComparison.Ordinal))
         {
-            MessageRole.System => ChatRole.System,
-            MessageRole.User => ChatRole.User,
-            MessageRole.Assistant => ChatRole.Assistant,
-            MessageRole.Tool => ChatRole.Tool,
-            _ => throw new ArgumentOutOfRangeException(nameof(msg))
-        },
-        msg.Content);
+            var json = msg.Content["@@TOOL_CALLS@@".Length..];
+            var data = JsonSerializer.Deserialize<SerializedAssistantToolCalls>(json, JsonOptions);
+            var contents = new List<AIContent>();
+            if (!string.IsNullOrEmpty(data?.Text))
+                contents.Add(new TextContent(data.Text));
+
+            if (data?.Calls != null)
+            {
+                foreach (var call in data.Calls)
+                {
+                    contents.Add(new FunctionCallContent(call.CallId, call.Name, call.Arguments));
+                }
+            }
+            return new ChatMessage(ChatRole.Assistant, contents);
+        }
+
+        if (msg.Role == MessageRole.Tool && msg.Content.StartsWith("@@TOOL_RESULT@@", StringComparison.Ordinal))
+        {
+            var json = msg.Content["@@TOOL_RESULT@@".Length..];
+            var data = JsonSerializer.Deserialize<SerializedToolResult>(json, JsonOptions);
+            if (data != null)
+            {
+                return new ChatMessage(ChatRole.Tool, [new FunctionResultContent(data.CallId, data.Name, data.Result)]);
+            }
+        }
+
+        if (msg.Role == MessageRole.Tool)
+        {
+            return new ChatMessage(ChatRole.Tool, [new FunctionResultContent("unknown", "unknown", msg.Content)]);
+        }
+
+        return new ChatMessage(
+            msg.Role switch
+            {
+                MessageRole.System => ChatRole.System,
+                MessageRole.User => ChatRole.User,
+                MessageRole.Assistant => ChatRole.Assistant,
+                _ => throw new ArgumentOutOfRangeException(nameof(msg))
+            },
+            msg.Content);
+    }
+
+    /// <summary>
+    /// Compacts tool result messages by stripping search result snippets,
+    /// keeping only title + URL. Reduces token usage by ~3,000-4,000 tokens
+    /// before the GENERATE LLM call.
+    /// </summary>
+    private static List<ChatMessage> CompactToolResults(List<ChatMessage> messages)
+    {
+        var compacted = new List<ChatMessage>(messages.Count);
+        foreach (var msg in messages)
+        {
+            // Only compact tool result messages
+            var frc = msg.Contents.OfType<FunctionResultContent>().FirstOrDefault();
+            if (msg.Role == ChatRole.Tool && frc is not null)
+            {
+                // Try to extract title+url pairs from the result JSON
+                var compactResult = CompactSearchResult(frc.Result);
+                compacted.Add(new ChatMessage(ChatRole.Tool,
+                    [new FunctionResultContent(frc.CallId, frc.Name, compactResult)]));
+            }
+            else
+            {
+                compacted.Add(msg);
+            }
+        }
+        return compacted;
+    }
+
+    /// <summary>
+    /// Extracts only title + url from search result JSON, dropping snippets.
+    /// Falls back to the original result if parsing fails.
+    /// </summary>
+    private static object CompactSearchResult(object? result)
+    {
+        if (result is null) return "No results";
+
+        try
+        {
+            var json = result is string s ? s : JsonSerializer.Serialize(result);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Handle array of search results
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                var compact = new List<object>();
+                foreach (var item in root.EnumerateArray())
+                {
+                    var title = item.TryGetProperty("title", out var t)
+                        ? t.GetString() ?? ""
+                        : item.TryGetProperty("Title", out var t2)
+                            ? t2.GetString() ?? "" : "";
+                    var url = item.TryGetProperty("url", out var u)
+                        ? u.GetString() ?? ""
+                        : item.TryGetProperty("Url", out var u2)
+                            ? u2.GetString() ?? "" : "";
+                    compact.Add(new { title, url });
+                }
+                return compact;
+            }
+
+            return result;
+        }
+        catch
+        {
+            // If parsing fails, return as-is (don't break the flow)
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Estimates the token count of a chat message using a rough 1 token ≈ 4 characters heuristic.
+    /// Accounts for text content, function call arguments, and function result payloads.
+    /// </summary>
+    private static int EstimateTokens(ChatMessage m)
+    {
+        // LLaMA-style tokenizers average ~2 chars per token. Using 4
+        // severely underestimates token count, causing Groq rate-limit (413) errors.
+        const int charsPerToken = 2;
+        int chars = m.Text?.Length ?? 0;
+        foreach (var content in m.Contents)
+        {
+            if (content is FunctionResultContent frc)
+                chars += frc.Result?.ToString()?.Length ?? 0;
+            else if (content is FunctionCallContent fcc)
+                chars += fcc.Arguments?.ToString()?.Length ?? 0;
+        }
+        return chars / charsPerToken;
+    }
+
+    /// <summary>
+    /// Trims the message list to stay within the approximate token limit.
+    /// Always keeps the system prompt (index 0) and the current turn
+    /// (last user message + all subsequent tool-call/result pairs).
+    /// Drops the oldest non-system messages first.
+    /// </summary>
+    private static List<ChatMessage> TrimMessagesToTokenLimit(List<ChatMessage> messages, int maxTokens)
+    {
+        int totalTokens = messages.Sum(EstimateTokens);
+        if (totalTokens <= maxTokens)
+            return messages;
+
+        // Find the last user message — protect it and everything after it
+        // (tool calls, tool results) to avoid orphaned pairs.
+        int lastUserIdx = messages.Count - 1;
+        for (int i = messages.Count - 1; i >= 1; i--)
+        {
+            if (messages[i].Role == ChatRole.User)
+            {
+                lastUserIdx = i;
+                break;
+            }
+        }
+
+        // Only trim between index 1 and lastUserIdx (exclusive)
+        var trimmed = new List<ChatMessage>(messages);
+        while (trimmed.Count > 2 && totalTokens > maxTokens && lastUserIdx > 1)
+        {
+            totalTokens -= EstimateTokens(trimmed[1]);
+            trimmed.RemoveAt(1);
+            lastUserIdx--;
+        }
+
+        return trimmed;
+    }
 
     private static string? ExtractJsonFromMarkers(string text)
     {
         const string startMarker = "StartOfAnswer";
         const string endMarker = "EndOfAnswer";
 
-        var startIdx = text.IndexOf(startMarker, StringComparison.Ordinal);
-        if (startIdx < 0) return null;
+        var startIdx = text.IndexOf(startMarker, StringComparison.OrdinalIgnoreCase);
 
-        startIdx += startMarker.Length;
-        var endIdx = text.IndexOf(endMarker, startIdx, StringComparison.Ordinal);
-        if (endIdx < 0) return null;
+        string possibleJson;
+        if (startIdx >= 0)
+        {
+            startIdx += startMarker.Length;
+            var endIdx = text.IndexOf(endMarker, startIdx, StringComparison.OrdinalIgnoreCase);
+            possibleJson = endIdx > startIdx
+                ? text[startIdx..endIdx].Trim()
+                : text[startIdx..].Trim();
+        }
+        else
+        {
+            possibleJson = text.Trim();
+        }
 
-        return text[startIdx..endIdx].Trim();
+        // Clean up markdown code blocks if LLM added them
+        if (possibleJson.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+            possibleJson = possibleJson[7..].TrimStart();
+        else if (possibleJson.StartsWith("```", StringComparison.OrdinalIgnoreCase))
+            possibleJson = possibleJson[3..].TrimStart();
+
+        if (possibleJson.EndsWith("```", StringComparison.OrdinalIgnoreCase))
+            possibleJson = possibleJson[..^3].TrimEnd();
+
+        // Fallback: string-aware bracket-depth scan.
+        // Ignores { } characters inside string literals to avoid false depth counts.
+        // Correctly stops at the real root closing brace, ignoring any garbage after it.
+        var firstBrace = possibleJson.IndexOf('{');
+        if (firstBrace >= 0)
+        {
+            var depth = 0;
+            var inString = false;
+            var escape = false;
+
+            for (var i = firstBrace; i < possibleJson.Length; i++)
+            {
+                var c = possibleJson[i];
+
+                if (escape) { escape = false; continue; }
+                if (c == '\\' && inString) { escape = true; continue; }
+                if (c == '"') { inString = !inString; continue; }
+                if (inString) continue;
+
+                if (c == '{') depth++;
+                else if (c == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                        return possibleJson[firstBrace..(i + 1)];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static string NormalizeLlmOutput(string json)
+    {
+        // Fix resource type names the LLM sometimes invents
+        json = json
+            .Replace("\"Guide\"", "\"Article\"")
+            .Replace("\"Tutorial\"", "\"Course\"")
+            .Replace("\"Workshop\"", "\"Course\"")
+            .Replace("\"Reference\"", "\"Documentation\"");
+
+        // Fix common LLM structural bug: "insights" placed as an element inside the
+        // "projects" array instead of as a sibling field of the phase object.
+        // Malformed: "projects": [{...}, {...}, "insights": [...]]
+        // Fixed:     "projects": [{...}, {...}], "insights": [...]
+        // The extra ']' that was originally closing the (broken) projects array
+        // will be dropped by RepairJsonBrackets.
+        json = System.Text.RegularExpressions.Regex.Replace(
+            json,
+            @"}\s*,\s*""insights""\s*:",
+            @"}], ""insights"":");
+
+        // Fix insights format: LLM sometimes outputs insights as objects
+        // {"title":"...", "description":"..."} instead of plain strings.
+        // Convert them to "title: description" strings.
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("phases", out var phases) && phases.ValueKind == JsonValueKind.Array)
+            {
+                bool needsFix = false;
+                foreach (var phase in phases.EnumerateArray())
+                {
+                    if (phase.TryGetProperty("insights", out var insights)
+                        && insights.ValueKind == JsonValueKind.Array
+                        && insights.GetArrayLength() > 0
+                        && insights[0].ValueKind == JsonValueKind.Object)
+                    {
+                        needsFix = true;
+                        break;
+                    }
+                }
+
+                if (needsFix)
+                {
+                    // Regex-based fix: replace insight objects with their text content
+                    json = System.Text.RegularExpressions.Regex.Replace(
+                        json,
+                        @"""insights""\s*:\s*\[([^\]]*)\]",
+                        match =>
+                        {
+                            var insightsContent = match.Groups[1].Value;
+                            try
+                            {
+                                var insightsArray = JsonSerializer.Deserialize<List<JsonElement>>(
+                                    $"[{insightsContent}]");
+                                if (insightsArray is null) return match.Value;
+
+                                var strings = new List<string>();
+                                foreach (var item in insightsArray)
+                                {
+                                    if (item.ValueKind == JsonValueKind.String)
+                                    {
+                                        strings.Add(item.GetString() ?? "");
+                                    }
+                                    else if (item.ValueKind == JsonValueKind.Object)
+                                    {
+                                        var title = item.TryGetProperty("title", out var t)
+                                            ? t.GetString() ?? "" : "";
+                                        var desc = item.TryGetProperty("description", out var d)
+                                            ? d.GetString() ?? "" : "";
+                                        strings.Add(string.IsNullOrEmpty(title)
+                                            ? desc
+                                            : string.IsNullOrEmpty(desc) ? title : $"{title}: {desc}");
+                                    }
+                                }
+
+                                var serialized = JsonSerializer.Serialize(strings);
+                                return $"\"insights\": {serialized}";
+                            }
+                            catch
+                            {
+                                return match.Value;
+                            }
+                        });
+                }
+            }
+        }
+        catch
+        {
+            // If JSON can't be parsed yet (it goes through RepairJsonBrackets next), skip
+        }
+
+        return json;
+    }
+
+    /// <summary>
+    /// Best-effort repair of malformed JSON brackets from LLM output.
+    /// Handles: extra closing brackets, mismatched bracket types,
+    /// and truncated responses missing closing brackets.
+    /// </summary>
+    private static string RepairJsonBrackets(string json)
+    {
+        var stack = new Stack<char>();
+        var sb = new StringBuilder();
+        var inString = false;
+        var escape = false;
+
+        foreach (var c in json)
+        {
+            if (escape) { escape = false; sb.Append(c); continue; }
+            if (c == '\\' && inString) { escape = true; sb.Append(c); continue; }
+            if (c == '"') { inString = !inString; sb.Append(c); continue; }
+            if (inString) { sb.Append(c); continue; }
+
+            switch (c)
+            {
+                case '{':
+                    stack.Push('{');
+                    sb.Append(c);
+                    break;
+                case '[':
+                    stack.Push('[');
+                    sb.Append(c);
+                    break;
+                case '}':
+                    if (stack.Count > 0 && stack.Peek() == '{')
+                    {
+                        stack.Pop();
+                        sb.Append(c);
+                    }
+                    else if (stack.Count > 0 && stack.Peek() == '[')
+                    {
+                        // Mismatched: expected ] but got } — close the array first
+                        stack.Pop();
+                        sb.Append(']');
+                        // Now handle the } if there's a matching {
+                        if (stack.Count > 0 && stack.Peek() == '{')
+                        {
+                            stack.Pop();
+                            sb.Append(c);
+                        }
+                    }
+                    // else: extra } with nothing on stack — drop it (garbage token)
+                    break;
+                case ']':
+                    if (stack.Count > 0 && stack.Peek() == '[')
+                    {
+                        stack.Pop();
+                        sb.Append(c);
+                    }
+                    // else: extra ] with nothing matching — drop it
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
+
+        // Append any missing closing brackets for truncated responses
+        while (stack.Count > 0)
+        {
+            sb.Append(stack.Pop() == '{' ? '}' : ']');
+        }
+
+        return sb.ToString();
     }
 
     private static Roadmap CreateRoadmapEntity(RoadmapJson data, AgentConversation conversation)
@@ -460,6 +1125,26 @@ public class RoadmapAgentService : IRoadmapAgentService
         public List<PhaseResource> Resources { get; set; } = [];
         public List<PhaseProject> Projects { get; set; } = [];
         public List<string> Insights { get; set; } = [];
+    }
+
+    private sealed class SerializedAssistantToolCalls
+    {
+        public string? Text { get; set; }
+        public List<SerializedToolCall> Calls { get; set; } = [];
+    }
+
+    private sealed class SerializedToolCall
+    {
+        public string CallId { get; set; } = "";
+        public string Name { get; set; } = "";
+        public IDictionary<string, object?>? Arguments { get; set; }
+    }
+
+    private sealed class SerializedToolResult
+    {
+        public string CallId { get; set; } = "";
+        public string Name { get; set; } = "";
+        public object? Result { get; set; }
     }
 
     #endregion

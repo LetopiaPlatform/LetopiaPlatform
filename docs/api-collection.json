@@ -14,6 +14,21 @@
       "key": "token",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "roadmapId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "phaseId",
+      "value": "",
+      "type": "string"
     }
   ],
   "auth": {
@@ -276,6 +291,132 @@
               "body": "{\n  \"success\": true,\n  \"statusCode\": 200,\n  \"message\": \"Success\",\n  \"data\": null,\n  \"timestamp\": \"2026-02-13T17:00:00Z\"\n}"
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Agent",
+      "description": "Roadmap generator agent (SSE streaming). Requires authentication.",
+      "item": [
+        {
+          "name": "Start Conversation (SSE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agent/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "agent", "conversations"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"initialMessage\": \"I want to learn backend development\"\n}"
+            },
+            "description": "Returns text/event-stream (Server-Sent Events)."
+          }
+        },
+        {
+          "name": "Send Message (SSE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agent/conversations/{{conversationId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "agent", "conversations", "{{conversationId}}", "messages"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Continue my roadmap\"\n}"
+            },
+            "description": "Set collection variable `conversationId` from start conversation response or list."
+          }
+        },
+        {
+          "name": "List Conversations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agent/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "agent", "conversations"]
+            }
+          }
+        },
+        {
+          "name": "Get Conversation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agent/conversations/{{conversationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "agent", "conversations", "{{conversationId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roadmaps",
+      "description": "User roadmaps and phase status. Requires authentication.",
+      "item": [
+        {
+          "name": "List Roadmaps",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roadmaps",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "roadmaps"]
+            }
+          }
+        },
+        {
+          "name": "Get Roadmap by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roadmaps/{{roadmapId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "roadmaps", "{{roadmapId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Phase Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roadmaps/{{roadmapId}}/phases/{{phaseId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "roadmaps", "{{roadmapId}}", "phases", "{{phaseId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Completed\"\n}"
+            },
+            "description": "Phase status enum as JSON string (e.g. NotStarted, InProgress, Completed)."
+          }
         }
       ]
     },

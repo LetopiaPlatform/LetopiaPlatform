@@ -1,4 +1,6 @@
+using LetopiaPlatform.Core.DTOs.Agent;
 using LetopiaPlatform.Core.Entities;
+using LetopiaPlatform.Core.Enums;
 using LetopiaPlatform.Core.Interfaces;
 using LetopiaPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -25,9 +27,25 @@ internal sealed class RoadmapRepository : IRoadmapRepository
     {
         return await _context.Roadmaps
             .AsNoTracking()
-            .Include(r => r.Phases)
             .Where(r => r.UserId == userId)
             .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<RoadmapSummaryDto>> GetRoadmapSummariesAsync(Guid userId, CancellationToken ct = default)
+    {
+        return await _context.Roadmaps
+            .AsNoTracking()
+            .Where(r => r.UserId == userId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new RoadmapSummaryDto(
+                r.Id,
+                r.Title,
+                r.Topic,
+                r.Status,
+                r.Phases.Count,
+                r.Phases.Count(p => p.Status == PhaseStatus.Completed),
+                r.CreatedAt))
             .ToListAsync(ct);
     }
 

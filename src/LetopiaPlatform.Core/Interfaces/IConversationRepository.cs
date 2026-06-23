@@ -25,6 +25,14 @@ public interface IConversationRepository
     Task<AgentConversation?> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// Retrieves a conversation by its unique identifier with tracking enabled, allowing property updates.
+    /// </summary>
+    /// <param name="id">The conversation ID.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The tracked conversation if found; otherwise null.</returns>
+    Task<AgentConversation?> GetByIdTrackedAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>
     /// Retrieves all conversations belonging to a user.
     /// </summary>
     /// <param name="userId">The user's ID.</param>

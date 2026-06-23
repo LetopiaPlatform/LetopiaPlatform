@@ -1,4 +1,5 @@
 
+using LetopiaPlatform.Core.DTOs.Agent;
 using LetopiaPlatform.Core.Entities;
 
 namespace LetopiaPlatform.Core.Interfaces;
@@ -24,6 +25,12 @@ public interface IRoadmapRepository
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A list of roadmaps for the user.</returns>
     Task<List<Roadmap>> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves lightweight roadmap summaries for a user using server-side projection.
+    /// Avoids loading full phase jsonb data (resources, projects, insights).
+    /// </summary>
+    Task<List<RoadmapSummaryDto>> GetRoadmapSummariesAsync(Guid userId, CancellationToken ct = default);
 
     /// <summary>
     /// Retrieves a single roadmap phase by its unique identifier.
