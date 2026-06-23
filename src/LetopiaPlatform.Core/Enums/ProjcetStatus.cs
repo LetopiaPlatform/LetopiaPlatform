@@ -7,4 +7,7 @@ public enum ProjectStatus
 
     Available = 1,      // Open for members to join and contribute
     UnAvailable = 2,    // Not open for new members, but work is ongoing
+    Recruiting = 3,
+    InProgress = 4,
+    Completed = 5,
 }

@@ -49,6 +49,22 @@ public static class DependencyInjection
         IConfiguration configuration,
         IHostEnvironment environment)
     {
+
+        if (environment.IsEnvironment("Testing"))
+        {
+            // Testing environment overrides DbContext, skip PostgreSQL setup
+            return services;
+        }
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        // 1. إعداد الـ DataSourceBuilder لتفعيل الـ JSON الديناميكي
+        var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(connectionString);
+        dataSourceBuilder.EnableDynamicJson(); // السطر ده هو "كلمة السر" لحل مشكلة الـ Milestones
+        var dataSource = dataSourceBuilder.Build();
+
+
+
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 

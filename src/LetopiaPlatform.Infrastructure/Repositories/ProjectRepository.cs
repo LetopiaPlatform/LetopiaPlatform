@@ -22,6 +22,7 @@ public class ProjectRepository : GenericRepository<Project>, IProjectRepository
          ProjectFilterDto filter, CancellationToken ct = default)
     {
         var query = _projects
+            .Include(p => p.Owner)
             .Include(p => p.Category)
             .Include(p => p.Members)
             .AsNoTracking()
